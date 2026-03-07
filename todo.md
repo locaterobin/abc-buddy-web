@@ -1,0 +1,57 @@
+# ABC Buddy - Project TODO
+
+## Database & Backend
+- [x] Dog records table schema (id, teamIdentifier, dogId, imageUrl, originalImageUrl, description, notes, latitude, longitude, areaName, source, recordedAt, createdAt)
+- [x] DB helpers for CRUD operations on dog_records
+- [x] tRPC router: dogs.generateTeamId
+- [x] tRPC router: dogs.analyzeImage (OpenAI Vision)
+- [x] tRPC router: dogs.geocodeLatLng (Nominatim)
+- [x] tRPC router: dogs.lookupDog (visual similarity)
+- [x] tRPC router: dogs.saveRecord (S3 upload + DB insert + webhook)
+- [x] tRPC router: dogs.getRecords
+- [x] tRPC router: dogs.deleteRecord
+- [x] tRPC router: dogs.checkDogId
+- [x] tRPC router: dogs.annotateRecord (canvas image annotation)
+- [x] tRPC router: dogs.getNextSuffix
+- [x] Install canvas npm package for server-side image annotation
+
+## Frontend - Layout & Theme
+- [x] Mobile-first clean field-ready UI theme
+- [x] Bottom tab navigation (Add Record, Lookup, Settings)
+- [x] Responsive design for phones and tablets
+
+## Frontend - Add Record Tab
+- [x] Image upload with drag-and-drop and camera capture
+- [x] Image preview after selection
+- [x] Auto-generate Dog ID (YYYYMMDD-NNN format)
+- [x] Dog ID uniqueness check (real-time)
+- [x] Date/time picker pre-filled with current time
+- [x] Area name field with auto-geocoding from GPS
+- [x] Notes textarea
+- [x] "Analyse with AI" button (OpenAI Vision description)
+- [x] "Annotate Image" button (server-side text burn-in)
+- [x] "Save Record" button (S3 upload + DB save + webhook)
+- [x] Auto-increment Dog ID after save
+- [x] Browser geolocation auto-detect on upload
+
+## Frontend - Lookup Tab
+- [x] Time range selector (7 days, 30 days, All time)
+- [x] Image upload for visual search
+- [x] Search results with confidence badges (High/Possible/Low match)
+- [x] Result detail modal on tap
+
+## Frontend - Settings Tab
+- [x] Team ID display and management (change, generate new)
+- [x] Webhook URL configuration
+- [x] Records list (newest first, thumbnail, Dog ID, date, area)
+- [x] Record detail modal (full image, metadata, GPS link, delete)
+- [x] Export JSON button
+- [x] Delete record functionality
+
+## Integration
+- [x] Webhook POST on record save
+- [x] GPS handling (browser geolocation + EXIF fallback)
+- [x] Reverse geocoding via Nominatim
+
+## Testing
+- [x] Vitest tests for backend procedures

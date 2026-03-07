@@ -1,11 +1,10 @@
-import { eq } from "drizzle-orm";
+import { and, desc, eq, gte, like, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
+import { InsertUser, users, dogRecords, InsertDogRecord, DogRecord } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
-// Lazily create the drizzle instance so local tooling can run without a DB.
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
@@ -89,4 +88,91 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
+// ─── Dog Record Helpers ───
+
+export async function getNextDogIdSuffix(teamIdentifier: string, datePrefix: string): Promise<string> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const pattern = `${datePrefix}-%`;
+  const result = await db
+    .select({ dogId: dogRecords.dogId })
+    .from(dogRecords)
+    .where(and(eq(dogRecords.teamIdentifier, teamIdentifier), like(dogRecords.dogId, pattern)))
+    .orderBy(desc(dogRecords.dogId))
+    .limit(1);
+
+  if (result.length === 0) return "001";
+
+  const lastId = result[0].dogId;
+  const suffix = parseInt(lastId.split("-")[1], 10);
+  return String(suffix + 1).padStart(3, "0");
+}
+
+export async function checkDogIdExists(teamIdentifier: string, dogId: string): Promise<boolean> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db
+    .select({ id: dogRecords.id })
+    .from(dogRecords)
+    .where(and(eq(dogRecords.teamIdentifier, teamIdentifier), eq(dogRecords.dogId, dogId)))
+    .limit(1);
+
+  return result.length > 0;
+}
+
+export async function insertDogRecord(record: InsertDogRecord): Promise<DogRecord> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const [insertResult] = await db.insert(dogRecords).values(record).$returningId();
+  const [newRecord] = await db
+    .select()
+    .from(dogRecords)
+    .where(eq(dogRecords.id, insertResult.id))
+    .limit(1);
+
+  return newRecord;
+}
+
+export async function getRecordsByTeam(teamIdentifier: string): Promise<DogRecord[]> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  return db
+    .select()
+    .from(dogRecords)
+    .where(eq(dogRecords.teamIdentifier, teamIdentifier))
+    .orderBy(desc(dogRecords.createdAt));
+}
+
+export async function getRecordsByTeamWithTimeRange(
+  teamIdentifier: string,
+  sinceDate?: Date
+): Promise<DogRecord[]> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const conditions = [eq(dogRecords.teamIdentifier, teamIdentifier)];
+  if (sinceDate) {
+    conditions.push(gte(dogRecords.recordedAt, sinceDate));
+  }
+
+  return db
+    .select()
+    .from(dogRecords)
+    .where(and(...conditions))
+    .orderBy(desc(dogRecords.recordedAt));
+}
+
+export async function deleteRecordById(id: number, teamIdentifier: string): Promise<boolean> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db
+    .delete(dogRecords)
+    .where(and(eq(dogRecords.id, id), eq(dogRecords.teamIdentifier, teamIdentifier)));
+
+  return (result[0] as any).affectedRows > 0;
+}
