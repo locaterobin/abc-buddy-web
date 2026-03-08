@@ -102,3 +102,6 @@
 
 ## Performance
 - [x] Client-side image resize before AI analysis and save (max 1280px, 80% JPEG quality)
+
+## Camera Save UX
+- [x] Camera save: reset form instantly, run annotation + S3 + DB + webhook in background (no waiting on "Annotating...")

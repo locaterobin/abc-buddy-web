@@ -226,74 +226,8 @@ export default function AddRecord() {
     [runAnalysis, requestDeviceGps]
   );
 
-  // Save record — annotates only for camera captures, uploads save as-is
-  const handleSave = async () => {
-    if (!imageBase64 || !dogId) {
-      toast.error("Please upload an image and set a Dog ID");
-      return;
-    }
-    if (dogIdCheck.data?.exists) {
-      toast.error("This Dog ID is already taken");
-      return;
-    }
-
-    try {
-      // Step 1: Annotate only for camera captures (this is the only awaited step)
-      let finalImageBase64 = imageBase64;
-      if (imageSource === "camera") {
-        try {
-          const annotated = await annotateMutation.mutateAsync({
-            imageBase64,
-            dogId,
-            recordedAt: new Date(recordedAt).toISOString(),
-            areaName: areaName || undefined,
-            latitude: latitude ?? undefined,
-            longitude: longitude ?? undefined,
-            notes: notes || undefined,
-          });
-          finalImageBase64 = annotated.annotatedBase64;
-        } catch (err) {
-          console.warn("Annotation failed, saving original:", err);
-        }
-      }
-
-      // Step 2: Fire save in background — don't await it
-      saveMutation.mutate({
-        teamIdentifier: teamId,
-        dogId,
-        imageBase64: finalImageBase64,
-        originalImageBase64: imageBase64 !== finalImageBase64 ? imageBase64 : undefined,
-        description: description || undefined,
-        notes: notes || undefined,
-        latitude: latitude ?? undefined,
-        longitude: longitude ?? undefined,
-        areaName: areaName || undefined,
-        source: imageSource,
-        recordedAt: new Date(recordedAt).getTime(),
-        webhookUrl: webhookUrl || undefined,
-      });
-
-      // Confirm immediately and reset form
-      toast.success(`Record ${dogId} saved!`);
-      setImageBase64("");
-      setDescription("");
-      setNotes("");
-      setAreaName("");
-      setAreaNameEdited(false);
-      setLatitude(null);
-      setLongitude(null);
-      setDogId("");
-      setRecordedAt(toLocalDatetimeValue(new Date()));
-      setAnalysisError("");
-      utils.dogs.getNextSuffix.invalidate();
-      // Delay records invalidation slightly to give background save time to complete
-      setTimeout(() => utils.dogs.getRecords.invalidate(), 5000);
-    } catch (err: any) {
-      toast.error("Save failed: " + err.message);
-    }
-  };
-
-  const handleReset = () => {
+  // Shared reset helper
+  const resetForm = useCallback(() => {
     setImageBase64("");
     setDescription("");
     setNotes("");
@@ -305,10 +239,77 @@ export default function AddRecord() {
     setRecordedAt(toLocalDatetimeValue(new Date()));
     setAnalysisError("");
     utils.dogs.getNextSuffix.invalidate();
+  }, [utils]);
+
+  // Save record — fully fire-and-forget for both upload and camera
+  const handleSave = () => {
+    if (!imageBase64 || !dogId) {
+      toast.error("Please upload an image and set a Dog ID");
+      return;
+    }
+    if (dogIdCheck.data?.exists) {
+      toast.error("This Dog ID is already taken");
+      return;
+    }
+
+    // Snapshot values before reset
+    const savedDogId = dogId;
+    const savedImageBase64 = imageBase64;
+    const savedSource = imageSource;
+    const savedDescription = description;
+    const savedNotes = notes;
+    const savedLat = latitude;
+    const savedLng = longitude;
+    const savedAreaName = areaName;
+    const savedRecordedAt = new Date(recordedAt).getTime();
+    const savedWebhookUrl = webhookUrl;
+
+    // Confirm and reset immediately
+    toast.success(`Record ${savedDogId} saved!`);
+    resetForm();
+    setTimeout(() => utils.dogs.getRecords.invalidate(), 6000);
+
+    // Run annotation (camera) + save entirely in background
+    const runBackground = async () => {
+      let finalImageBase64 = savedImageBase64;
+      if (savedSource === "camera") {
+        try {
+          const annotated = await annotateMutation.mutateAsync({
+            imageBase64: savedImageBase64,
+            dogId: savedDogId,
+            recordedAt: new Date(savedRecordedAt).toISOString(),
+            areaName: savedAreaName || undefined,
+            latitude: savedLat ?? undefined,
+            longitude: savedLng ?? undefined,
+            notes: savedNotes || undefined,
+          });
+          finalImageBase64 = annotated.annotatedBase64;
+        } catch (err) {
+          console.warn("Annotation failed, saving original:", err);
+        }
+      }
+      saveMutation.mutate({
+        teamIdentifier: teamId,
+        dogId: savedDogId,
+        imageBase64: finalImageBase64,
+        originalImageBase64: savedImageBase64 !== finalImageBase64 ? savedImageBase64 : undefined,
+        description: savedDescription || undefined,
+        notes: savedNotes || undefined,
+        latitude: savedLat ?? undefined,
+        longitude: savedLng ?? undefined,
+        areaName: savedAreaName || undefined,
+        source: savedSource,
+        recordedAt: savedRecordedAt,
+        webhookUrl: savedWebhookUrl || undefined,
+      });
+    };
+    runBackground();
   };
 
-  // Only block UI during annotation (camera only); save is fire-and-forget
-  const isSaving = imageSource === "camera" && annotateMutation.isPending;
+  const handleReset = () => resetForm();
+
+  // Save button never blocks — always instant
+  const isSaving = false;
   const hasImage = !!imageBase64;
 
   return (
