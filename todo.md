@@ -83,3 +83,6 @@
 
 ## Lookup Tab Improvements
 - [x] Add Camera + Upload picker to Lookup tab matching Add Record photo picker UI
+
+## Env Defaults
+- [x] Set VITE_DEFAULT_TEAM_ID=calm-otter and VITE_DEFAULT_WEBHOOK_URL as env vars, wire into TeamContext defaults
