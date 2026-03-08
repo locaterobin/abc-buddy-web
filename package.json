@@ -52,7 +52,6 @@
     "@trpc/server": "^11.6.0",
     "ai": "^6.0.38",
     "axios": "^1.12.0",
-    "canvas": "2.11.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
@@ -76,6 +75,7 @@
     "react-hook-form": "^7.64.0",
     "react-resizable-panels": "^3.0.6",
     "recharts": "^2.15.2",
+    "sharp": "^0.34.5",
     "sonner": "^2.0.7",
     "streamdown": "^1.0.1",
     "superjson": "^1.13.3",
@@ -119,7 +119,7 @@
       "tailwindcss>nanoid": "3.3.7"
     },
     "onlyBuiltDependencies": [
-      "canvas"
+      "sharp"
     ]
   }
 }

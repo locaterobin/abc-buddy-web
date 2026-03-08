@@ -179,14 +179,13 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
       })
     )
     .mutation(async ({ input }) => {
-      // Dynamic import for canvas (native module)
-      const { createCanvas, loadImage } = await import("canvas");
+      const sharp = (await import("sharp")).default;
 
       const imgBuffer = Buffer.from(input.imageBase64.replace(/^data:image\/\w+;base64,/, ""), "base64");
-      const img = await loadImage(imgBuffer);
-
-      const W = img.width;
-      const H = img.height;
+      const image = sharp(imgBuffer);
+      const meta = await image.metadata();
+      const W = meta.width || 800;
+      const H = meta.height || 600;
 
       // Build text lines
       const date = new Date(input.recordedAt);
@@ -195,17 +194,15 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
       const dateStr = date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
       const timeStr = date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
 
-      const lines: { text: string; bold: boolean; italic: boolean }[] = [];
-      lines.push({ text: `${input.dogId} · ${dayName}`, bold: true, italic: false });
+      type Line = { text: string; bold: boolean; italic: boolean };
+      const lines: Line[] = [];
+      lines.push({ text: `${input.dogId}  ${dayName}`, bold: true, italic: false });
       lines.push({ text: `${dateStr}, ${timeStr}`, bold: false, italic: false });
-      if (input.areaName) {
-        lines.push({ text: input.areaName, bold: false, italic: false });
-      }
+      if (input.areaName) lines.push({ text: input.areaName, bold: false, italic: false });
       if (input.latitude != null && input.longitude != null) {
         lines.push({ text: `${input.latitude.toFixed(5)}, ${input.longitude.toFixed(5)}`, bold: false, italic: false });
       }
       if (input.notes) {
-        // Wrap notes to ~50 chars per line
         const words = input.notes.split(" ");
         let current = "";
         for (const word of words) {
@@ -216,41 +213,48 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
             current = current ? current + " " + word : word;
           }
         }
-        if (current.trim()) {
-          lines.push({ text: current.trim(), bold: false, italic: true });
-        }
+        if (current.trim()) lines.push({ text: current.trim(), bold: false, italic: true });
       }
 
-      // Calculate overlay dimensions
-      const idFontSize = Math.round(W * 0.038);
-      const lineFontSize = Math.round(W * 0.030);
-      const lineHeight = lineFontSize * 1.4;
-      const padding = Math.round(W * 0.02);
-      const overlayHeight = padding * 2 + idFontSize * 1.4 + (lines.length - 1) * lineHeight;
+      // Font sizes proportional to image width
+      const idFontSize = Math.max(18, Math.round(W * 0.038));
+      const lineFontSize = Math.max(14, Math.round(W * 0.030));
+      const lineHeight = Math.round(lineFontSize * 1.55);
+      const padding = Math.max(10, Math.round(W * 0.025));
 
-      // Create canvas
-      const canvas = createCanvas(W, H);
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(img, 0, 0);
+      // Calculate total overlay height
+      const overlayHeight = padding * 2 + idFontSize + (lines.length - 1) * lineHeight + Math.round(lineHeight * 0.3);
 
-      // Dark overlay
-      ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
-      ctx.fillRect(0, H - overlayHeight, W, overlayHeight);
+      // Escape XML special chars for SVG
+      const escXml = (s: string) =>
+        s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
-      // Draw text
-      let y = H - overlayHeight + padding;
+      // Build SVG overlay
+      let svgLines = "";
+      let y = padding + idFontSize;
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
         const size = i === 0 ? idFontSize : lineFontSize;
-        const style = line.bold ? "bold" : line.italic ? "italic" : "";
-        ctx.font = `${style} ${size}px sans-serif`.trim();
-        ctx.fillStyle = "#ffffff";
-        ctx.fillText(line.text, padding, y + size);
-        y += i === 0 ? idFontSize * 1.4 : lineHeight;
+        const weight = line.bold ? "bold" : "normal";
+        const style = line.italic ? "italic" : "normal";
+        svgLines += `<text x="${padding}" y="${y}" font-family="Arial, Helvetica, sans-serif" font-size="${size}" font-weight="${weight}" font-style="${style}" fill="white" paint-order="stroke" stroke="rgba(0,0,0,0.6)" stroke-width="3" stroke-linejoin="round">${escXml(line.text)}</text>\n`;
+        y += i === 0 ? idFontSize + Math.round(lineHeight * 0.4) : lineHeight;
       }
 
-      const annotatedBase64 = canvas.toBuffer("image/jpeg", { quality: 0.92 }).toString("base64");
-      return { annotatedBase64: `data:image/jpeg;base64,${annotatedBase64}` };
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${overlayHeight}">
+  <rect width="${W}" height="${overlayHeight}" fill="rgba(0,0,0,0.62)"/>
+  ${svgLines}
+</svg>`;
+
+      const svgBuffer = Buffer.from(svg);
+
+      // Composite the SVG strip onto the bottom of the image
+      const annotatedBuffer = await image
+        .composite([{ input: svgBuffer, top: H - overlayHeight, left: 0 }])
+        .jpeg({ quality: 92 })
+        .toBuffer();
+
+      return { annotatedBase64: `data:image/jpeg;base64,${annotatedBuffer.toString("base64")}` };
     }),
 
   saveRecord: publicProcedure

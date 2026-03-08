@@ -66,3 +66,6 @@
 
 ## Lookup Time Range Update
 - [x] Change Lookup time range options from 7days/30days/all to 3days/7days/30days (default: 7days)
+
+## Deploy Fix
+- [x] Replace canvas (native C++ - breaks deployment) with pure-JS image annotation using sharp + SVG overlay
