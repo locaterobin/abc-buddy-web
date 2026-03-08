@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
+import { resizeImage } from "@/lib/resizeImage";
 import { useTeam } from "@/contexts/TeamContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -40,7 +41,8 @@ export default function Lookup() {
 
   const handleFile = useCallback(async (file: File) => {
     try {
-      const base64 = await fileToBase64(file);
+      const rawBase64 = await fileToBase64(file);
+      const base64 = await resizeImage(rawBase64, 1280, 0.82);
       setImageBase64(base64);
     } catch {
       toast.error("Failed to read image");

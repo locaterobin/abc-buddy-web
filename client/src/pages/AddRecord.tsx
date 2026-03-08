@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
+import { resizeImage } from "@/lib/resizeImage";
 import { useTeam } from "@/contexts/TeamContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -181,7 +182,8 @@ export default function AddRecord() {
   const handleUploadFile = useCallback(
     async (file: File) => {
       try {
-        const base64 = await fileToBase64(file);
+        const rawBase64 = await fileToBase64(file);
+        const base64 = await resizeImage(rawBase64, 1280, 0.82);
         setImageBase64(base64);
         setImageSource("upload");
         setDescription("");
@@ -205,7 +207,8 @@ export default function AddRecord() {
   const handleCameraFile = useCallback(
     async (file: File) => {
       try {
-        const base64 = await fileToBase64(file);
+        const rawBase64 = await fileToBase64(file);
+        const base64 = await resizeImage(rawBase64, 1280, 0.82);
         setImageBase64(base64);
         setImageSource("camera");
         setDescription("");
