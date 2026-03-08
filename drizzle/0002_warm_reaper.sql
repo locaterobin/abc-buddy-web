@@ -1,0 +1,1 @@
+ALTER TABLE `dog_records` MODIFY COLUMN `source` enum('camera','upload','api') NOT NULL DEFAULT 'upload';

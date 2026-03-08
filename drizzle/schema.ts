@@ -26,7 +26,7 @@ export const dogRecords = mysqlTable("dog_records", {
   latitude: double("latitude"),
   longitude: double("longitude"),
   areaName: varchar("areaName", { length: 255 }),
-  source: mysqlEnum("source", ["camera", "upload"]).default("upload").notNull(),
+  source: mysqlEnum("source", ["camera", "upload", "api"]).default("upload").notNull(),
   recordedAt: timestamp("recordedAt").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
