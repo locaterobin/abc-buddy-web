@@ -223,7 +223,7 @@ export default function AddRecord() {
     [runAnalysis, requestDeviceGps]
   );
 
-  // Save record — auto-annotates first, then saves
+  // Save record — annotates only for camera captures, uploads save as-is
   const handleSave = async () => {
     if (!imageBase64 || !dogId) {
       toast.error("Please upload an image and set a Dog ID");
@@ -235,22 +235,24 @@ export default function AddRecord() {
     }
 
     try {
-      // Step 1: Annotate the image
+      // Step 1: Annotate only for camera captures
       let finalImageBase64 = imageBase64;
-      try {
-        const annotated = await annotateMutation.mutateAsync({
-          imageBase64,
-          dogId,
-          recordedAt: new Date(recordedAt).toISOString(),
-          areaName: areaName || undefined,
-          latitude: latitude ?? undefined,
-          longitude: longitude ?? undefined,
-          notes: notes || undefined,
-        });
-        finalImageBase64 = annotated.annotatedBase64;
-      } catch (err) {
-        console.warn("Annotation failed, saving original:", err);
-        // Non-fatal — save without annotation
+      if (imageSource === "camera") {
+        try {
+          const annotated = await annotateMutation.mutateAsync({
+            imageBase64,
+            dogId,
+            recordedAt: new Date(recordedAt).toISOString(),
+            areaName: areaName || undefined,
+            latitude: latitude ?? undefined,
+            longitude: longitude ?? undefined,
+            notes: notes || undefined,
+          });
+          finalImageBase64 = annotated.annotatedBase64;
+        } catch (err) {
+          console.warn("Annotation failed, saving original:", err);
+          // Non-fatal — save without annotation
+        }
       }
 
       // Step 2: Save to DB + S3
@@ -303,7 +305,7 @@ export default function AddRecord() {
     utils.dogs.getNextSuffix.invalidate();
   };
 
-  const isSaving = annotateMutation.isPending || saveMutation.isPending;
+  const isSaving = (imageSource === "camera" && annotateMutation.isPending) || saveMutation.isPending;
   const hasImage = !!imageBase64;
 
   return (

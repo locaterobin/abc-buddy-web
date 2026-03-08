@@ -69,3 +69,6 @@
 
 ## Deploy Fix
 - [x] Replace canvas (native C++ - breaks deployment) with pure-JS image annotation using sharp + SVG overlay
+
+## Upload vs Camera Flow
+- [x] Skip annotation for Upload source — save original image as-is; only annotate Camera captures
