@@ -31,7 +31,7 @@ export default function Lookup() {
   const { teamId } = useTeam();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [timeRange, setTimeRange] = useState<TimeRange>("7days");
+  const [timeRange, setTimeRange] = useState<TimeRange>("3days");
   const [imageBase64, setImageBase64] = useState("");
   const [selectedRecord, setSelectedRecord] = useState<any>(null);
 
