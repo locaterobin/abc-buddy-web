@@ -63,19 +63,74 @@ const dogsRouter = router({
     }),
 
   analyzeImage: publicProcedure
-    .input(z.object({ imageBase64: z.string() }))
+    .input(z.object({
+      imageBase64: z.string(),
+      extractMetadata: z.boolean().optional(), // true = also extract burnt-in GPS/date/place
+    }))
     .mutation(async ({ input }) => {
       const model = openai.chat("gpt-4o");
+
+      if (input.extractMetadata) {
+        // Two-part prompt: describe the dog AND extract any burnt-in metadata
+        const result = await generateText({
+          model,
+          messages: [
+            {
+              role: "user",
+              content: [
+                { type: "image", image: input.imageBase64 },
+                {
+                  type: "text",
+                  text: `You are analysing a field photo of a dog. Do two things:
+
+1. Describe the dog in detail for an animal welfare record: approximate breed or breed mix, primary and secondary colours, distinctive markings (patches, spots, scars), approximate size (small/medium/large), body condition (thin/normal/overweight), approximate age (puppy/young/adult/senior), and any notable features (collar, injuries, ear tags). Be concise but thorough.
+
+2. Look carefully at the image for any text, watermarks, or data overlaid/burnt into the photo — such as GPS coordinates, a date/time stamp, a location name, or any notes. Extract whatever you can find.
+
+Respond ONLY with a valid JSON object in this exact format (no markdown, no extra text):
+{
+  "description": "<dog description here>",
+  "latitude": <number or null>,
+  "longitude": <number or null>,
+  "recordedAt": "<ISO 8601 datetime string or null>",
+  "areaName": "<place name or null>",
+  "notes": "<any other burnt-in text or null>"
+}`,
+                },
+              ],
+            },
+          ],
+        });
+
+        try {
+          const text = result.text.trim();
+          const jsonMatch = text.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            const parsed = JSON.parse(jsonMatch[0]);
+            return {
+              description: parsed.description || "",
+              latitude: typeof parsed.latitude === "number" ? parsed.latitude : null,
+              longitude: typeof parsed.longitude === "number" ? parsed.longitude : null,
+              recordedAt: parsed.recordedAt || null,
+              areaName: parsed.areaName || null,
+              notes: parsed.notes || null,
+            };
+          }
+        } catch (e) {
+          console.error("Failed to parse metadata JSON:", e);
+        }
+        // Fallback: return just the text as description
+        return { description: result.text, latitude: null, longitude: null, recordedAt: null, areaName: null, notes: null };
+      }
+
+      // Camera mode: just describe the dog
       const result = await generateText({
         model,
         messages: [
           {
             role: "user",
             content: [
-              {
-                type: "image",
-                image: input.imageBase64,
-              },
+              { type: "image", image: input.imageBase64 },
               {
                 type: "text",
                 text: "Describe this dog in detail for an animal welfare record. Include: approximate breed or breed mix, primary and secondary colors, distinctive markings (patches, spots, scars), approximate size (small/medium/large), body condition (thin/normal/overweight), approximate age (puppy/young/adult/senior), and any notable features (collar, injuries, ear tags). Be concise but thorough. Respond in plain text, no markdown.",
@@ -84,7 +139,7 @@ const dogsRouter = router({
           },
         ],
       });
-      return { description: result.text };
+      return { description: result.text, latitude: null, longitude: null, recordedAt: null, areaName: null, notes: null };
     }),
 
   geocodeLatLng: publicProcedure
@@ -297,14 +352,16 @@ const dogsRouter = router({
       z.object({
         teamIdentifier: z.string(),
         imageBase64: z.string(),
-        timeRange: z.enum(["7days", "30days", "all"]),
+        timeRange: z.enum(["3days", "7days", "30days"]),
       })
     )
     .mutation(async ({ input }) => {
       // Determine date filter
       let sinceDate: Date | undefined;
       const now = new Date();
-      if (input.timeRange === "7days") {
+      if (input.timeRange === "3days") {
+        sinceDate = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
+      } else if (input.timeRange === "7days") {
         sinceDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       } else if (input.timeRange === "30days") {
         sinceDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);

@@ -55,3 +55,14 @@
 
 ## Testing
 - [x] Vitest tests for backend procedures
+
+## UX Improvements (User Request)
+- [x] Auto-trigger AI analysis on image upload (remove manual Analyse button)
+- [x] AI Vision extracts burnt-in GPS lat/lng, date/time, and place name from uploaded images
+- [x] Camera button opens actual device camera (capture=environment), not file picker
+- [x] Device GPS + date/time used when capturing from camera; place name from reverse geocoding
+- [x] Auto-annotate image on Save Record (remove manual Annotate button)
+- [x] Remove manual Analyse with AI and Annotate Image buttons from UI
+
+## Lookup Time Range Update
+- [x] Change Lookup time range options from 7days/30days/all to 3days/7days/30days (default: 7days)

@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import RecordDetailModal from "@/components/RecordDetailModal";
 
-type TimeRange = "7days" | "30days" | "all";
+type TimeRange = "3days" | "7days" | "30days";
 
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -31,7 +31,7 @@ export default function Lookup() {
   const { teamId } = useTeam();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [timeRange, setTimeRange] = useState<TimeRange>("30days");
+  const [timeRange, setTimeRange] = useState<TimeRange>("7days");
   const [imageBase64, setImageBase64] = useState("");
   const [selectedRecord, setSelectedRecord] = useState<any>(null);
 
@@ -73,7 +73,7 @@ export default function Lookup() {
     <div className="container py-4 pb-6 max-w-lg mx-auto space-y-4">
       {/* Time Range Selector */}
       <div className="flex gap-2">
-        {(["7days", "30days", "all"] as TimeRange[]).map((range) => (
+        {(["3days", "7days", "30days"] as TimeRange[]).map((range) => (
           <button
             key={range}
             onClick={() => setTimeRange(range)}
@@ -83,7 +83,7 @@ export default function Lookup() {
                 : "bg-muted text-muted-foreground hover:bg-muted/80"
             }`}
           >
-            {range === "7days" ? "7 Days" : range === "30days" ? "30 Days" : "All Time"}
+            {range === "3days" ? "3 Days" : range === "7days" ? "7 Days" : "30 Days"}
           </button>
         ))}
       </div>

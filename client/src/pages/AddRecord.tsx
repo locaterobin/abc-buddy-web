@@ -5,19 +5,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
   Camera,
   Upload,
   Sparkles,
-  Stamp,
   Save,
   CheckCircle2,
   XCircle,
   Loader2,
   MapPin,
   RotateCcw,
+  AlertCircle,
 } from "lucide-react";
 
 function getDatePrefix(): string {
@@ -26,6 +25,12 @@ function getDatePrefix(): string {
   const m = String(now.getMonth() + 1).padStart(2, "0");
   const d = String(now.getDate()).padStart(2, "0");
   return `${y}${m}${d}`;
+}
+
+function toLocalDatetimeValue(date: Date): string {
+  const d = new Date(date);
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0, 16);
 }
 
 function fileToBase64(file: File): Promise<string> {
@@ -37,6 +42,8 @@ function fileToBase64(file: File): Promise<string> {
   });
 }
 
+type ImageSource = "upload" | "camera";
+
 export default function AddRecord() {
   const { teamId, webhookUrl } = useTeam();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -44,42 +51,37 @@ export default function AddRecord() {
 
   // Image state
   const [imageBase64, setImageBase64] = useState<string>("");
-  const [originalImageBase64, setOriginalImageBase64] = useState<string>("");
-  const [isAnnotated, setIsAnnotated] = useState(false);
+  const [imageSource, setImageSource] = useState<ImageSource>("upload");
 
   // Form state
   const datePrefix = useMemo(() => getDatePrefix(), []);
   const [dogId, setDogId] = useState("");
-  const [recordedAt, setRecordedAt] = useState(() => {
-    const now = new Date();
-    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-    return now.toISOString().slice(0, 16);
-  });
+  const [recordedAt, setRecordedAt] = useState(() => toLocalDatetimeValue(new Date()));
   const [areaName, setAreaName] = useState("");
   const [areaNameEdited, setAreaNameEdited] = useState(false);
   const [notes, setNotes] = useState("");
   const [description, setDescription] = useState("");
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
-  const [gpsLoading, setGpsLoading] = useState(false);
 
-  // Queries
+  // Loading states
+  const [gpsLoading, setGpsLoading] = useState(false);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [analysisError, setAnalysisError] = useState("");
+
+  // Queries & mutations
   const suffixQuery = trpc.dogs.getNextSuffix.useQuery(
     { teamIdentifier: teamId, datePrefix },
     { enabled: !!teamId }
   );
-
   const dogIdCheck = trpc.dogs.checkDogId.useQuery(
     { teamIdentifier: teamId, dogId },
     { enabled: !!dogId && dogId.length > 4 }
   );
-
-  // Mutations
   const analyzeMutation = trpc.dogs.analyzeImage.useMutation();
   const annotateMutation = trpc.dogs.annotateRecord.useMutation();
   const saveMutation = trpc.dogs.saveRecord.useMutation();
   const geocodeMutation = trpc.dogs.geocodeLatLng.useMutation();
-
   const utils = trpc.useUtils();
 
   // Auto-set dog ID when suffix loads
@@ -89,28 +91,35 @@ export default function AddRecord() {
     }
   }, [suffixQuery.data, datePrefix, dogId]);
 
-  // Request GPS
-  const requestGps = useCallback(() => {
+  // Reverse geocode helper
+  const geocode = useCallback(
+    (lat: number, lng: number) => {
+      geocodeMutation.mutate(
+        { latitude: lat, longitude: lng },
+        {
+          onSuccess: (data) => {
+            if (data.areaName && !areaNameEdited) {
+              setAreaName(data.areaName);
+            }
+          },
+        }
+      );
+    },
+    [areaNameEdited, geocodeMutation]
+  );
+
+  // Device GPS (for camera captures)
+  const requestDeviceGps = useCallback(() => {
     if (!navigator.geolocation) return;
     setGpsLoading(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setLatitude(pos.coords.latitude);
-        setLongitude(pos.coords.longitude);
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        setLatitude(lat);
+        setLongitude(lng);
         setGpsLoading(false);
-        // Auto-geocode
-        if (!areaNameEdited) {
-          geocodeMutation.mutate(
-            { latitude: pos.coords.latitude, longitude: pos.coords.longitude },
-            {
-              onSuccess: (data) => {
-                if (data.areaName && !areaNameEdited) {
-                  setAreaName(data.areaName);
-                }
-              },
-            }
-          );
-        }
+        if (!areaNameEdited) geocode(lat, lng);
       },
       (err) => {
         console.warn("GPS error:", err);
@@ -118,140 +127,183 @@ export default function AddRecord() {
       },
       { enableHighAccuracy: true, timeout: 15000 }
     );
-  }, [areaNameEdited, geocodeMutation]);
+  }, [areaNameEdited, geocode]);
 
-  // Handle file selection
-  const handleFile = useCallback(
+  // Run AI analysis (auto-triggered after image is set)
+  const runAnalysis = useCallback(
+    async (base64: string, source: ImageSource) => {
+      setAnalysisLoading(true);
+      setAnalysisError("");
+      try {
+        const result = await analyzeMutation.mutateAsync({
+          imageBase64: base64,
+          extractMetadata: source === "upload", // only extract burnt-in metadata for uploads
+        });
+
+        setDescription(result.description);
+
+        if (source === "upload") {
+          // Populate fields from burnt-in metadata if found
+          if (result.latitude !== null && result.longitude !== null) {
+            setLatitude(result.latitude);
+            setLongitude(result.longitude);
+            // If we got coords, also geocode for a clean place name (unless already set)
+            if (!areaNameEdited) {
+              geocode(result.latitude, result.longitude);
+            }
+          }
+          if (result.recordedAt) {
+            try {
+              const d = new Date(result.recordedAt);
+              if (!isNaN(d.getTime())) {
+                setRecordedAt(toLocalDatetimeValue(d));
+              }
+            } catch {}
+          }
+          if (result.areaName && !areaNameEdited) {
+            setAreaName(result.areaName);
+          }
+          if (result.notes) {
+            setNotes((prev) => (prev ? prev : result.notes || ""));
+          }
+        }
+      } catch (err: any) {
+        setAnalysisError("AI analysis failed. You can still save the record.");
+        console.error("Analysis error:", err);
+      } finally {
+        setAnalysisLoading(false);
+      }
+    },
+    [analyzeMutation, areaNameEdited, geocode]
+  );
+
+  // Handle file selected from gallery (upload)
+  const handleUploadFile = useCallback(
     async (file: File) => {
       try {
         const base64 = await fileToBase64(file);
         setImageBase64(base64);
-        setOriginalImageBase64(base64);
-        setIsAnnotated(false);
+        setImageSource("upload");
         setDescription("");
-        // Request GPS on upload
-        requestGps();
-      } catch (e) {
+        setAnalysisError("");
+        // Reset metadata fields so AI can fill them
+        setLatitude(null);
+        setLongitude(null);
+        setAreaName("");
+        setAreaNameEdited(false);
+        setRecordedAt(toLocalDatetimeValue(new Date()));
+        // Auto-run AI analysis with metadata extraction
+        runAnalysis(base64, "upload");
+      } catch {
         toast.error("Failed to read image");
       }
     },
-    [requestGps]
+    [runAnalysis]
   );
 
-  const handleDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault();
-      const file = e.dataTransfer.files[0];
-      if (file && file.type.startsWith("image/")) {
-        handleFile(file);
+  // Handle photo taken from camera
+  const handleCameraFile = useCallback(
+    async (file: File) => {
+      try {
+        const base64 = await fileToBase64(file);
+        setImageBase64(base64);
+        setImageSource("camera");
+        setDescription("");
+        setAnalysisError("");
+        // Set current device time
+        setRecordedAt(toLocalDatetimeValue(new Date()));
+        // Get device GPS
+        requestDeviceGps();
+        // Auto-run AI analysis (description only, no metadata extraction)
+        runAnalysis(base64, "camera");
+      } catch {
+        toast.error("Failed to read image");
       }
     },
-    [handleFile]
+    [runAnalysis, requestDeviceGps]
   );
 
-  // Analyze with AI
-  const handleAnalyze = () => {
-    const img = originalImageBase64 || imageBase64;
-    if (!img) return;
-    analyzeMutation.mutate(
-      { imageBase64: img },
-      {
-        onSuccess: (data) => {
-          setDescription(data.description);
-          toast.success("AI analysis complete");
-        },
-        onError: (err) => {
-          toast.error("AI analysis failed: " + err.message);
-        },
-      }
-    );
-  };
-
-  // Annotate image
-  const handleAnnotate = () => {
-    const img = originalImageBase64 || imageBase64;
-    if (!img) return;
-    annotateMutation.mutate(
-      {
-        imageBase64: img,
-        dogId,
-        recordedAt: new Date(recordedAt).toISOString(),
-        areaName: areaName || undefined,
-        latitude: latitude ?? undefined,
-        longitude: longitude ?? undefined,
-        notes: notes || undefined,
-      },
-      {
-        onSuccess: (data) => {
-          setImageBase64(data.annotatedBase64);
-          setIsAnnotated(true);
-          toast.success("Image annotated");
-        },
-        onError: (err) => {
-          toast.error("Annotation failed: " + err.message);
-        },
-      }
-    );
-  };
-
-  // Save record
-  const handleSave = () => {
+  // Save record — auto-annotates first, then saves
+  const handleSave = async () => {
     if (!imageBase64 || !dogId) {
       toast.error("Please upload an image and set a Dog ID");
       return;
     }
+    if (dogIdCheck.data?.exists) {
+      toast.error("This Dog ID is already taken");
+      return;
+    }
 
-    saveMutation.mutate(
-      {
+    try {
+      // Step 1: Annotate the image
+      let finalImageBase64 = imageBase64;
+      try {
+        const annotated = await annotateMutation.mutateAsync({
+          imageBase64,
+          dogId,
+          recordedAt: new Date(recordedAt).toISOString(),
+          areaName: areaName || undefined,
+          latitude: latitude ?? undefined,
+          longitude: longitude ?? undefined,
+          notes: notes || undefined,
+        });
+        finalImageBase64 = annotated.annotatedBase64;
+      } catch (err) {
+        console.warn("Annotation failed, saving original:", err);
+        // Non-fatal — save without annotation
+      }
+
+      // Step 2: Save to DB + S3
+      await saveMutation.mutateAsync({
         teamIdentifier: teamId,
         dogId,
-        imageBase64,
-        originalImageBase64: originalImageBase64 || undefined,
+        imageBase64: finalImageBase64,
+        originalImageBase64: imageBase64 !== finalImageBase64 ? imageBase64 : undefined,
         description: description || undefined,
         notes: notes || undefined,
         latitude: latitude ?? undefined,
         longitude: longitude ?? undefined,
         areaName: areaName || undefined,
-        source: "upload",
+        source: imageSource,
         recordedAt: new Date(recordedAt).getTime(),
         webhookUrl: webhookUrl || undefined,
-      },
-      {
-        onSuccess: () => {
-          toast.success("Record saved successfully!");
-          // Reset form
-          setImageBase64("");
-          setOriginalImageBase64("");
-          setIsAnnotated(false);
-          setDescription("");
-          setNotes("");
-          setAreaName("");
-          setAreaNameEdited(false);
-          setDogId("");
-          // Refresh suffix
-          utils.dogs.getNextSuffix.invalidate();
-          utils.dogs.getRecords.invalidate();
-        },
-        onError: (err) => {
-          toast.error("Save failed: " + err.message);
-        },
-      }
-    );
+      });
+
+      toast.success("Record saved!");
+
+      // Reset form
+      setImageBase64("");
+      setDescription("");
+      setNotes("");
+      setAreaName("");
+      setAreaNameEdited(false);
+      setLatitude(null);
+      setLongitude(null);
+      setDogId("");
+      setRecordedAt(toLocalDatetimeValue(new Date()));
+      setAnalysisError("");
+      utils.dogs.getNextSuffix.invalidate();
+      utils.dogs.getRecords.invalidate();
+    } catch (err: any) {
+      toast.error("Save failed: " + err.message);
+    }
   };
 
-  // Reset form
   const handleReset = () => {
     setImageBase64("");
-    setOriginalImageBase64("");
-    setIsAnnotated(false);
     setDescription("");
     setNotes("");
     setDogId("");
     setAreaName("");
     setAreaNameEdited(false);
+    setLatitude(null);
+    setLongitude(null);
+    setRecordedAt(toLocalDatetimeValue(new Date()));
+    setAnalysisError("");
     utils.dogs.getNextSuffix.invalidate();
   };
 
+  const isSaving = annotateMutation.isPending || saveMutation.isPending;
   const hasImage = !!imageBase64;
 
   return (
@@ -263,7 +315,11 @@ export default function AddRecord() {
             <div
               className="flex flex-col items-center gap-4"
               onDragOver={(e) => e.preventDefault()}
-              onDrop={handleDrop}
+              onDrop={(e) => {
+                e.preventDefault();
+                const file = e.dataTransfer.files[0];
+                if (file?.type.startsWith("image/")) handleUploadFile(file);
+              }}
             >
               <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
                 <Camera className="text-primary" size={28} />
@@ -275,6 +331,7 @@ export default function AddRecord() {
                 </p>
               </div>
               <div className="flex gap-3">
+                {/* Camera button — opens actual camera on mobile */}
                 <Button
                   variant="default"
                   size="sm"
@@ -283,6 +340,7 @@ export default function AddRecord() {
                   <Camera size={16} className="mr-1.5" />
                   Camera
                 </Button>
+                {/* Upload button — opens file picker */}
                 <Button
                   variant="outline"
                   size="sm"
@@ -293,6 +351,8 @@ export default function AddRecord() {
                   Upload
                 </Button>
               </div>
+
+              {/* Camera input — capture="environment" forces rear camera on mobile */}
               <input
                 ref={cameraInputRef}
                 type="file"
@@ -301,10 +361,11 @@ export default function AddRecord() {
                 className="hidden"
                 onChange={(e) => {
                   const file = e.target.files?.[0];
-                  if (file) handleFile(file);
+                  if (file) handleCameraFile(file);
                   e.target.value = "";
                 }}
               />
+              {/* Gallery/upload input — no capture attribute */}
               <input
                 ref={fileInputRef}
                 type="file"
@@ -312,7 +373,7 @@ export default function AddRecord() {
                 className="hidden"
                 onChange={(e) => {
                   const file = e.target.files?.[0];
-                  if (file) handleFile(file);
+                  if (file) handleUploadFile(file);
                   e.target.value = "";
                 }}
               />
@@ -327,21 +388,48 @@ export default function AddRecord() {
               <img
                 src={imageBase64}
                 alt="Dog preview"
-                className="w-full max-h-[50vh] object-contain bg-black/5"
+                className="w-full max-h-[45vh] object-contain bg-black/5"
               />
-              {isAnnotated && (
-                <Badge className="absolute top-2 right-2 bg-primary text-primary-foreground">
-                  Annotated
-                </Badge>
-              )}
               <button
                 onClick={handleReset}
                 className="absolute top-2 left-2 bg-black/50 text-white rounded-full p-1.5 hover:bg-black/70 transition-colors"
               >
                 <RotateCcw size={16} />
               </button>
+              {/* AI analysis status overlay */}
+              {analysisLoading && (
+                <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center gap-2">
+                  <Loader2 size={28} className="animate-spin text-white" />
+                  <span className="text-white text-sm font-medium">
+                    {imageSource === "upload" ? "Reading image & extracting data…" : "Analysing dog…"}
+                  </span>
+                </div>
+              )}
             </div>
           </Card>
+
+          {/* AI analysis error (non-fatal) */}
+          {analysisError && (
+            <div className="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+              <AlertCircle size={16} className="flex-shrink-0" />
+              <span>{analysisError}</span>
+            </div>
+          )}
+
+          {/* AI Description */}
+          {description && (
+            <Card className="bg-accent/50 border-primary/20">
+              <CardContent className="py-3">
+                <div className="flex items-start gap-2">
+                  <Sparkles size={16} className="text-primary mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs font-medium text-primary mb-1">AI Description</p>
+                    <p className="text-sm text-foreground leading-relaxed">{description}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Form */}
           <Card>
@@ -377,6 +465,11 @@ export default function AddRecord() {
               <div>
                 <label className="text-sm font-medium text-foreground mb-1.5 block">
                   Date & Time
+                  {imageSource === "upload" && (
+                    <span className="ml-2 text-xs font-normal text-muted-foreground">
+                      (from image)
+                    </span>
+                  )}
                 </label>
                 <Input
                   type="datetime-local"
@@ -389,6 +482,11 @@ export default function AddRecord() {
               <div>
                 <label className="text-sm font-medium text-foreground mb-1.5 block">
                   Area / Location
+                  {imageSource === "upload" && (
+                    <span className="ml-2 text-xs font-normal text-muted-foreground">
+                      (from image)
+                    </span>
+                  )}
                 </label>
                 <div className="relative">
                   <Input
@@ -397,7 +495,11 @@ export default function AddRecord() {
                       setAreaName(e.target.value);
                       setAreaNameEdited(true);
                     }}
-                    placeholder={geocodeMutation.isPending ? "Getting location..." : "Area name"}
+                    placeholder={
+                      gpsLoading || geocodeMutation.isPending
+                        ? "Getting location…"
+                        : "Area name"
+                    }
                     className="pr-10"
                   />
                   <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -408,7 +510,7 @@ export default function AddRecord() {
                     ) : null}
                   </div>
                 </div>
-                {latitude && longitude && (
+                {latitude !== null && longitude !== null && (
                   <p className="text-xs text-muted-foreground mt-1">
                     GPS: {latitude.toFixed(5)}, {longitude.toFixed(5)}
                   </p>
@@ -418,77 +520,43 @@ export default function AddRecord() {
               {/* Notes */}
               <div>
                 <label className="text-sm font-medium text-foreground mb-1.5 block">
-                  Notes <span className="text-muted-foreground font-normal">(optional)</span>
+                  Notes{" "}
+                  <span className="text-muted-foreground font-normal">(optional)</span>
+                  {imageSource === "upload" && (
+                    <span className="ml-2 text-xs font-normal text-muted-foreground">
+                      (from image)
+                    </span>
+                  )}
                 </label>
                 <Textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Any observations about the dog..."
+                  placeholder="Any observations about the dog…"
                   rows={2}
                 />
               </div>
             </CardContent>
           </Card>
 
-          {/* AI Description */}
-          {description && (
-            <Card className="bg-accent/50 border-primary/20">
-              <CardContent className="py-3">
-                <div className="flex items-start gap-2">
-                  <Sparkles size={16} className="text-primary mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-xs font-medium text-primary mb-1">AI Description</p>
-                    <p className="text-sm text-foreground leading-relaxed">{description}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Action Buttons */}
-          <div className="space-y-2.5">
-            <Button
-              variant="outline"
-              className="w-full bg-card"
-              onClick={handleAnalyze}
-              disabled={analyzeMutation.isPending}
-            >
-              {analyzeMutation.isPending ? (
+          {/* Save Button */}
+          <Button
+            className="w-full"
+            size="lg"
+            onClick={handleSave}
+            disabled={isSaving || analysisLoading || !dogId || dogIdCheck.data?.exists}
+          >
+            {isSaving ? (
+              <>
                 <Loader2 size={16} className="mr-2 animate-spin" />
-              ) : (
-                <Sparkles size={16} className="mr-2" />
-              )}
-              {analyzeMutation.isPending ? "Analysing..." : "Analyse with AI"}
-            </Button>
-
-            <Button
-              variant="outline"
-              className="w-full bg-card"
-              onClick={handleAnnotate}
-              disabled={annotateMutation.isPending || !dogId}
-            >
-              {annotateMutation.isPending ? (
-                <Loader2 size={16} className="mr-2 animate-spin" />
-              ) : (
-                <Stamp size={16} className="mr-2" />
-              )}
-              {annotateMutation.isPending ? "Annotating..." : "Annotate Image"}
-            </Button>
-
-            <Button
-              className="w-full"
-              size="lg"
-              onClick={handleSave}
-              disabled={saveMutation.isPending || !dogId || dogIdCheck.data?.exists}
-            >
-              {saveMutation.isPending ? (
-                <Loader2 size={16} className="mr-2 animate-spin" />
-              ) : (
+                {annotateMutation.isPending ? "Annotating…" : "Saving…"}
+              </>
+            ) : (
+              <>
                 <Save size={16} className="mr-2" />
-              )}
-              {saveMutation.isPending ? "Saving..." : "Save Record"}
-            </Button>
-          </div>
+                Save Record
+              </>
+            )}
+          </Button>
         </>
       )}
     </div>
