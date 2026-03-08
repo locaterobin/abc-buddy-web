@@ -80,3 +80,6 @@
 ## Bug Fixes Round 2
 - [x] Fix annotation text rendering - write dynamic fonts.conf at startup + FONTCONFIG_PATH so sharp's bundled fontconfig finds Liberation Sans
 - [x] Fix portrait photos showing as landscape - apply EXIF auto-rotate before annotation
+
+## Lookup Tab Improvements
+- [x] Add Camera + Upload picker to Lookup tab matching Add Record photo picker UI

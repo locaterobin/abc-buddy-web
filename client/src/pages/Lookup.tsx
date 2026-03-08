@@ -30,6 +30,7 @@ function fileToBase64(file: File): Promise<string> {
 export default function Lookup() {
   const { teamId } = useTeam();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const [timeRange, setTimeRange] = useState<TimeRange>("3days");
   const [imageBase64, setImageBase64] = useState("");
@@ -131,12 +132,34 @@ export default function Lookup() {
                 <Button
                   variant="default"
                   size="sm"
+                  onClick={() => cameraInputRef.current?.click()}
+                >
+                  <Camera size={16} className="mr-1.5" />
+                  Camera
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => fileInputRef.current?.click()}
                 >
                   <Upload size={16} className="mr-1.5" />
-                  Choose Photo
+                  Upload
                 </Button>
               </div>
+              {/* Camera input — opens rear camera directly */}
+              <input
+                ref={cameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleFile(file);
+                  e.target.value = "";
+                }}
+              />
+              {/* Upload input — opens gallery/file picker */}
               <input
                 ref={fileInputRef}
                 type="file"
