@@ -96,3 +96,6 @@
 - [x] Full pipeline: AI description → Dog ID → S3 upload → DB save → webhook
 - [x] Return saved record JSON (dogId, imageUrl, aiDescription, gpsLat, gpsLng, areaName, recordedAt)
 - [x] Vitest for the ingest endpoint (4 tests: auth, validation, bad date)
+
+## Header
+- [x] Show app version number under app name in header

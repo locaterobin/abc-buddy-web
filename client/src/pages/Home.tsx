@@ -19,7 +19,10 @@ export default function Home() {
           <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
             <span className="text-primary-foreground font-bold text-sm">AB</span>
           </div>
-          <h1 className="text-lg font-semibold text-foreground">ABC Buddy</h1>
+          <div className="flex flex-col">
+            <h1 className="text-lg font-semibold text-foreground leading-tight">ABC Buddy</h1>
+            <span className="text-[10px] font-mono text-muted-foreground leading-tight">v1.0.0</span>
+          </div>
         </div>
         <div className="flex items-center gap-1.5 bg-muted rounded-full px-3 py-1">
           <div className="w-2 h-2 rounded-full bg-primary" />
