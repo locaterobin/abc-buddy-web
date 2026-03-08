@@ -72,3 +72,7 @@
 
 ## Upload vs Camera Flow
 - [x] Skip annotation for Upload source — save original image as-is; only annotate Camera captures
+
+## Bug Fixes
+- [x] Fix annotation font rendering (SVG text shows as dots/rectangles - no system fonts in sharp/libvips)
+- [x] Make save instant - confirm UI immediately, run S3+DB+webhook in background

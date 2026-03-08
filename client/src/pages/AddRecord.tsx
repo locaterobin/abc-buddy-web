@@ -235,7 +235,7 @@ export default function AddRecord() {
     }
 
     try {
-      // Step 1: Annotate only for camera captures
+      // Step 1: Annotate only for camera captures (this is the only awaited step)
       let finalImageBase64 = imageBase64;
       if (imageSource === "camera") {
         try {
@@ -251,12 +251,11 @@ export default function AddRecord() {
           finalImageBase64 = annotated.annotatedBase64;
         } catch (err) {
           console.warn("Annotation failed, saving original:", err);
-          // Non-fatal — save without annotation
         }
       }
 
-      // Step 2: Save to DB + S3
-      await saveMutation.mutateAsync({
+      // Step 2: Fire save in background — don't await it
+      saveMutation.mutate({
         teamIdentifier: teamId,
         dogId,
         imageBase64: finalImageBase64,
@@ -271,9 +270,8 @@ export default function AddRecord() {
         webhookUrl: webhookUrl || undefined,
       });
 
-      toast.success("Record saved!");
-
-      // Reset form
+      // Confirm immediately and reset form
+      toast.success(`Record ${dogId} saved!`);
       setImageBase64("");
       setDescription("");
       setNotes("");
@@ -285,7 +283,8 @@ export default function AddRecord() {
       setRecordedAt(toLocalDatetimeValue(new Date()));
       setAnalysisError("");
       utils.dogs.getNextSuffix.invalidate();
-      utils.dogs.getRecords.invalidate();
+      // Delay records invalidation slightly to give background save time to complete
+      setTimeout(() => utils.dogs.getRecords.invalidate(), 5000);
     } catch (err: any) {
       toast.error("Save failed: " + err.message);
     }
@@ -305,7 +304,8 @@ export default function AddRecord() {
     utils.dogs.getNextSuffix.invalidate();
   };
 
-  const isSaving = (imageSource === "camera" && annotateMutation.isPending) || saveMutation.isPending;
+  // Only block UI during annotation (camera only); save is fire-and-forget
+  const isSaving = imageSource === "camera" && annotateMutation.isPending;
   const hasImage = !!imageBase64;
 
   return (

@@ -180,6 +180,13 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
     )
     .mutation(async ({ input }) => {
       const sharp = (await import("sharp")).default;
+      const fs = await import("fs");
+      const path = await import("path");
+
+      // Load bundled fonts (Liberation Sans — guaranteed available in both dev and production)
+      const fontsDir = path.join(process.cwd(), "server", "fonts");
+      const boldFontB64 = fs.readFileSync(path.join(fontsDir, "LiberationSans-Bold.ttf")).toString("base64");
+      const regularFontB64 = fs.readFileSync(path.join(fontsDir, "LiberationSans-Regular.ttf")).toString("base64");
 
       const imgBuffer = Buffer.from(input.imageBase64.replace(/^data:image\/\w+;base64,/, ""), "base64");
       const image = sharp(imgBuffer);
@@ -194,32 +201,32 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
       const dateStr = date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
       const timeStr = date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
 
-      type Line = { text: string; bold: boolean; italic: boolean };
+      type Line = { text: string; bold: boolean };
       const lines: Line[] = [];
-      lines.push({ text: `${input.dogId}  ${dayName}`, bold: true, italic: false });
-      lines.push({ text: `${dateStr}, ${timeStr}`, bold: false, italic: false });
-      if (input.areaName) lines.push({ text: input.areaName, bold: false, italic: false });
+      lines.push({ text: `${input.dogId}  ${dayName}`, bold: true });
+      lines.push({ text: `${dateStr}, ${timeStr}`, bold: false });
+      if (input.areaName) lines.push({ text: input.areaName, bold: false });
       if (input.latitude != null && input.longitude != null) {
-        lines.push({ text: `${input.latitude.toFixed(5)}, ${input.longitude.toFixed(5)}`, bold: false, italic: false });
+        lines.push({ text: `${input.latitude.toFixed(5)}, ${input.longitude.toFixed(5)}`, bold: false });
       }
       if (input.notes) {
         const words = input.notes.split(" ");
         let current = "";
         for (const word of words) {
           if ((current + " " + word).trim().length > 50) {
-            lines.push({ text: current.trim(), bold: false, italic: true });
+            lines.push({ text: current.trim(), bold: false });
             current = word;
           } else {
             current = current ? current + " " + word : word;
           }
         }
-        if (current.trim()) lines.push({ text: current.trim(), bold: false, italic: true });
+        if (current.trim()) lines.push({ text: current.trim(), bold: false });
       }
 
       // Font sizes proportional to image width
       const idFontSize = Math.max(18, Math.round(W * 0.038));
       const lineFontSize = Math.max(14, Math.round(W * 0.030));
-      const lineHeight = Math.round(lineFontSize * 1.55);
+      const lineHeight = Math.round(lineFontSize * 1.6);
       const padding = Math.max(10, Math.round(W * 0.025));
 
       // Calculate total overlay height
@@ -229,28 +236,31 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
       const escXml = (s: string) =>
         s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
-      // Build SVG overlay
+      // Build SVG with embedded fonts so libvips/rsvg renders text correctly
       let svgLines = "";
       let y = padding + idFontSize;
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
         const size = i === 0 ? idFontSize : lineFontSize;
-        const weight = line.bold ? "bold" : "normal";
-        const style = line.italic ? "italic" : "normal";
-        svgLines += `<text x="${padding}" y="${y}" font-family="Arial, Helvetica, sans-serif" font-size="${size}" font-weight="${weight}" font-style="${style}" fill="white" paint-order="stroke" stroke="rgba(0,0,0,0.6)" stroke-width="3" stroke-linejoin="round">${escXml(line.text)}</text>\n`;
+        const fontFamily = line.bold ? "LibSansBold" : "LibSans";
+        svgLines += `<text x="${padding}" y="${y}" font-family="${fontFamily}" font-size="${size}" fill="white">${escXml(line.text)}</text>\n`;
         y += i === 0 ? idFontSize + Math.round(lineHeight * 0.4) : lineHeight;
       }
 
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${overlayHeight}">
-  <rect width="${W}" height="${overlayHeight}" fill="rgba(0,0,0,0.62)"/>
+  <defs>
+    <style>
+      @font-face { font-family: 'LibSansBold'; src: url('data:font/truetype;base64,${boldFontB64}'); }
+      @font-face { font-family: 'LibSans'; src: url('data:font/truetype;base64,${regularFontB64}'); }
+    </style>
+  </defs>
+  <rect width="${W}" height="${overlayHeight}" fill="rgba(0,0,0,0.65)"/>
   ${svgLines}
 </svg>`;
 
-      const svgBuffer = Buffer.from(svg);
-
       // Composite the SVG strip onto the bottom of the image
       const annotatedBuffer = await image
-        .composite([{ input: svgBuffer, top: H - overlayHeight, left: 0 }])
+        .composite([{ input: Buffer.from(svg), top: H - overlayHeight, left: 0 }])
         .jpeg({ quality: 92 })
         .toBuffer();
 
@@ -275,67 +285,72 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
       })
     )
     .mutation(async ({ input }) => {
-      // Upload annotated image to S3
-      const imgBuffer = Buffer.from(
-        input.imageBase64.replace(/^data:image\/\w+;base64,/, ""),
-        "base64"
-      );
+      // Return immediately with a pending acknowledgement.
+      // All heavy work (S3 upload, DB insert, webhook) runs in the background.
       const suffix = nanoid(8);
       const fileKey = `dogs/${input.teamIdentifier}/${input.dogId}-${suffix}.jpg`;
-      const { url: imageUrl } = await storagePut(fileKey, imgBuffer, "image/jpeg");
+      const origKey = input.originalImageBase64
+        ? `dogs/${input.teamIdentifier}/${input.dogId}-original-${suffix}.jpg`
+        : null;
 
-      // Upload original image if provided
-      let originalImageUrl: string | undefined;
-      if (input.originalImageBase64) {
-        const origBuffer = Buffer.from(
-          input.originalImageBase64.replace(/^data:image\/\w+;base64,/, ""),
-          "base64"
-        );
-        const origKey = `dogs/${input.teamIdentifier}/${input.dogId}-original-${suffix}.jpg`;
-        const { url } = await storagePut(origKey, origBuffer, "image/jpeg");
-        originalImageUrl = url;
-      }
+      // Fire-and-forget background task
+      Promise.resolve().then(async () => {
+        try {
+          const imgBuffer = Buffer.from(
+            input.imageBase64.replace(/^data:image\/\w+;base64,/, ""),
+            "base64"
+          );
+          const { url: imageUrl } = await storagePut(fileKey, imgBuffer, "image/jpeg");
 
-      // Insert record
-      const record = await insertDogRecord({
-        teamIdentifier: input.teamIdentifier,
-        dogId: input.dogId,
-        imageUrl,
-        originalImageUrl: originalImageUrl ?? null,
-        description: input.description ?? null,
-        notes: input.notes ?? null,
-        latitude: input.latitude ?? null,
-        longitude: input.longitude ?? null,
-        areaName: input.areaName ?? null,
-        source: input.source,
-        recordedAt: new Date(input.recordedAt),
+          let originalImageUrl: string | undefined;
+          if (input.originalImageBase64 && origKey) {
+            const origBuffer = Buffer.from(
+              input.originalImageBase64.replace(/^data:image\/\w+;base64,/, ""),
+              "base64"
+            );
+            const { url } = await storagePut(origKey, origBuffer, "image/jpeg");
+            originalImageUrl = url;
+          }
+
+          await insertDogRecord({
+            teamIdentifier: input.teamIdentifier,
+            dogId: input.dogId,
+            imageUrl,
+            originalImageUrl: originalImageUrl ?? null,
+            description: input.description ?? null,
+            notes: input.notes ?? null,
+            latitude: input.latitude ?? null,
+            longitude: input.longitude ?? null,
+            areaName: input.areaName ?? null,
+            source: input.source,
+            recordedAt: new Date(input.recordedAt),
+          });
+
+          if (input.webhookUrl) {
+            fetch(input.webhookUrl, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                dogId: input.dogId,
+                teamIdentifier: input.teamIdentifier,
+                recordedAt: new Date(input.recordedAt).toISOString(),
+                latitude: input.latitude,
+                longitude: input.longitude,
+                areaName: input.areaName,
+                description: input.description,
+                notes: input.notes,
+                imageUrl,
+                source: input.source,
+              }),
+            }).catch((e) => console.error("Webhook failed:", e));
+          }
+        } catch (e) {
+          console.error("[saveRecord background] Error:", e);
+        }
       });
 
-      // Fire webhook (non-blocking)
-      if (input.webhookUrl) {
-        try {
-          fetch(input.webhookUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              dogId: input.dogId,
-              teamIdentifier: input.teamIdentifier,
-              recordedAt: new Date(input.recordedAt).toISOString(),
-              latitude: input.latitude,
-              longitude: input.longitude,
-              areaName: input.areaName,
-              description: input.description,
-              notes: input.notes,
-              imageUrl,
-              source: input.source,
-            }),
-          }).catch((e) => console.error("Webhook failed:", e));
-        } catch (e) {
-          console.error("Webhook error:", e);
-        }
-      }
-
-      return record;
+      // Return instantly — UI can reset immediately
+      return { dogId: input.dogId, queued: true };
     }),
 
   getRecords: publicProcedure
