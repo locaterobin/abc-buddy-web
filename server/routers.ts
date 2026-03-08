@@ -180,17 +180,12 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
     )
     .mutation(async ({ input }) => {
       const sharp = (await import("sharp")).default;
-      const fs = await import("fs");
-      const path = await import("path");
-
-      // Load bundled fonts (Liberation Sans — guaranteed available in both dev and production)
-      const fontsDir = path.join(process.cwd(), "server", "fonts");
-      const boldFontB64 = fs.readFileSync(path.join(fontsDir, "LiberationSans-Bold.ttf")).toString("base64");
-      const regularFontB64 = fs.readFileSync(path.join(fontsDir, "LiberationSans-Regular.ttf")).toString("base64");
 
       const imgBuffer = Buffer.from(input.imageBase64.replace(/^data:image\/\w+;base64,/, ""), "base64");
-      const image = sharp(imgBuffer);
-      const meta = await image.metadata();
+
+      // autoOrient fixes portrait photos taken on mobile that have EXIF rotation tags
+      const image = sharp(imgBuffer).autoOrient();
+      const meta = await image.clone().metadata();
       const W = meta.width || 800;
       const H = meta.height || 600;
 
@@ -236,29 +231,23 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
       const escXml = (s: string) =>
         s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
-      // Build SVG with embedded fonts so libvips/rsvg renders text correctly
+      // Build SVG using system font name — Liberation Sans is installed on both dev and deployment
       let svgLines = "";
       let y = padding + idFontSize;
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
         const size = i === 0 ? idFontSize : lineFontSize;
-        const fontFamily = line.bold ? "LibSansBold" : "LibSans";
-        svgLines += `<text x="${padding}" y="${y}" font-family="${fontFamily}" font-size="${size}" fill="white">${escXml(line.text)}</text>\n`;
+        const weight = line.bold ? "bold" : "normal";
+        svgLines += `<text x="${padding}" y="${y}" font-family="Liberation Sans, Arial, sans-serif" font-size="${size}" font-weight="${weight}" fill="white">${escXml(line.text)}</text>\n`;
         y += i === 0 ? idFontSize + Math.round(lineHeight * 0.4) : lineHeight;
       }
 
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${overlayHeight}">
-  <defs>
-    <style>
-      @font-face { font-family: 'LibSansBold'; src: url('data:font/truetype;base64,${boldFontB64}'); }
-      @font-face { font-family: 'LibSans'; src: url('data:font/truetype;base64,${regularFontB64}'); }
-    </style>
-  </defs>
   <rect width="${W}" height="${overlayHeight}" fill="rgba(0,0,0,0.65)"/>
   ${svgLines}
 </svg>`;
 
-      // Composite the SVG strip onto the bottom of the image
+      // Composite the SVG strip onto the bottom of the correctly-oriented image
       const annotatedBuffer = await image
         .composite([{ input: Buffer.from(svg), top: H - overlayHeight, left: 0 }])
         .jpeg({ quality: 92 })

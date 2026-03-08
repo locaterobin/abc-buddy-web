@@ -1,4 +1,22 @@
 import "dotenv/config";
+import path from "path";
+import fs from "fs";
+
+// Write a dynamic fonts.conf with the actual runtime path, then point FONTCONFIG_PATH at it.
+// This ensures sharp's bundled librsvg/fontconfig finds Liberation Sans in all environments.
+// Must happen before any sharp import.
+(function setupFontConfig() {
+  const fontsDir = path.join(process.cwd(), "server", "fonts");
+  const confPath = path.join(fontsDir, "fonts.conf");
+  const conf = `<?xml version="1.0"?>\n<fontconfig>\n  <dir>${fontsDir}</dir>\n  <cachedir>/tmp/fc-cache-abc</cachedir>\n</fontconfig>`;
+  try {
+    fs.writeFileSync(confPath, conf, "utf8");
+    process.env.FONTCONFIG_PATH = fontsDir;
+  } catch (e) {
+    console.warn("[fonts] Could not write fonts.conf:", e);
+  }
+})();
+
 import express from "express";
 import { createServer } from "http";
 import net from "net";

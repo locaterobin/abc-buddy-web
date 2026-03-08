@@ -76,3 +76,7 @@
 ## Bug Fixes
 - [x] Fix annotation font rendering (SVG text shows as dots/rectangles - no system fonts in sharp/libvips)
 - [x] Make save instant - confirm UI immediately, run S3+DB+webhook in background
+
+## Bug Fixes Round 2
+- [x] Fix annotation text rendering - write dynamic fonts.conf at startup + FONTCONFIG_PATH so sharp's bundled fontconfig finds Liberation Sans
+- [x] Fix portrait photos showing as landscape - apply EXIF auto-rotate before annotation
