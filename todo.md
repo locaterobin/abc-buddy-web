@@ -86,3 +86,6 @@
 
 ## Env Defaults
 - [x] Set VITE_DEFAULT_TEAM_ID=calm-otter and VITE_DEFAULT_WEBHOOK_URL as env vars, wire into TeamContext defaults
+
+## Add Record UX
+- [x] Make AI description field editable (textarea) on Add Record page

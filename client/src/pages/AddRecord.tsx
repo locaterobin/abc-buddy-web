@@ -420,17 +420,19 @@ export default function AddRecord() {
 
           {/* AI Description */}
           {description && (
-            <Card className="bg-accent/50 border-primary/20">
-              <CardContent className="py-3">
-                <div className="flex items-start gap-2">
-                  <Sparkles size={16} className="text-primary mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-xs font-medium text-primary mb-1">AI Description</p>
-                    <p className="text-sm text-foreground leading-relaxed">{description}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <div>
+              <label className="text-sm font-medium text-foreground mb-1.5 flex items-center gap-1.5">
+                <Sparkles size={14} className="text-primary" />
+                AI Description
+              </label>
+              <Textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={4}
+                className="text-sm resize-none"
+                placeholder="AI-generated description..."
+              />
+            </div>
           )}
 
           {/* Form */}
