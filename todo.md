@@ -41,3 +41,7 @@
 - [x] Save release data to DB before firing webhook
 - [x] Include distanceFromCapture (metres) in webhook payload
 - [x] Display release info (date, location, distance) in RecordDetailModal for already-released records
+
+## Records List - Badge + Filter
+- [x] Show green "Released" badge on each released record row in Records tab
+- [x] Add Released / Not Released / All filter toggle on Records tab
