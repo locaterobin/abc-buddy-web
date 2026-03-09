@@ -176,3 +176,16 @@ export async function deleteRecordById(id: number, teamIdentifier: string): Prom
 
   return (result[0] as any).affectedRows > 0;
 }
+
+export async function getRecordByDogId(dogId: string, teamIdentifier: string): Promise<DogRecord | undefined> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db
+    .select()
+    .from(dogRecords)
+    .where(and(eq(dogRecords.dogId, dogId), eq(dogRecords.teamIdentifier, teamIdentifier)))
+    .limit(1);
+
+  return result.length > 0 ? result[0] : undefined;
+}

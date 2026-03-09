@@ -105,3 +105,16 @@
 
 ## Camera Save UX
 - [x] Camera save: reset form instantly, run annotation + S3 + DB + webhook in background (no waiting on "Annotating...")
+
+## PDF Form Generation
+- [ ] Install puppeteer/html-pdf library for server-side PDF rendering
+- [ ] Build GET /api/record/:dogId/pdf endpoint — fill {dog Id}, {date}, {notes}, {location}, {description}
+- [ ] Recreate Google Doc form layout in HTML (tables, surgery fields left blank)
+- [ ] Add "Print Form" button on each record in Settings
+
+## PDF Form Generation
+- [x] GET /api/record/:dogId/pdf?team=<teamId> endpoint
+- [x] PDFKit pure-JS PDF generation (no system dependencies)
+- [x] Fill Dog ID, date, location, description, notes from DB record
+- [x] Recreate Google Doc template layout (surgery, premedication, induction, maintenance sections)
+- [x] Print Form button (FileText icon) on each record row in Settings

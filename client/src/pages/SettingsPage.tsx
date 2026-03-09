@@ -10,6 +10,7 @@ import {
   Users,
   Webhook,
   FileJson,
+  FileText,
   Clock,
   MapPin,
   Trash2,
@@ -211,10 +212,10 @@ export default function SettingsPage() {
           ) : (
             <div className="space-y-1">
               {records.map((rec: any) => (
+                <div key={rec.id} className="flex items-center gap-1">
                 <button
-                  key={rec.id}
                   onClick={() => setSelectedRecord(rec)}
-                  className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors group text-left"
+                  className="flex-1 flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors group text-left"
                 >
                   {rec.imageUrl ? (
                     <img
@@ -251,6 +252,16 @@ export default function SettingsPage() {
                     className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
                   />
                 </button>
+                <a
+                  href={`/api/record/${rec.dogId}/pdf?team=${encodeURIComponent(teamId)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Print Form (PDF)"
+                  className="flex-shrink-0 p-2 rounded-lg hover:bg-muted/70 text-muted-foreground hover:text-primary transition-colors"
+                >
+                  <FileText size={16} />
+                </a>
+                </div>
               ))}
             </div>
           )}
