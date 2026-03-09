@@ -135,3 +135,9 @@
 ## Timezone Fix (Deployment Server is UTC-4)
 - [x] Fix DOCX date: use explicit timeZone "Asia/Kolkata" in formatDate (was showing UTC-4 server local time)
 - [x] Fix image annotation date/time strip: use explicit timeZone "Asia/Kolkata" for dateStr and timeStr
+
+## Released Button
+- [x] Add "Released" button above Delete in record detail modal
+- [x] On press: get device GPS, reverse-geocode to place name, fire POST to {webhookUrl}/release with dogId, current IST date, lat/lng, place name
+- [x] Show loading state while getting GPS + geocoding
+- [x] Show success/error toast after webhook fires
