@@ -126,3 +126,8 @@
 - [x] Replace PDFKit route with docxtemplater /api/record/:dogId/docx route
 - [x] Test DOCX output fills tags correctly
 - [x] Update Settings button to download DOCX (tooltip: Download Form)
+
+## Settings Records Filters & Timezone Fix
+- [x] Add record ID search filter to Settings records list
+- [x] Add date filter (date picker) to Settings records list
+- [x] Fix timezone display to IST (GMT+5:30) in DOCX date field

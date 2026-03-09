@@ -19,6 +19,9 @@ import {
   Loader2,
   ChevronRight,
   Dog,
+  Search,
+  Calendar,
+  X,
 } from "lucide-react";
 import RecordDetailModal from "@/components/RecordDetailModal";
 
@@ -30,6 +33,8 @@ export default function SettingsPage() {
   const [webhookInput, setWebhookInput] = useState(webhookUrl);
   const [webhookSaved, setWebhookSaved] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<any>(null);
+  const [searchId, setSearchId] = useState("");
+  const [filterDate, setFilterDate] = useState("");
 
   const generateMutation = trpc.dogs.generateTeamId.useMutation();
 
@@ -88,7 +93,15 @@ export default function SettingsPage() {
     toast.success("Export downloaded");
   };
 
-  const records = recordsQuery.data || [];
+  const allRecords = recordsQuery.data || [];
+  const records = allRecords.filter((rec: any) => {
+    const matchId = !searchId.trim() || rec.dogId?.toLowerCase().includes(searchId.trim().toLowerCase());
+    const matchDate = !filterDate || (() => {
+      const recDate = new Date(rec.recordedAt).toISOString().slice(0, 10);
+      return recDate === filterDate;
+    })();
+    return matchId && matchDate;
+  });
 
   return (
     <div className="container py-4 pb-6 max-w-lg mx-auto space-y-5">
@@ -191,13 +204,45 @@ export default function SettingsPage() {
               <Dog size={18} className="text-primary" />
               <h3 className="font-semibold text-foreground">Records</h3>
               <Badge variant="secondary" className="text-xs">
-                {records.length}
+                {records.length}{allRecords.length !== records.length ? `/${allRecords.length}` : ""}
               </Badge>
             </div>
             <Button variant="outline" size="sm" className="bg-card" onClick={handleExportJson}>
               <FileJson size={14} className="mr-1.5" />
               Export JSON
             </Button>
+          </div>
+
+          {/* Search + Date filters */}
+          <div className="flex gap-2 mb-3">
+            <div className="relative flex-1">
+              <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={searchId}
+                onChange={(e) => setSearchId(e.target.value)}
+                placeholder="Search by Dog ID…"
+                className="pl-8 text-sm h-8"
+              />
+              {searchId && (
+                <button onClick={() => setSearchId("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                  <X size={13} />
+                </button>
+              )}
+            </div>
+            <div className="relative">
+              <Calendar size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+              <input
+                type="date"
+                value={filterDate}
+                onChange={(e) => setFilterDate(e.target.value)}
+                className="pl-8 pr-2 h-8 text-sm rounded-md border border-input bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+              />
+              {filterDate && (
+                <button onClick={() => setFilterDate("")} className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                  <X size={13} />
+                </button>
+              )}
+            </div>
           </div>
 
           {recordsQuery.isLoading ? (

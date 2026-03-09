@@ -22,7 +22,9 @@ function getTemplatePath() {
 function formatDate(ts: Date | string | number | null | undefined): string {
   if (!ts) return "";
   const d = new Date(ts as string);
-  return d.toLocaleString("en-GB", {
+  return d.toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    weekday: "short",
     day: "2-digit",
     month: "short",
     year: "numeric",
