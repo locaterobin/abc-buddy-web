@@ -213,7 +213,7 @@ export default function SettingsPage() {
             <div className="space-y-1">
               {records.map((rec: any) => (
                 <div key={rec.id} className="flex items-center gap-1">
-                <button
+                  <button
                   onClick={() => setSelectedRecord(rec)}
                   className="flex-1 flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors group text-left"
                 >
@@ -253,10 +253,10 @@ export default function SettingsPage() {
                   />
                 </button>
                 <a
-                  href={`/api/record/${rec.dogId}/pdf?team=${encodeURIComponent(teamId)}`}
+                  href={`/api/record/${rec.dogId}/docx?team=${encodeURIComponent(teamId)}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  title="Print Form (PDF)"
+                  title="Download Form (DOCX)"
                   className="flex-shrink-0 p-2 rounded-lg hover:bg-muted/70 text-muted-foreground hover:text-primary transition-colors"
                 >
                   <FileText size={16} />

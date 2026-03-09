@@ -118,3 +118,11 @@
 - [x] Fill Dog ID, date, location, description, notes from DB record
 - [x] Recreate Google Doc template layout (surgery, premedication, induction, maintenance sections)
 - [x] Print Form button (FileText icon) on each record row in Settings
+
+## PDF via docxtemplater (DOCX template)
+- [x] Inspect abc.docx template tags ({dog id}, {date}, {location}, {description}, {notes})
+- [x] Install docxtemplater + pizzip, copy template to server/templates/
+- [x] Serve filled DOCX directly (no LibreOffice needed, works in deployment)
+- [x] Replace PDFKit route with docxtemplater /api/record/:dogId/docx route
+- [x] Test DOCX output fills tags correctly
+- [x] Update Settings button to download DOCX (tooltip: Download Form)
