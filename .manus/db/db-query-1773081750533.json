@@ -1,0 +1,22 @@
+{
+  "query": "SELECT dogId, teamIdentifier, releasedAt, latitude AS captureLatitude, longitude AS captureLongitude, areaName AS captureAreaName, releaseLatitude, releaseLongitude, releaseAreaName, releaseDistanceMetres FROM dog_records WHERE releasedAt IS NOT NULL ORDER BY releasedAt DESC LIMIT 1;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4YKkGxc6t8uKQwU.5f0d0a62126a --database hPjpqQFScRPNzVz7QPH5a8 --execute SELECT dogId, teamIdentifier, releasedAt, latitude AS captureLatitude, longitude AS captureLongitude, areaName AS captureAreaName, releaseLatitude, releaseLongitude, releaseAreaName, releaseDistanceMetres FROM dog_records WHERE releasedAt IS NOT NULL ORDER BY releasedAt DESC LIMIT 1;",
+  "rows": [
+    {
+      "dogId": "20260310-009",
+      "teamIdentifier": "bold-otter",
+      "releasedAt": "2026-03-09 18:40:17",
+      "captureLatitude": "32.19221",
+      "captureLongitude": "76.23083",
+      "captureAreaName": "Dhanotu",
+      "releaseLatitude": "32.192199225535504",
+      "releaseLongitude": "76.2307632953376",
+      "releaseAreaName": "Dhanotu",
+      "releaseDistanceMetres": "6"
+    }
+  ],
+  "messages": [],
+  "stdout": "dogId\tteamIdentifier\treleasedAt\tcaptureLatitude\tcaptureLongitude\tcaptureAreaName\treleaseLatitude\treleaseLongitude\treleaseAreaName\treleaseDistanceMetres\n20260310-009\tbold-otter\t2026-03-09 18:40:17\t32.19221\t76.23083\tDhanotu\t32.192199225535504\t76.2307632953376\tDhanotu\t6\n",
+  "stderr": "",
+  "execution_time_ms": 1648
+}

@@ -45,3 +45,6 @@
 ## Records List - Badge + Filter
 - [x] Show green "Released" badge on each released record row in Records tab
 - [x] Add Released / Not Released / All filter toggle on Records tab
+
+## Delete Webhook
+- [x] Fire POST to {webhookUrl}/delete with dogId when a record is deleted

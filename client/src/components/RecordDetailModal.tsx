@@ -69,6 +69,15 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
         onSuccess: () => {
           toast.success("Record deleted");
           utils.dogs.getRecords.invalidate();
+          // Fire delete webhook (fire-and-forget)
+          if (webhookUrl) {
+            const deleteUrl = webhookUrl.replace(/\/$/, "") + "/delete";
+            fetch(deleteUrl, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ dogId: record.dogId }),
+            }).catch((e) => console.error("Delete webhook failed:", e));
+          }
           onDelete?.();
           onClose();
         },
