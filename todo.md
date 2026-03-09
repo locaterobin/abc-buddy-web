@@ -141,3 +141,12 @@
 - [x] On press: get device GPS, reverse-geocode to place name, fire POST to {webhookUrl}/release with dogId, current IST date, lat/lng, place name
 - [x] Show loading state while getting GPS + geocoding
 - [x] Show success/error toast after webhook fires
+
+## Rename Settings → Records
+- [x] Rename "Settings" tab label and icon aria-label to "Records" in bottom nav and page header
+
+## Navigation Restructure
+- [x] Rename Settings tab label to Records, change icon to ClipboardList (or similar)
+- [x] Create new Settings tab (4th tab) with Settings icon - contains team ID and webhook config
+- [x] Move team ID and webhook config out of SettingsPage into new SettingsTab
+- [x] SettingsPage (now Records) shows only records list with filters

@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { PlusCircle, Search, Settings } from "lucide-react";
+import { PlusCircle, Search, ClipboardList, Settings } from "lucide-react";
 import { useTeam } from "@/contexts/TeamContext";
 import AddRecord from "./AddRecord";
 import Lookup from "./Lookup";
 import SettingsPage from "./SettingsPage";
+import ConfigPage from "./ConfigPage";
 
-type Tab = "add" | "lookup" | "settings";
+type Tab = "add" | "lookup" | "records" | "settings";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>("add");
@@ -34,7 +35,8 @@ export default function Home() {
       <main className="flex-1 overflow-y-auto">
         {activeTab === "add" && <AddRecord />}
         {activeTab === "lookup" && <Lookup />}
-        {activeTab === "settings" && <SettingsPage />}
+        {activeTab === "records" && <SettingsPage />}
+        {activeTab === "settings" && <ConfigPage />}
       </main>
 
       {/* Bottom Navigation */}
@@ -51,6 +53,12 @@ export default function Home() {
             onClick={() => setActiveTab("lookup")}
             icon={<Search size={22} />}
             label="Lookup"
+          />
+          <TabButton
+            active={activeTab === "records"}
+            onClick={() => setActiveTab("records")}
+            icon={<ClipboardList size={22} />}
+            label="Records"
           />
           <TabButton
             active={activeTab === "settings"}
