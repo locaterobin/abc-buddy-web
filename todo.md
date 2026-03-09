@@ -150,3 +150,9 @@
 - [x] Create new Settings tab (4th tab) with Settings icon - contains team ID and webhook config
 - [x] Move team ID and webhook config out of SettingsPage into new SettingsTab
 - [x] SettingsPage (now Records) shows only records list with filters
+
+## Release Distance Check
+- [x] Calculate Haversine distance between record's original GPS and current release GPS
+- [x] Show distance in confirmation dialog before firing release webhook
+- [x] Also include distance in the webhook payload sent to /release
+- [x] Handle case where record has no GPS (skip distance, note in dialog)

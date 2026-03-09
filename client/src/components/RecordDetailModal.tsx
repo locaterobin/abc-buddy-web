@@ -21,6 +21,26 @@ interface RecordDetailModalProps {
   onDelete?: () => void;
 }
 
+/** Haversine formula — returns distance in metres between two lat/lng points */
+function haversineMetres(
+  lat1: number, lng1: number,
+  lat2: number, lng2: number
+): number {
+  const R = 6371000; // Earth radius in metres
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function formatDistance(metres: number): string {
+  if (metres < 1000) return `${Math.round(metres)} m`;
+  return `${(metres / 1000).toFixed(2)} km`;
+}
+
 export default function RecordDetailModal({ record, onClose, onDelete }: RecordDetailModalProps) {
   const { teamId, webhookUrl } = useTeam();
   const utils = trpc.useUtils();
@@ -55,17 +75,14 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
       toast.error("No webhook URL configured. Set it in Settings.");
       return;
     }
-    if (!window.confirm(`Mark ${record.dogId} as Released and notify the webhook?`)) {
-      return;
-    }
 
     setReleasing(true);
+    let latitude: number | null = null;
+    let longitude: number | null = null;
+    let areaName = "";
+
     try {
       // 1. Get current device GPS
-      let latitude: number | null = null;
-      let longitude: number | null = null;
-      let areaName = "";
-
       try {
         const pos = await new Promise<GeolocationPosition>((resolve, reject) =>
           navigator.geolocation.getCurrentPosition(resolve, reject, {
@@ -77,7 +94,6 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
         latitude = pos.coords.latitude;
         longitude = pos.coords.longitude;
       } catch {
-        // GPS unavailable — proceed without it
         toast("GPS unavailable — sending without location", { icon: "⚠️" });
       }
 
@@ -91,19 +107,56 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
         }
       }
 
-      // 3. Current IST timestamp
-      const now = new Date();
-      const releasedAt = now.toISOString();
+      // 3. Calculate distance from record's original GPS to current position
+      let distanceMetres: number | null = null;
+      if (
+        latitude !== null &&
+        longitude !== null &&
+        record.latitude != null &&
+        record.longitude != null
+      ) {
+        distanceMetres = haversineMetres(
+          record.latitude, record.longitude,
+          latitude, longitude
+        );
+      }
 
-      // 4. POST to {webhookUrl}/release
+      // 4. Build confirmation message with distance info
+      const distanceLine =
+        distanceMetres !== null
+          ? `📍 Distance from capture location: ${formatDistance(distanceMetres)}`
+          : record.latitude == null
+          ? "📍 No GPS on original record — distance unavailable"
+          : "📍 Current GPS unavailable — distance unavailable";
+
+      const releaseAreaLine = areaName ? `Release location: ${areaName}` : "";
+
+      const confirmMsg = [
+        `Mark ${record.dogId} as Released?`,
+        "",
+        distanceLine,
+        releaseAreaLine,
+        "",
+        "This will notify the webhook.",
+      ]
+        .filter((l) => l !== undefined)
+        .join("\n");
+
+      if (!window.confirm(confirmMsg)) {
+        setReleasing(false);
+        return;
+      }
+
+      // 5. POST to {webhookUrl}/release
       const releaseUrl = webhookUrl.replace(/\/$/, "") + "/release";
       const payload = {
         dogId: record.dogId,
         teamIdentifier: teamId,
-        releasedAt,
+        releasedAt: new Date().toISOString(),
         latitude,
         longitude,
         areaName: areaName || null,
+        distanceFromCapture: distanceMetres !== null ? Math.round(distanceMetres) : null,
       };
 
       const res = await fetch(releaseUrl, {
@@ -117,7 +170,8 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
       }
 
       setReleased(true);
-      toast.success(`${record.dogId} marked as Released!`);
+      const distanceMsg = distanceMetres !== null ? ` · ${formatDistance(distanceMetres)} from capture` : "";
+      toast.success(`${record.dogId} marked as Released${distanceMsg}`);
     } catch (err: any) {
       toast.error("Release failed: " + (err?.message || "Unknown error"));
     } finally {
