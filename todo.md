@@ -48,3 +48,6 @@
 
 ## Delete Webhook
 - [x] Fire POST to {webhookUrl}/delete with dogId when a record is deleted
+
+## Back Button
+- [ ] Phone back button closes RecordDetailModal

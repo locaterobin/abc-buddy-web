@@ -150,7 +150,7 @@ export default function ConfigPage() {
             </Button>
           </div>
           <p className="text-xs text-muted-foreground mt-2">
-            Fires on every new record save and on release events ({webhookInput ? webhookInput.replace(/\/$/, "") + "/release" : "…/release"}).
+            Fires on every new record save and on release events.
           </p>
         </CardContent>
       </Card>

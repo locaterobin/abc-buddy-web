@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { useTeam } from "@/contexts/TeamContext";
 import { Button } from "@/components/ui/button";
@@ -60,6 +60,18 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
   const [releasing, setReleasing] = useState(false);
   // Use record's existing release data to determine initial released state
   const [released, setReleased] = useState(() => !!record.releasedAt);
+
+  // Back button closes modal
+  useEffect(() => {
+    history.pushState({ modal: true }, "");
+    const handlePop = () => onClose();
+    window.addEventListener("popstate", handlePop);
+    return () => {
+      window.removeEventListener("popstate", handlePop);
+      // If modal is closed programmatically, go back to clean up the history entry
+      if (history.state?.modal) history.back();
+    };
+  }, [onClose]);
 
   const handleDelete = () => {
     if (!window.confirm("Are you sure you want to delete this record? This cannot be undone.")) return;
