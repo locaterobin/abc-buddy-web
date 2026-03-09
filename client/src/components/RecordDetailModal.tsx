@@ -132,10 +132,23 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
       // 4. Build confirmation message
       const distanceLine =
         distanceMetres !== null
-          ? formatDistance(distanceMetres)
-          : "Distance unavailable";
+          ? `📍 Distance from capture: ${formatDistance(distanceMetres)}${distanceMetres > 200 ? "\n⚠️  This is more than 200 m from the capture location." : ""}`
+          : record.latitude == null
+          ? "📍 No GPS on original record — distance unavailable"
+          : "📍 Current GPS unavailable — distance unavailable";
 
-      const confirmMsg = distanceLine;
+      const releaseAreaLine = areaName ? `Release location: ${areaName}` : "";
+
+      const confirmMsg = [
+        `Mark ${record.dogId} as Released?`,
+        "",
+        distanceLine,
+        releaseAreaLine,
+        "",
+        "This will save the release data and notify the webhook.",
+      ]
+        .filter(Boolean)
+        .join("\n");
 
       if (!window.confirm(confirmMsg)) {
         setReleasing(false);
