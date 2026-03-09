@@ -131,3 +131,7 @@
 - [x] Add record ID search filter to Settings records list
 - [x] Add date filter (date picker) to Settings records list
 - [x] Fix timezone display to IST (GMT+5:30) in DOCX date field
+
+## Timezone Fix (Deployment Server is UTC-4)
+- [x] Fix DOCX date: use explicit timeZone "Asia/Kolkata" in formatDate (was showing UTC-4 server local time)
+- [x] Fix image annotation date/time strip: use explicit timeZone "Asia/Kolkata" for dateStr and timeStr

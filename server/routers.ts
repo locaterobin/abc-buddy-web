@@ -191,10 +191,12 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
 
       // Build text lines
       const date = new Date(input.recordedAt);
+      const IST = "Asia/Kolkata";
       const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-      const dayName = days[date.getDay()];
-      const dateStr = date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
-      const timeStr = date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
+      // Use IST explicitly so the annotation is correct regardless of server timezone
+      const dayName = days[new Date(date.toLocaleString("en-US", { timeZone: IST })).getDay()];
+      const dateStr = date.toLocaleDateString("en-GB", { timeZone: IST, day: "2-digit", month: "short", year: "numeric" });
+      const timeStr = date.toLocaleTimeString("en-US", { timeZone: IST, hour: "2-digit", minute: "2-digit", hour12: true });
 
       type Line = { text: string; bold: boolean };
       const lines: Line[] = [];
