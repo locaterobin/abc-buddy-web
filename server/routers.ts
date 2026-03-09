@@ -11,6 +11,7 @@ import {
   getRecordsByTeam,
   getRecordsByTeamWithTimeRange,
   deleteRecordById,
+  saveReleaseData,
 } from "./db";
 import { storagePut } from "./storage";
 import { createOpenAI } from "@ai-sdk/openai";
@@ -355,6 +356,29 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
     .mutation(async ({ input }) => {
       const deleted = await deleteRecordById(input.id, input.teamIdentifier);
       return { success: deleted };
+    }),
+
+  saveRelease: publicProcedure
+    .input(
+      z.object({
+        id: z.number(),
+        teamIdentifier: z.string(),
+        releasedAt: z.string(), // ISO string
+        releaseLatitude: z.number().nullable(),
+        releaseLongitude: z.number().nullable(),
+        releaseAreaName: z.string().nullable(),
+        releaseDistanceMetres: z.number().int().nullable(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const saved = await saveReleaseData(input.id, input.teamIdentifier, {
+        releasedAt: new Date(input.releasedAt),
+        releaseLatitude: input.releaseLatitude,
+        releaseLongitude: input.releaseLongitude,
+        releaseAreaName: input.releaseAreaName,
+        releaseDistanceMetres: input.releaseDistanceMetres,
+      });
+      return { success: saved };
     }),
 
   lookupDog: publicProcedure

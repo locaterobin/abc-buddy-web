@@ -29,6 +29,12 @@ export const dogRecords = mysqlTable("dog_records", {
   source: mysqlEnum("source", ["camera", "upload", "api"]).default("upload").notNull(),
   recordedAt: timestamp("recordedAt").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
+  // Release data
+  releasedAt: timestamp("releasedAt"),
+  releaseLatitude: double("releaseLatitude"),
+  releaseLongitude: double("releaseLongitude"),
+  releaseAreaName: varchar("releaseAreaName", { length: 255 }),
+  releaseDistanceMetres: int("releaseDistanceMetres"),
 });
 
 export type DogRecord = typeof dogRecords.$inferSelect;

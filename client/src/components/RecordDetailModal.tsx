@@ -21,13 +21,10 @@ interface RecordDetailModalProps {
   onDelete?: () => void;
 }
 
-/** Haversine formula — returns distance in metres between two lat/lng points */
-function haversineMetres(
-  lat1: number, lng1: number,
-  lat2: number, lng2: number
-): number {
-  const R = 6371000; // Earth radius in metres
-  const toRad = (deg: number) => (deg * Math.PI) / 180;
+/** Haversine formula — returns distance in metres */
+function haversineMetres(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371000;
+  const toRad = (d: number) => (d * Math.PI) / 180;
   const dLat = toRad(lat2 - lat1);
   const dLng = toRad(lng2 - lng1);
   const a =
@@ -36,9 +33,21 @@ function haversineMetres(
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-function formatDistance(metres: number): string {
-  if (metres < 1000) return `${Math.round(metres)} m`;
-  return `${(metres / 1000).toFixed(2)} km`;
+function formatDistance(m: number): string {
+  return m < 1000 ? `${Math.round(m)} m` : `${(m / 1000).toFixed(2)} km`;
+}
+
+function formatDate(date: string | Date) {
+  return new Date(date).toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    weekday: "short",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
 }
 
 export default function RecordDetailModal({ record, onClose, onDelete }: RecordDetailModalProps) {
@@ -46,14 +55,14 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
   const utils = trpc.useUtils();
   const deleteMutation = trpc.dogs.deleteRecord.useMutation();
   const geocodeMutation = trpc.dogs.geocodeLatLng.useMutation();
+  const saveReleaseMutation = trpc.dogs.saveRelease.useMutation();
 
   const [releasing, setReleasing] = useState(false);
-  const [released, setReleased] = useState(false);
+  // Use record's existing release data to determine initial released state
+  const [released, setReleased] = useState(() => !!record.releasedAt);
 
   const handleDelete = () => {
-    if (!window.confirm("Are you sure you want to delete this record? This cannot be undone.")) {
-      return;
-    }
+    if (!window.confirm("Are you sure you want to delete this record? This cannot be undone.")) return;
     deleteMutation.mutate(
       { id: record.id, teamIdentifier: teamId },
       {
@@ -63,9 +72,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
           onDelete?.();
           onClose();
         },
-        onError: (err) => {
-          toast.error("Delete failed: " + err.message);
-        },
+        onError: (err) => toast.error("Delete failed: " + err.message),
       }
     );
   };
@@ -82,7 +89,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
     let areaName = "";
 
     try {
-      // 1. Get current device GPS
+      // 1. Get current GPS
       try {
         const pos = await new Promise<GeolocationPosition>((resolve, reject) =>
           navigator.geolocation.getCurrentPosition(resolve, reject, {
@@ -97,34 +104,26 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
         toast("GPS unavailable — sending without location", { icon: "⚠️" });
       }
 
-      // 2. Reverse geocode if we have GPS
+      // 2. Reverse geocode
       if (latitude !== null && longitude !== null) {
         try {
           const geo = await geocodeMutation.mutateAsync({ latitude, longitude });
           areaName = geo.areaName || "";
         } catch {
-          // geocoding failed — continue without area name
+          // continue without area name
         }
       }
 
-      // 3. Calculate distance from record's original GPS to current position
+      // 3. Calculate distance from capture
       let distanceMetres: number | null = null;
-      if (
-        latitude !== null &&
-        longitude !== null &&
-        record.latitude != null &&
-        record.longitude != null
-      ) {
-        distanceMetres = haversineMetres(
-          record.latitude, record.longitude,
-          latitude, longitude
-        );
+      if (latitude !== null && longitude !== null && record.latitude != null && record.longitude != null) {
+        distanceMetres = haversineMetres(record.latitude, record.longitude, latitude, longitude);
       }
 
-      // 4. Build confirmation message with distance info
+      // 4. Build confirmation message
       const distanceLine =
         distanceMetres !== null
-          ? `📍 Distance from capture location: ${formatDistance(distanceMetres)}`
+          ? `📍 Distance from capture: ${formatDistance(distanceMetres)}${distanceMetres > 200 ? "\n⚠️  This is more than 200 m from the capture location." : ""}`
           : record.latitude == null
           ? "📍 No GPS on original record — distance unavailable"
           : "📍 Current GPS unavailable — distance unavailable";
@@ -137,9 +136,9 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
         distanceLine,
         releaseAreaLine,
         "",
-        "This will notify the webhook.",
+        "This will save the release data and notify the webhook.",
       ]
-        .filter((l) => l !== undefined)
+        .filter(Boolean)
         .join("\n");
 
       if (!window.confirm(confirmMsg)) {
@@ -147,16 +146,36 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
         return;
       }
 
-      // 5. POST to {webhookUrl}/release
+      const releasedAt = new Date().toISOString();
+      const distanceRounded = distanceMetres !== null ? Math.round(distanceMetres) : null;
+
+      // 5. Save to DB first
+      await saveReleaseMutation.mutateAsync({
+        id: record.id,
+        teamIdentifier: teamId,
+        releasedAt,
+        releaseLatitude: latitude,
+        releaseLongitude: longitude,
+        releaseAreaName: areaName || null,
+        releaseDistanceMetres: distanceRounded,
+      });
+
+      // 6. Fire webhook
       const releaseUrl = webhookUrl.replace(/\/$/, "") + "/release";
       const payload = {
         dogId: record.dogId,
         teamIdentifier: teamId,
-        releasedAt: new Date().toISOString(),
-        latitude,
-        longitude,
-        areaName: areaName || null,
-        distanceFromCapture: distanceMetres !== null ? Math.round(distanceMetres) : null,
+        releasedAt,
+        // Capture location
+        captureLatitude: record.latitude ?? null,
+        captureLongitude: record.longitude ?? null,
+        captureAreaName: record.areaName ?? null,
+        // Release location
+        releaseLatitude: latitude,
+        releaseLongitude: longitude,
+        releaseAreaName: areaName || null,
+        // Distance
+        distanceFromCapture: distanceRounded,
       };
 
       const res = await fetch(releaseUrl, {
@@ -165,9 +184,10 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) {
-        throw new Error(`Webhook responded with ${res.status}`);
-      }
+      if (!res.ok) throw new Error(`Webhook responded with ${res.status}`);
+
+      // Invalidate records so the list reflects the updated release data
+      utils.dogs.getRecords.invalidate();
 
       setReleased(true);
       const distanceMsg = distanceMetres !== null ? ` · ${formatDistance(distanceMetres)} from capture` : "";
@@ -179,33 +199,21 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
     }
   };
 
-  const formatDate = (date: string | Date) => {
-    const d = new Date(date);
-    return d.toLocaleString("en-IN", {
-      timeZone: "Asia/Kolkata",
-      weekday: "short",
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    });
-  };
-
   const gpsLink =
     record.latitude && record.longitude
       ? `https://www.google.com/maps?q=${record.latitude},${record.longitude}`
       : null;
 
+  const releaseGpsLink =
+    record.releaseLatitude && record.releaseLongitude
+      ? `https://www.google.com/maps?q=${record.releaseLatitude},${record.releaseLongitude}`
+      : null;
+
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-      {/* Backdrop */}
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
 
-      {/* Modal */}
       <div className="relative bg-card w-full sm:max-w-lg sm:rounded-xl rounded-t-xl max-h-[90vh] overflow-y-auto animate-in slide-in-from-bottom duration-300">
-        {/* Close button */}
         <button
           onClick={onClose}
           className="absolute top-3 right-3 z-10 bg-black/50 text-white rounded-full p-1.5 hover:bg-black/70 transition-colors"
@@ -213,52 +221,37 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
           <X size={18} />
         </button>
 
-        {/* Image */}
         {record.imageUrl && (
           <div className="bg-black/5">
-            <img
-              src={record.imageUrl}
-              alt={record.dogId}
-              className="w-full max-h-[60vh] object-contain"
-            />
+            <img src={record.imageUrl} alt={record.dogId} className="w-full max-h-[60vh] object-contain" />
           </div>
         )}
 
-        {/* Details */}
         <div className="p-4 space-y-3">
-          {/* Dog ID */}
           <h2 className="font-mono font-bold text-xl text-foreground">{record.dogId}</h2>
 
-          {/* Date */}
+          {/* Capture date */}
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Clock size={16} className="flex-shrink-0" />
             <span>{formatDate(record.recordedAt)}</span>
           </div>
 
-          {/* Location */}
+          {/* Capture location */}
           {(record.areaName || gpsLink) && (
             <div className="flex items-start gap-2 text-sm">
               <MapPin size={16} className="flex-shrink-0 text-muted-foreground mt-0.5" />
               <div>
                 {record.areaName && gpsLink ? (
-                  <a
-                    href={gpsLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary hover:underline inline-flex items-center gap-1"
-                  >
+                  <a href={gpsLink} target="_blank" rel="noopener noreferrer"
+                    className="text-primary hover:underline inline-flex items-center gap-1">
                     {record.areaName} · {record.latitude?.toFixed(5)}, {record.longitude?.toFixed(5)}
                     <ExternalLink size={12} />
                   </a>
                 ) : record.areaName ? (
                   <span className="text-foreground">{record.areaName}</span>
                 ) : gpsLink ? (
-                  <a
-                    href={gpsLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary hover:underline inline-flex items-center gap-1"
-                  >
+                  <a href={gpsLink} target="_blank" rel="noopener noreferrer"
+                    className="text-primary hover:underline inline-flex items-center gap-1">
                     {record.latitude?.toFixed(5)}, {record.longitude?.toFixed(5)}
                     <ExternalLink size={12} />
                   </a>
@@ -288,6 +281,45 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
             </div>
           )}
 
+          {/* Release info (if already released) */}
+          {record.releasedAt && (
+            <div className="bg-green-50 dark:bg-green-950/30 rounded-lg p-3 border border-green-500/20 space-y-1.5">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 size={15} className="text-green-600 dark:text-green-400 flex-shrink-0" />
+                <p className="text-xs font-semibold text-green-700 dark:text-green-400">Released</p>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-green-700/80 dark:text-green-400/80">
+                <Clock size={12} className="flex-shrink-0" />
+                <span>{formatDate(record.releasedAt)}</span>
+              </div>
+              {(record.releaseAreaName || releaseGpsLink) && (
+                <div className="flex items-start gap-2 text-xs text-green-700/80 dark:text-green-400/80">
+                  <MapPin size={12} className="flex-shrink-0 mt-0.5" />
+                  {record.releaseAreaName && releaseGpsLink ? (
+                    <a href={releaseGpsLink} target="_blank" rel="noopener noreferrer"
+                      className="hover:underline inline-flex items-center gap-1">
+                      {record.releaseAreaName}
+                      <ExternalLink size={10} />
+                    </a>
+                  ) : record.releaseAreaName ? (
+                    <span>{record.releaseAreaName}</span>
+                  ) : releaseGpsLink ? (
+                    <a href={releaseGpsLink} target="_blank" rel="noopener noreferrer"
+                      className="hover:underline inline-flex items-center gap-1">
+                      {record.releaseLatitude?.toFixed(5)}, {record.releaseLongitude?.toFixed(5)}
+                      <ExternalLink size={10} />
+                    </a>
+                  ) : null}
+                </div>
+              )}
+              {record.releaseDistanceMetres != null && (
+                <p className="text-xs text-green-700/70 dark:text-green-400/70 pl-[20px]">
+                  {formatDistance(record.releaseDistanceMetres)} from capture
+                </p>
+              )}
+            </div>
+          )}
+
           {/* Released Button */}
           <Button
             variant="outline"
@@ -300,20 +332,11 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
             disabled={releasing || released}
           >
             {releasing ? (
-              <>
-                <Loader2 size={16} className="mr-2 animate-spin" />
-                Getting location…
-              </>
+              <><Loader2 size={16} className="mr-2 animate-spin" />Getting location…</>
             ) : released ? (
-              <>
-                <CheckCircle2 size={16} className="mr-2" />
-                Released
-              </>
+              <><CheckCircle2 size={16} className="mr-2" />Released</>
             ) : (
-              <>
-                <CheckCircle2 size={16} className="mr-2" />
-                Mark as Released
-              </>
+              <><CheckCircle2 size={16} className="mr-2" />Mark as Released</>
             )}
           </Button>
 

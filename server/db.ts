@@ -177,6 +177,34 @@ export async function deleteRecordById(id: number, teamIdentifier: string): Prom
   return (result[0] as any).affectedRows > 0;
 }
 
+export async function saveReleaseData(
+  id: number,
+  teamIdentifier: string,
+  data: {
+    releasedAt: Date;
+    releaseLatitude: number | null;
+    releaseLongitude: number | null;
+    releaseAreaName: string | null;
+    releaseDistanceMetres: number | null;
+  }
+): Promise<boolean> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db
+    .update(dogRecords)
+    .set({
+      releasedAt: data.releasedAt,
+      releaseLatitude: data.releaseLatitude,
+      releaseLongitude: data.releaseLongitude,
+      releaseAreaName: data.releaseAreaName,
+      releaseDistanceMetres: data.releaseDistanceMetres,
+    })
+    .where(and(eq(dogRecords.id, id), eq(dogRecords.teamIdentifier, teamIdentifier)));
+
+  return (result[0] as any).affectedRows > 0;
+}
+
 export async function getRecordByDogId(dogId: string, teamIdentifier: string): Promise<DogRecord | undefined> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
