@@ -57,3 +57,9 @@
 - [x] Show distance in large bold uppercase (e.g. 100 METERS AWAY / 1 KM AWAY)
 - [x] Green tick if < 200m, yellow warning + ARE YOU SURE? if 200-500m, red STOP + DO NOT RELEASE if > 500m
 - [x] Phone back button cancels the dialog (not confirms)
+
+## Server-side Pagination
+- [x] Add paginated getRecordsPaginated procedure (page, pageSize=50, filters: teamId, search, dateFrom, dateTo, status)
+- [x] Update db.ts with getRecordsPaginated helper returning { records, total, hasMore }
+- [x] Update SettingsPage to use paginated query with Load More button
+- [x] Ensure search and status filters still work server-side with pagination

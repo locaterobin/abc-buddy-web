@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, like, sql } from "drizzle-orm";
+import { and, desc, eq, gte, isNotNull, isNull, like, lte, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, users, dogRecords, InsertDogRecord, DogRecord } from "../drizzle/schema";
 import { ENV } from './_core/env';
@@ -134,6 +134,54 @@ export async function insertDogRecord(record: InsertDogRecord): Promise<DogRecor
     .limit(1);
 
   return newRecord;
+}
+
+export async function getRecordsPaginated(
+  teamIdentifier: string,
+  opts: {
+    page: number;
+    pageSize: number;
+    search?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    status?: "all" | "active" | "released";
+  }
+): Promise<{ records: DogRecord[]; total: number; hasMore: boolean }> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const { page, pageSize, search, dateFrom, dateTo, status } = opts;
+  const conditions: ReturnType<typeof eq>[] = [eq(dogRecords.teamIdentifier, teamIdentifier)];
+  if (search?.trim()) {
+    conditions.push(like(dogRecords.dogId, `%${search.trim()}%`) as any);
+  }
+  if (dateFrom) {
+    // Convert YYYY-MM-DD (IST midnight) to UTC
+    const d = new Date(dateFrom + "T00:00:00+05:30");
+    conditions.push(gte(dogRecords.recordedAt, d) as any);
+  }
+  if (dateTo) {
+    const d = new Date(dateTo + "T23:59:59+05:30");
+    conditions.push(lte(dogRecords.recordedAt, d) as any);
+  }
+  if (status === "released") {
+    conditions.push(isNotNull(dogRecords.releasedAt) as any);
+  } else if (status === "active") {
+    conditions.push(isNull(dogRecords.releasedAt) as any);
+  }
+  const where = and(...conditions);
+  const [countRow] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(dogRecords)
+    .where(where);
+  const total = Number(countRow?.count ?? 0);
+  const records = await db
+    .select()
+    .from(dogRecords)
+    .where(where)
+    .orderBy(desc(dogRecords.createdAt))
+    .limit(pageSize)
+    .offset((page - 1) * pageSize);
+  return { records, total, hasMore: page * pageSize < total };
 }
 
 export async function getRecordsByTeam(teamIdentifier: string): Promise<DogRecord[]> {

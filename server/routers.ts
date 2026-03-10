@@ -10,6 +10,7 @@ import {
   insertDogRecord,
   getRecordsByTeam,
   getRecordsByTeamWithTimeRange,
+  getRecordsPaginated,
   deleteRecordById,
   saveReleaseData,
 } from "./db";
@@ -349,6 +350,29 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
     .input(z.object({ teamIdentifier: z.string() }))
     .query(async ({ input }) => {
       return getRecordsByTeam(input.teamIdentifier);
+    }),
+
+  getRecordsPaginated: publicProcedure
+    .input(
+      z.object({
+        teamIdentifier: z.string(),
+        page: z.number().int().min(1).default(1),
+        pageSize: z.number().int().min(1).max(100).default(50),
+        search: z.string().optional(),
+        dateFrom: z.string().optional(),
+        dateTo: z.string().optional(),
+        status: z.enum(["all", "active", "released"]).default("all"),
+      })
+    )
+    .query(async ({ input }) => {
+      return getRecordsPaginated(input.teamIdentifier, {
+        page: input.page,
+        pageSize: input.pageSize,
+        search: input.search,
+        dateFrom: input.dateFrom,
+        dateTo: input.dateTo,
+        status: input.status,
+      });
     }),
 
   deleteRecord: publicProcedure

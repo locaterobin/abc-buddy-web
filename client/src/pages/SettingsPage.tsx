@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { useTeam } from "@/contexts/TeamContext";
 import { Button } from "@/components/ui/button";
@@ -23,26 +23,70 @@ import RecordDetailModal from "@/components/RecordDetailModal";
 
 type StatusFilter = "all" | "active" | "released";
 
+const PAGE_SIZE = 50;
+
 export default function RecordsPage() {
   const { teamId } = useTeam();
 
   const [selectedRecord, setSelectedRecord] = useState<any>(null);
-  const [searchId, setSearchId] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState(""); // debounced
   const [filterDate, setFilterDate] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [page, setPage] = useState(1);
+  const [allRecords, setAllRecords] = useState<any[]>([]);
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const teamIdForQuery = useMemo(() => teamId, [teamId]);
-  const recordsQuery = trpc.dogs.getRecords.useQuery(
-    { teamIdentifier: teamIdForQuery },
-    { enabled: !!teamIdForQuery }
+  // Debounce search input
+  const handleSearchChange = useCallback((val: string) => {
+    setSearchInput(val);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => {
+      setSearch(val);
+      setPage(1);
+      setAllRecords([]);
+    }, 350);
+  }, []);
+
+  // Reset when filters change
+  useEffect(() => {
+    setPage(1);
+    setAllRecords([]);
+  }, [filterDate, statusFilter]);
+
+  const query = trpc.dogs.getRecordsPaginated.useQuery(
+    {
+      teamIdentifier: teamId,
+      page,
+      pageSize: PAGE_SIZE,
+      search: search || undefined,
+      dateFrom: filterDate || undefined,
+      dateTo: filterDate || undefined,
+      status: statusFilter,
+    },
+    { enabled: !!teamId }
   );
 
+  // Accumulate pages
+  useEffect(() => {
+    if (!query.data) return;
+    if (page === 1) {
+      setAllRecords(query.data.records);
+    } else {
+      setAllRecords((prev) => {
+        const existingIds = new Set(prev.map((r: any) => r.id));
+        const newOnes = query.data!.records.filter((r: any) => !existingIds.has(r.id));
+        return [...prev, ...newOnes];
+      });
+    }
+  }, [query.data, page]);
+
   const handleExportJson = () => {
-    if (!recordsQuery.data || recordsQuery.data.length === 0) {
+    if (allRecords.length === 0) {
       toast.error("No records to export");
       return;
     }
-    const data = JSON.stringify(recordsQuery.data, null, 2);
+    const data = JSON.stringify(allRecords, null, 2);
     const blob = new Blob([data], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const date = new Date().toISOString().slice(0, 10);
@@ -54,22 +98,10 @@ export default function RecordsPage() {
     toast.success("Export downloaded");
   };
 
-  const allRecords = recordsQuery.data || [];
-  const records = allRecords.filter((rec: any) => {
-    const matchId = !searchId.trim() || rec.dogId?.toLowerCase().includes(searchId.trim().toLowerCase());
-    const matchDate = !filterDate || (() => {
-      const recDate = new Date(rec.recordedAt).toISOString().slice(0, 10);
-      return recDate === filterDate;
-    })();
-    const matchStatus =
-      statusFilter === "all" ||
-      (statusFilter === "released" && !!rec.releasedAt) ||
-      (statusFilter === "active" && !rec.releasedAt);
-    return matchId && matchDate && matchStatus;
-  });
-
-  const releasedCount = allRecords.filter((r: any) => !!r.releasedAt).length;
-  const activeCount = allRecords.length - releasedCount;
+  const total = query.data?.total ?? 0;
+  const hasMore = query.data?.hasMore ?? false;
+  const isLoading = query.isLoading && page === 1;
+  const isLoadingMore = query.isFetching && page > 1;
 
   return (
     <div className="container py-4 pb-6 max-w-lg mx-auto space-y-5">
@@ -81,7 +113,7 @@ export default function RecordsPage() {
               <Dog size={18} className="text-primary" />
               <h3 className="font-semibold text-foreground">Records</h3>
               <Badge variant="secondary" className="text-xs">
-                {records.length}{allRecords.length !== records.length ? `/${allRecords.length}` : ""}
+                {allRecords.length}{total > allRecords.length ? `/${total}` : ""}
               </Badge>
             </div>
             <Button variant="outline" size="sm" className="bg-card" onClick={handleExportJson}>
@@ -94,11 +126,7 @@ export default function RecordsPage() {
           <div className="flex gap-1.5 mb-3">
             {(["all", "active", "released"] as StatusFilter[]).map((s) => {
               const label =
-                s === "all"
-                  ? `All (${allRecords.length})`
-                  : s === "active"
-                  ? `Active (${activeCount})`
-                  : `Released (${releasedCount})`;
+                s === "all" ? "All" : s === "active" ? "Active" : "Released";
               return (
                 <button
                   key={s}
@@ -122,13 +150,16 @@ export default function RecordsPage() {
             <div className="relative flex-1">
               <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <Input
-                value={searchId}
-                onChange={(e) => setSearchId(e.target.value)}
+                value={searchInput}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 placeholder="Search by Dog ID…"
                 className="pl-8 text-sm h-8"
               />
-              {searchId && (
-                <button onClick={() => setSearchId("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+              {searchInput && (
+                <button
+                  onClick={() => { handleSearchChange(""); }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
                   <X size={13} />
                 </button>
               )}
@@ -142,7 +173,10 @@ export default function RecordsPage() {
                 className="pl-8 pr-2 h-8 text-sm rounded-md border border-input bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
               />
               {filterDate && (
-                <button onClick={() => setFilterDate("")} className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                <button
+                  onClick={() => setFilterDate("")}
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
                   <X size={13} />
                 </button>
               )}
@@ -150,18 +184,18 @@ export default function RecordsPage() {
           </div>
 
           {/* Records list */}
-          {recordsQuery.isLoading ? (
+          {isLoading ? (
             <div className="py-8 text-center">
               <Loader2 size={24} className="animate-spin text-primary mx-auto" />
             </div>
-          ) : records.length === 0 ? (
+          ) : allRecords.length === 0 ? (
             <div className="py-8 text-center">
               <Dog size={32} className="text-muted-foreground mx-auto mb-2 opacity-40" />
               <p className="text-sm text-muted-foreground">No records found</p>
             </div>
           ) : (
             <div className="space-y-1">
-              {records.map((rec: any) => (
+              {allRecords.map((rec: any) => (
                 <div key={rec.id} className="flex items-center gap-1">
                   <button
                     onClick={() => setSelectedRecord(rec)}
@@ -227,6 +261,28 @@ export default function RecordsPage() {
                   </a>
                 </div>
               ))}
+
+              {/* Load More */}
+              {hasMore && (
+                <div className="pt-3 text-center">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage((p) => p + 1)}
+                    disabled={isLoadingMore}
+                    className="w-full"
+                  >
+                    {isLoadingMore ? (
+                      <>
+                        <Loader2 size={14} className="mr-2 animate-spin" />
+                        Loading…
+                      </>
+                    ) : (
+                      `Load more (${total - allRecords.length} remaining)`
+                    )}
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </CardContent>
