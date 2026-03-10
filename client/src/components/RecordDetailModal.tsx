@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { useTeam } from "@/contexts/TeamContext";
 import { Button } from "@/components/ui/button";
@@ -77,24 +77,17 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
   const [confirmData, setConfirmData] = useState<ReleaseConfirmData | null>(null);
   const [confirming, setConfirming] = useState(false);
 
-  // Back button: close modal (or cancel confirm dialog if open)
+  // Push a history entry when modal opens so back button can close it
   useEffect(() => {
     history.pushState({ modal: true }, "");
     const handlePop = () => {
-      if (confirmData) {
-        // Cancel the confirm dialog, push state again so back still works for modal
-        setConfirmData(null);
-        history.pushState({ modal: true }, "");
-      } else {
-        onClose();
-      }
+      onClose();
     };
     window.addEventListener("popstate", handlePop);
     return () => {
       window.removeEventListener("popstate", handlePop);
-      if (history.state?.modal) history.back();
     };
-  }, [onClose, confirmData]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleDelete = () => {
     if (!window.confirm("Are you sure you want to delete this record? This cannot be undone.")) return;
@@ -159,7 +152,12 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
 
       // 3. Calculate distance from capture
       let distanceMetres: number | null = null;
-      if (latitude !== null && longitude !== null && record.latitude != null && record.longitude != null) {
+      if (
+        latitude !== null &&
+        longitude !== null &&
+        record.latitude != null &&
+        record.longitude != null
+      ) {
         distanceMetres = haversineMetres(record.latitude, record.longitude, latitude, longitude);
       }
 
@@ -181,7 +179,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
       const releasedAt = new Date().toISOString();
       const distanceRounded = distanceMetres !== null ? Math.round(distanceMetres) : null;
 
-      // 5. Save to DB first
+      // Save to DB first
       await saveReleaseMutation.mutateAsync({
         id: record.id,
         teamIdentifier: teamId,
@@ -192,7 +190,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
         releaseDistanceMetres: distanceRounded,
       });
 
-      // 6. Fire webhook
+      // Fire webhook
       const releaseUrl = webhookUrl!.replace(/\/$/, "") + "/release";
       const payload = {
         dogId: record.dogId,
@@ -218,7 +216,8 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
       utils.dogs.getRecords.invalidate();
       setReleased(true);
       setConfirmData(null);
-      const distanceMsg = distanceMetres !== null ? ` · ${formatDistance(distanceMetres)} from capture` : "";
+      const distanceMsg =
+        distanceMetres !== null ? ` · ${formatDistance(distanceMetres)} from capture` : "";
       toast.success(`${record.dogId} marked as Released${distanceMsg}`);
     } catch (err: any) {
       toast.error("Release failed: " + (err?.message || "Unknown error"));
@@ -241,7 +240,6 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
       ? `https://www.google.com/maps?q=${record.releaseLatitude},${record.releaseLongitude}`
       : null;
 
-  // Determine distance status
   const dm = confirmData?.distanceMetres ?? null;
   const distanceStatus: "ok" | "warn" | "stop" | "unknown" =
     dm === null ? "unknown" : dm <= 200 ? "ok" : dm <= 500 ? "warn" : "stop";
@@ -260,7 +258,11 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
 
         {record.imageUrl && (
           <div className="bg-black/5">
-            <img src={record.imageUrl} alt={record.dogId} className="w-full max-h-[60vh] object-contain" />
+            <img
+              src={record.imageUrl}
+              alt={record.dogId}
+              className="w-full max-h-[60vh] object-contain"
+            />
           </div>
         )}
 
@@ -279,16 +281,24 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
               <MapPin size={16} className="flex-shrink-0 text-muted-foreground mt-0.5" />
               <div>
                 {record.areaName && gpsLink ? (
-                  <a href={gpsLink} target="_blank" rel="noopener noreferrer"
-                    className="text-primary hover:underline inline-flex items-center gap-1">
+                  <a
+                    href={gpsLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline inline-flex items-center gap-1"
+                  >
                     {record.areaName} · {record.latitude?.toFixed(5)}, {record.longitude?.toFixed(5)}
                     <ExternalLink size={12} />
                   </a>
                 ) : record.areaName ? (
                   <span className="text-foreground">{record.areaName}</span>
                 ) : gpsLink ? (
-                  <a href={gpsLink} target="_blank" rel="noopener noreferrer"
-                    className="text-primary hover:underline inline-flex items-center gap-1">
+                  <a
+                    href={gpsLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline inline-flex items-center gap-1"
+                  >
                     {record.latitude?.toFixed(5)}, {record.longitude?.toFixed(5)}
                     <ExternalLink size={12} />
                   </a>
@@ -322,7 +332,10 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
           {record.releasedAt && (
             <div className="bg-green-50 dark:bg-green-950/30 rounded-lg p-3 border border-green-500/20 space-y-1.5">
               <div className="flex items-center gap-2">
-                <CheckCircle2 size={15} className="text-green-600 dark:text-green-400 flex-shrink-0" />
+                <CheckCircle2
+                  size={15}
+                  className="text-green-600 dark:text-green-400 flex-shrink-0"
+                />
                 <p className="text-xs font-semibold text-green-700 dark:text-green-400">Released</p>
               </div>
               <div className="flex items-center gap-2 text-xs text-green-700/80 dark:text-green-400/80">
@@ -333,16 +346,24 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
                 <div className="flex items-start gap-2 text-xs text-green-700/80 dark:text-green-400/80">
                   <MapPin size={12} className="flex-shrink-0 mt-0.5" />
                   {record.releaseAreaName && releaseGpsLink ? (
-                    <a href={releaseGpsLink} target="_blank" rel="noopener noreferrer"
-                      className="hover:underline inline-flex items-center gap-1">
+                    <a
+                      href={releaseGpsLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:underline inline-flex items-center gap-1"
+                    >
                       {record.releaseAreaName}
                       <ExternalLink size={10} />
                     </a>
                   ) : record.releaseAreaName ? (
                     <span>{record.releaseAreaName}</span>
                   ) : releaseGpsLink ? (
-                    <a href={releaseGpsLink} target="_blank" rel="noopener noreferrer"
-                      className="hover:underline inline-flex items-center gap-1">
+                    <a
+                      href={releaseGpsLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:underline inline-flex items-center gap-1"
+                    >
                       {record.releaseLatitude?.toFixed(5)}, {record.releaseLongitude?.toFixed(5)}
                       <ExternalLink size={10} />
                     </a>
@@ -360,10 +381,11 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
           {/* Custom Release Confirm Dialog */}
           {confirmData && (
             <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-              <div className="absolute inset-0 bg-black/60" onClick={handleCancelRelease} />
+              <div
+                className="absolute inset-0 bg-black/60"
+                onClick={handleCancelRelease}
+              />
               <div className="relative bg-card rounded-2xl shadow-2xl w-full max-w-sm p-6 flex flex-col items-center gap-4 animate-in zoom-in-95 duration-200">
-
-                {/* Distance status icon + label */}
                 {distanceStatus === "ok" && (
                   <>
                     <CheckCircle size={56} className="text-green-500" strokeWidth={1.5} />
@@ -403,7 +425,6 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
                   </>
                 )}
 
-                {/* Action buttons */}
                 <div className="flex gap-3 w-full mt-2">
                   <Button
                     variant="outline"
@@ -425,7 +446,10 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
                     disabled={confirming}
                   >
                     {confirming ? (
-                      <><Loader2 size={16} className="mr-2 animate-spin" />Releasing…</>
+                      <>
+                        <Loader2 size={16} className="mr-2 animate-spin" />
+                        Releasing…
+                      </>
                     ) : (
                       "Release"
                     )}
@@ -447,11 +471,20 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
             disabled={releasing || released}
           >
             {releasing ? (
-              <><Loader2 size={16} className="mr-2 animate-spin" />Getting location…</>
+              <>
+                <Loader2 size={16} className="mr-2 animate-spin" />
+                Getting location…
+              </>
             ) : released ? (
-              <><CheckCircle2 size={16} className="mr-2" />Released</>
+              <>
+                <CheckCircle2 size={16} className="mr-2" />
+                Released
+              </>
             ) : (
-              <><CheckCircle2 size={16} className="mr-2" />Mark as Released</>
+              <>
+                <CheckCircle2 size={16} className="mr-2" />
+                Mark as Released
+              </>
             )}
           </Button>
 
