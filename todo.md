@@ -66,3 +66,6 @@
 
 ## Date Filter Timezone Fix
 - [x] Fix date filter in Records to use IST (GMT+5:30) boundaries, not UTC or device-local time
+
+## Upload Flow Bug Fix
+- [x] Description field should always be editable after image upload, even if AI returns empty description

@@ -422,8 +422,8 @@ export default function AddRecord() {
             </div>
           )}
 
-          {/* AI Description */}
-          {description && (
+          {/* AI Description - always show once image is loaded so user can type even if AI found nothing */}
+          {hasImage && (
             <div>
               <label className="text-sm font-medium text-foreground mb-1.5 flex items-center gap-1.5">
                 <Sparkles size={14} className="text-primary" />
