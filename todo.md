@@ -51,3 +51,9 @@
 
 ## Back Button
 - [ ] Phone back button closes RecordDetailModal
+
+## Release Dialog UX
+- [x] Replace window.confirm with custom styled Dialog
+- [x] Show distance in large bold uppercase (e.g. 100 METERS AWAY / 1 KM AWAY)
+- [x] Green tick if < 200m, yellow warning + ARE YOU SURE? if 200-500m, red STOP + DO NOT RELEASE if > 500m
+- [x] Phone back button cancels the dialog (not confirms)

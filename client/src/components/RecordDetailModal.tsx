@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import { useTeam } from "@/contexts/TeamContext";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,9 @@ import {
   Loader2,
   ExternalLink,
   CheckCircle2,
+  CheckCircle,
+  AlertTriangle,
+  StopCircle,
 } from "lucide-react";
 
 interface RecordDetailModalProps {
@@ -33,6 +36,11 @@ function haversineMetres(lat1: number, lng1: number, lat2: number, lng2: number)
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+function formatDistanceLabel(m: number): string {
+  if (m < 1000) return `${Math.round(m)} METERS AWAY`;
+  return `${(m / 1000).toFixed(1)} KM AWAY`;
+}
+
 function formatDistance(m: number): string {
   return m < 1000 ? `${Math.round(m)} m` : `${(m / 1000).toFixed(2)} km`;
 }
@@ -50,6 +58,13 @@ function formatDate(date: string | Date) {
   });
 }
 
+interface ReleaseConfirmData {
+  latitude: number | null;
+  longitude: number | null;
+  areaName: string;
+  distanceMetres: number | null;
+}
+
 export default function RecordDetailModal({ record, onClose, onDelete }: RecordDetailModalProps) {
   const { teamId, webhookUrl } = useTeam();
   const utils = trpc.useUtils();
@@ -58,20 +73,28 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
   const saveReleaseMutation = trpc.dogs.saveRelease.useMutation();
 
   const [releasing, setReleasing] = useState(false);
-  // Use record's existing release data to determine initial released state
   const [released, setReleased] = useState(() => !!record.releasedAt);
+  const [confirmData, setConfirmData] = useState<ReleaseConfirmData | null>(null);
+  const [confirming, setConfirming] = useState(false);
 
-  // Back button closes modal
+  // Back button: close modal (or cancel confirm dialog if open)
   useEffect(() => {
     history.pushState({ modal: true }, "");
-    const handlePop = () => onClose();
+    const handlePop = () => {
+      if (confirmData) {
+        // Cancel the confirm dialog, push state again so back still works for modal
+        setConfirmData(null);
+        history.pushState({ modal: true }, "");
+      } else {
+        onClose();
+      }
+    };
     window.addEventListener("popstate", handlePop);
     return () => {
       window.removeEventListener("popstate", handlePop);
-      // If modal is closed programmatically, go back to clean up the history entry
       if (history.state?.modal) history.back();
     };
-  }, [onClose]);
+  }, [onClose, confirmData]);
 
   const handleDelete = () => {
     if (!window.confirm("Are you sure you want to delete this record? This cannot be undone.")) return;
@@ -81,7 +104,6 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
         onSuccess: () => {
           toast.success("Record deleted");
           utils.dogs.getRecords.invalidate();
-          // Fire delete webhook (fire-and-forget)
           if (webhookUrl) {
             const deleteUrl = webhookUrl.replace(/\/$/, "") + "/delete";
             fetch(deleteUrl, {
@@ -141,19 +163,21 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
         distanceMetres = haversineMetres(record.latitude, record.longitude, latitude, longitude);
       }
 
-      // 4. Build confirmation message
-      const distanceLine =
-        distanceMetres !== null
-          ? formatDistance(distanceMetres)
-          : "Distance unavailable";
+      // 4. Show custom confirm dialog
+      setConfirmData({ latitude, longitude, areaName, distanceMetres });
+    } catch (err: any) {
+      toast.error("Release failed: " + (err?.message || "Unknown error"));
+    } finally {
+      setReleasing(false);
+    }
+  };
 
-      const confirmMsg = distanceLine;
+  const handleConfirmRelease = async () => {
+    if (!confirmData) return;
+    setConfirming(true);
+    const { latitude, longitude, areaName, distanceMetres } = confirmData;
 
-      if (!window.confirm(confirmMsg)) {
-        setReleasing(false);
-        return;
-      }
-
+    try {
       const releasedAt = new Date().toISOString();
       const distanceRounded = distanceMetres !== null ? Math.round(distanceMetres) : null;
 
@@ -169,20 +193,17 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
       });
 
       // 6. Fire webhook
-      const releaseUrl = webhookUrl.replace(/\/$/, "") + "/release";
+      const releaseUrl = webhookUrl!.replace(/\/$/, "") + "/release";
       const payload = {
         dogId: record.dogId,
         teamIdentifier: teamId,
         releasedAt,
-        // Capture location
         captureLatitude: record.latitude ?? null,
         captureLongitude: record.longitude ?? null,
         captureAreaName: record.areaName ?? null,
-        // Release location
         releaseLatitude: latitude,
         releaseLongitude: longitude,
         releaseAreaName: areaName || null,
-        // Distance
         distanceFromCapture: distanceRounded,
       };
 
@@ -194,17 +215,20 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
 
       if (!res.ok) throw new Error(`Webhook responded with ${res.status}`);
 
-      // Invalidate records so the list reflects the updated release data
       utils.dogs.getRecords.invalidate();
-
       setReleased(true);
+      setConfirmData(null);
       const distanceMsg = distanceMetres !== null ? ` · ${formatDistance(distanceMetres)} from capture` : "";
       toast.success(`${record.dogId} marked as Released${distanceMsg}`);
     } catch (err: any) {
       toast.error("Release failed: " + (err?.message || "Unknown error"));
     } finally {
-      setReleasing(false);
+      setConfirming(false);
     }
+  };
+
+  const handleCancelRelease = () => {
+    setConfirmData(null);
   };
 
   const gpsLink =
@@ -216,6 +240,11 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
     record.releaseLatitude && record.releaseLongitude
       ? `https://www.google.com/maps?q=${record.releaseLatitude},${record.releaseLongitude}`
       : null;
+
+  // Determine distance status
+  const dm = confirmData?.distanceMetres ?? null;
+  const distanceStatus: "ok" | "warn" | "stop" | "unknown" =
+    dm === null ? "unknown" : dm <= 200 ? "ok" : dm <= 500 ? "warn" : "stop";
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
@@ -325,6 +354,84 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
                   {formatDistance(record.releaseDistanceMetres)} from capture
                 </p>
               )}
+            </div>
+          )}
+
+          {/* Custom Release Confirm Dialog */}
+          {confirmData && (
+            <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+              <div className="absolute inset-0 bg-black/60" onClick={handleCancelRelease} />
+              <div className="relative bg-card rounded-2xl shadow-2xl w-full max-w-sm p-6 flex flex-col items-center gap-4 animate-in zoom-in-95 duration-200">
+
+                {/* Distance status icon + label */}
+                {distanceStatus === "ok" && (
+                  <>
+                    <CheckCircle size={56} className="text-green-500" strokeWidth={1.5} />
+                    <p className="text-3xl font-black tracking-tight text-green-600 text-center uppercase">
+                      {formatDistanceLabel(dm!)}
+                    </p>
+                  </>
+                )}
+                {distanceStatus === "warn" && (
+                  <>
+                    <AlertTriangle size={56} className="text-yellow-500" strokeWidth={1.5} />
+                    <p className="text-3xl font-black tracking-tight text-yellow-600 text-center uppercase">
+                      {formatDistanceLabel(dm!)}
+                    </p>
+                    <p className="text-base font-bold text-yellow-600 text-center uppercase tracking-wide">
+                      Are you sure?
+                    </p>
+                  </>
+                )}
+                {distanceStatus === "stop" && (
+                  <>
+                    <StopCircle size={56} className="text-red-500" strokeWidth={1.5} />
+                    <p className="text-3xl font-black tracking-tight text-red-600 text-center uppercase">
+                      {formatDistanceLabel(dm!)}
+                    </p>
+                    <p className="text-base font-bold text-red-600 text-center uppercase tracking-wide">
+                      Do Not Release
+                    </p>
+                  </>
+                )}
+                {distanceStatus === "unknown" && (
+                  <>
+                    <AlertTriangle size={56} className="text-muted-foreground" strokeWidth={1.5} />
+                    <p className="text-xl font-bold text-muted-foreground text-center">
+                      Distance unavailable
+                    </p>
+                  </>
+                )}
+
+                {/* Action buttons */}
+                <div className="flex gap-3 w-full mt-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={handleCancelRelease}
+                    disabled={confirming}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    className={
+                      distanceStatus === "stop"
+                        ? "flex-1 bg-red-600 hover:bg-red-700 text-white"
+                        : distanceStatus === "warn"
+                        ? "flex-1 bg-yellow-500 hover:bg-yellow-600 text-white"
+                        : "flex-1 bg-green-600 hover:bg-green-700 text-white"
+                    }
+                    onClick={handleConfirmRelease}
+                    disabled={confirming}
+                  >
+                    {confirming ? (
+                      <><Loader2 size={16} className="mr-2 animate-spin" />Releasing…</>
+                    ) : (
+                      "Release"
+                    )}
+                  </Button>
+                </div>
+              </div>
             </div>
           )}
 
