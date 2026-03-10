@@ -97,7 +97,7 @@ export function registerIngestRoute(app: Router) {
                 { type: "image", image: base64Clean },
                 {
                   type: "text",
-                  text: "Describe this dog in detail for an animal welfare record. Include: approximate breed or breed mix, primary and secondary colors, distinctive markings (patches, spots, scars), approximate size (small/medium/large), body condition (thin/normal/overweight), approximate age (puppy/young/adult/senior), and any notable features (collar, injuries, ear tags). Be concise but thorough. Respond in plain text, no markdown.",
+                  text: "Describe this dog briefly for an animal welfare record. Only include what is clearly visible. Cover: color(s), any distinguishing features (markings, scars, injuries), build (small/medium/large, thin/normal/stocky), and breed only if clearly not mixed. Omit anything uncertain. Never mention absent features (no collar, no markings, etc.). Plain text only, 1-2 sentences max.",
                 },
               ],
             },

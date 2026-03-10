@@ -84,7 +84,7 @@ const dogsRouter = router({
                   type: "text",
                   text: `You are analysing a field photo of a dog. Do two things:
 
-1. Describe the dog in detail for an animal welfare record: approximate breed or breed mix, primary and secondary colours, distinctive markings (patches, spots, scars), approximate size (small/medium/large), body condition (thin/normal/overweight), approximate age (puppy/young/adult/senior), and any notable features (collar, injuries, ear tags). Be concise but thorough.
+1. Describe the dog briefly for an animal welfare record. Only include what is clearly visible. Cover: color(s), any distinguishing features (markings, scars, injuries), build (small/medium/large, thin/normal/stocky), and breed only if clearly not mixed. Omit anything uncertain. Never mention absent features (no collar, no markings, etc.). 1-2 sentences max.
 
 2. Look carefully at the image for any text, watermarks, or data overlaid/burnt into the photo — such as GPS coordinates, a date/time stamp, a location name, or any notes. Extract whatever you can find.
 
@@ -134,7 +134,7 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
               { type: "image", image: input.imageBase64 },
               {
                 type: "text",
-                text: "Describe this dog in detail for an animal welfare record. Include: approximate breed or breed mix, primary and secondary colors, distinctive markings (patches, spots, scars), approximate size (small/medium/large), body condition (thin/normal/overweight), approximate age (puppy/young/adult/senior), and any notable features (collar, injuries, ear tags). Be concise but thorough. Respond in plain text, no markdown.",
+                text: "Describe this dog briefly for an animal welfare record. Only include what is clearly visible. Cover: color(s), any distinguishing features (markings, scars, injuries), build (small/medium/large, thin/normal/stocky), and breed only if clearly not mixed. Omit anything uncertain. Never mention absent features (no collar, no markings, etc.). Plain text only, 1-2 sentences max.",
               },
             ],
           },
