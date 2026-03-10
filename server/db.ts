@@ -155,13 +155,15 @@ export async function getRecordsPaginated(
     conditions.push(like(dogRecords.dogId, `%${search.trim()}%`) as any);
   }
   if (dateFrom) {
-    // Convert YYYY-MM-DD (IST midnight) to UTC
-    const d = new Date(dateFrom + "T00:00:00+05:30");
-    conditions.push(gte(dogRecords.recordedAt, d) as any);
+    // Convert IST midnight to UTC ISO string for SQL comparison.
+    // We use sql`` with a literal UTC string to bypass mysql2's local-timezone
+    // Date serialization (which would shift the boundary by the server's UTC offset).
+    const utcStart = new Date(dateFrom + "T00:00:00+05:30").toISOString().replace("T", " ").replace("Z", "");
+    conditions.push(sql`${dogRecords.recordedAt} >= ${utcStart}` as any);
   }
   if (dateTo) {
-    const d = new Date(dateTo + "T23:59:59+05:30");
-    conditions.push(lte(dogRecords.recordedAt, d) as any);
+    const utcEnd = new Date(dateTo + "T23:59:59+05:30").toISOString().replace("T", " ").replace("Z", "");
+    conditions.push(sql`${dogRecords.recordedAt} <= ${utcEnd}` as any);
   }
   if (status === "released") {
     conditions.push(isNotNull(dogRecords.releasedAt) as any);

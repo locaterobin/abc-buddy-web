@@ -63,3 +63,6 @@
 - [x] Update db.ts with getRecordsPaginated helper returning { records, total, hasMore }
 - [x] Update SettingsPage to use paginated query with Load More button
 - [x] Ensure search and status filters still work server-side with pagination
+
+## Date Filter Timezone Fix
+- [x] Fix date filter in Records to use IST (GMT+5:30) boundaries, not UTC or device-local time
