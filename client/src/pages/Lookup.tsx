@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { resizeImage } from "@/lib/resizeImage";
 import { useTeam } from "@/contexts/TeamContext";
@@ -23,6 +23,7 @@ import {
   X,
 } from "lucide-react";
 import RecordDetailModal from "@/components/RecordDetailModal";
+import { getCachedRecordDates, setCachedRecordDates } from "@/hooks/useRecordCache";
 
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -57,12 +58,29 @@ export default function Lookup() {
 
   const lookupMutation = trpc.dogs.lookupDog.useMutation();
 
+  // Cached dates for offline support
+  const [cachedDates, setCachedDates] = useState<string[]>([]);
+  useEffect(() => {
+    if (teamId) getCachedRecordDates(teamId).then(setCachedDates);
+  }, [teamId]);
+
   // Fetch distinct dates that have records in the past 30 days
   const { data: datesData } = trpc.dogs.getRecordDates.useQuery(
     { teamIdentifier: teamId },
     { enabled: !!teamId, staleTime: 60_000 }
   );
-  const recordDates: string[] = datesData?.dates ?? [];
+  const freshDates: string[] = datesData?.dates ?? [];
+
+  // Persist fresh dates to IndexedDB whenever they arrive
+  useEffect(() => {
+    if (teamId && freshDates.length > 0) {
+      setCachedRecordDates(teamId, freshDates);
+      setCachedDates(freshDates);
+    }
+  }, [teamId, freshDates.join("|")]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Use fresh dates if available, fall back to cache when offline
+  const recordDates: string[] = freshDates.length > 0 ? freshDates : cachedDates;
 
   const handleFile = useCallback(async (file: File) => {
     try {

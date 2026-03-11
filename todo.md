@@ -92,3 +92,6 @@
 - [x] Add service worker to cache app shell (HTML, JS, CSS) for offline load
 - [x] Register service worker in index.html
 - [x] Add offline fallback page shown when network is unavailable
+
+## Lookup Date Cache (Offline)
+- [x] Cache record dates in IndexedDB so Lookup dropdown works offline

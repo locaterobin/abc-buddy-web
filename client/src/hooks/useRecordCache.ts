@@ -1,12 +1,13 @@
 /**
- * useRecordCache — IndexedDB-backed cache for dog records.
- * Stores the last 100 records per team so the Records tab loads
- * instantly even on a slow connection or offline.
+ * useRecordCache — IndexedDB-backed cache for dog records and record dates.
+ * Stores the last 100 records per team and the list of dates that have records,
+ * so the Records tab and Lookup dropdown load instantly even offline.
  */
 
 const DB_NAME = "abc-buddy-cache";
-const DB_VERSION = 1;
-const STORE_NAME = "records";
+const DB_VERSION = 2; // bumped to add dates store
+const RECORDS_STORE = "records";
+const DATES_STORE = "recordDates";
 const MAX_CACHED = 100;
 
 function openDB(): Promise<IDBDatabase> {
@@ -14,9 +15,12 @@ function openDB(): Promise<IDBDatabase> {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
     req.onupgradeneeded = () => {
       const db = req.result;
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        // key: `${teamId}:${id}`
-        db.createObjectStore(STORE_NAME, { keyPath: "_cacheKey" });
+      if (!db.objectStoreNames.contains(RECORDS_STORE)) {
+        db.createObjectStore(RECORDS_STORE, { keyPath: "_cacheKey" });
+      }
+      if (!db.objectStoreNames.contains(DATES_STORE)) {
+        // key: teamId, value: { teamId, dates: string[], cachedAt: number }
+        db.createObjectStore(DATES_STORE, { keyPath: "teamId" });
       }
     };
     req.onsuccess = () => resolve(req.result);
@@ -24,16 +28,17 @@ function openDB(): Promise<IDBDatabase> {
   });
 }
 
+// ── Records ──────────────────────────────────────────────────────────────────
+
 export async function getCachedRecords(teamId: string): Promise<any[]> {
   try {
     const db = await openDB();
     return new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE_NAME, "readonly");
-      const store = tx.objectStore(STORE_NAME);
+      const tx = db.transaction(RECORDS_STORE, "readonly");
+      const store = tx.objectStore(RECORDS_STORE);
       const req = store.getAll();
       req.onsuccess = () => {
         const all: any[] = req.result ?? [];
-        // Filter by team and strip the internal cache key
         const teamRecords = all
           .filter((r) => r._teamId === teamId)
           .map(({ _cacheKey, _teamId, ...rest }) => rest);
@@ -49,8 +54,8 @@ export async function getCachedRecords(teamId: string): Promise<any[]> {
 export async function setCachedRecords(teamId: string, records: any[]): Promise<void> {
   try {
     const db = await openDB();
-    const tx = db.transaction(STORE_NAME, "readwrite");
-    const store = tx.objectStore(STORE_NAME);
+    const tx = db.transaction(RECORDS_STORE, "readwrite");
+    const store = tx.objectStore(RECORDS_STORE);
 
     // Delete all existing records for this team first
     const allReq = store.getAll();
@@ -80,6 +85,41 @@ export async function setCachedRecords(teamId: string, records: any[]): Promise<
       tx.onerror = () => reject(tx.error);
     });
   } catch (e) {
-    console.warn("IndexedDB write failed:", e);
+    console.warn("IndexedDB records write failed:", e);
+  }
+}
+
+// ── Record Dates ──────────────────────────────────────────────────────────────
+
+export async function getCachedRecordDates(teamId: string): Promise<string[]> {
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(DATES_STORE, "readonly");
+      const store = tx.objectStore(DATES_STORE);
+      const req = store.get(teamId);
+      req.onsuccess = () => {
+        const entry = req.result;
+        resolve(entry?.dates ?? []);
+      };
+      req.onerror = () => reject(req.error);
+    });
+  } catch {
+    return [];
+  }
+}
+
+export async function setCachedRecordDates(teamId: string, dates: string[]): Promise<void> {
+  try {
+    const db = await openDB();
+    const tx = db.transaction(DATES_STORE, "readwrite");
+    const store = tx.objectStore(DATES_STORE);
+    store.put({ teamId, dates, cachedAt: Date.now() });
+    await new Promise<void>((resolve, reject) => {
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  } catch (e) {
+    console.warn("IndexedDB dates write failed:", e);
   }
 }
