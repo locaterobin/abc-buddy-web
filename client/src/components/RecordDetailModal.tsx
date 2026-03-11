@@ -194,6 +194,8 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
   const [pendingPlanId, setPendingPlanId] = useState<number | null>(null);
   const [photo2Base64, setPhoto2Base64] = useState<string | null>(null);
   const photo2InputRef = useRef<HTMLInputElement>(null);
+  const [photo3Base64, setPhoto3Base64] = useState<string | null>(null);
+  const photo3InputRef = useRef<HTMLInputElement>(null);
 
   // Release plans
   const { data: plans = [] } = trpc.releasePlans.getPlans.useQuery(
@@ -223,6 +225,17 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
     reader.onload = (ev) => {
       const b64 = ev.target?.result as string;
       setPhoto2Base64(b64);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function handlePhoto3Change(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const b64 = ev.target?.result as string;
+      setPhoto3Base64(b64);
     };
     reader.readAsDataURL(file);
   }
@@ -352,6 +365,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
         releaseLongitude: longitude,
         releaseAreaName: areaName || null,
         releaseDistanceMetres: distanceRounded,
+        photo3Base64: photo3Base64 ?? undefined,
       });
 
       // Fire webhook
@@ -380,6 +394,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
       utils.dogs.getRecords.invalidate();
       setReleased(true);
       setConfirmData(null);
+      setPhoto3Base64(null);
       const distanceMsg =
         distanceMetres !== null ? ` · ${formatDistance(distanceMetres)} from capture` : "";
       toast.success(`${record.dogId} marked as Released${distanceMsg}`);
@@ -420,16 +435,44 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
           <X size={18} />
         </button>
 
-        {record.imageUrl && (
-          <div
-            className="bg-black/5 cursor-zoom-in"
-            onClick={() => setLightboxOpen(true)}
-          >
-            <img
-              src={record.imageUrl}
-              alt={record.dogId}
-              className="w-full max-h-[60vh] object-contain pointer-events-none"
-            />
+        {/* Photos row: photo1, photo2 (plan), photo3 (release) */}
+        {(record.imageUrl || record.photo2Url || record.releasePhotoUrl) && (
+          <div className={`bg-black/5 ${
+            [record.imageUrl, record.photo2Url, record.releasePhotoUrl].filter(Boolean).length > 1
+              ? 'grid grid-cols-3 gap-0.5'
+              : ''
+          }`}>
+            {record.imageUrl && (
+              <div className="cursor-zoom-in" onClick={() => setLightboxOpen(true)}>
+                <img
+                  src={record.imageUrl}
+                  alt={`${record.dogId} capture`}
+                  className={`w-full object-cover pointer-events-none ${
+                    [record.imageUrl, record.photo2Url, record.releasePhotoUrl].filter(Boolean).length > 1
+                      ? 'h-32'
+                      : 'max-h-[60vh] object-contain'
+                  }`}
+                />
+              </div>
+            )}
+            {record.photo2Url && (
+              <div>
+                <img
+                  src={record.photo2Url}
+                  alt={`${record.dogId} plan photo`}
+                  className="w-full h-32 object-cover"
+                />
+              </div>
+            )}
+            {record.releasePhotoUrl && (
+              <div>
+                <img
+                  src={record.releasePhotoUrl}
+                  alt={`${record.dogId} release photo`}
+                  className="w-full h-32 object-cover"
+                />
+              </div>
+            )}
           </div>
         )}
         {lightboxOpen && record.imageUrl && (
@@ -599,7 +642,53 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
                   </>
                 )}
 
-                <div className="flex gap-3 w-full mt-2">
+                {/* Photo 3 capture */}
+                <div className="w-full">
+                  <p className="text-xs text-muted-foreground mb-2 text-center">Add a release photo (optional)</p>
+                  {photo3Base64 ? (
+                    <div className="relative">
+                      <img src={photo3Base64} alt="release photo" className="w-full h-28 object-cover rounded-xl" />
+                      <button
+                        onClick={() => setPhoto3Base64(null)}
+                        className="absolute top-1 right-1 bg-black/60 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs"
+                      >✕</button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          if (photo3InputRef.current) {
+                            photo3InputRef.current.setAttribute("capture", "environment");
+                            photo3InputRef.current.click();
+                          }
+                        }}
+                        className="flex-1 flex flex-col items-center gap-1 py-3 border border-dashed border-border rounded-lg text-xs text-muted-foreground hover:bg-muted transition-colors"
+                      >
+                        <span className="text-lg">📷</span>Camera
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (photo3InputRef.current) {
+                            photo3InputRef.current.removeAttribute("capture");
+                            photo3InputRef.current.click();
+                          }
+                        }}
+                        className="flex-1 flex flex-col items-center gap-1 py-3 border border-dashed border-border rounded-lg text-xs text-muted-foreground hover:bg-muted transition-colors"
+                      >
+                        <span className="text-lg">🖼️</span>Gallery
+                      </button>
+                    </div>
+                  )}
+                  <input
+                    ref={photo3InputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handlePhoto3Change}
+                  />
+                </div>
+
+                <div className="flex gap-3 w-full">
                   <Button
                     variant="outline"
                     className="flex-1"

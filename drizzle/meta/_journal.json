@@ -50,6 +50,13 @@
       "when": 1773256999409,
       "tag": "0006_pale_carlie_cooper",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1773258201200,
+      "tag": "0007_spooky_pestilence",
+      "breakpoints": true
     }
   ]
 }

@@ -35,6 +35,7 @@ export const dogRecords = mysqlTable("dog_records", {
   releaseLongitude: double("releaseLongitude"),
   releaseAreaName: varchar("releaseAreaName", { length: 255 }),
   releaseDistanceMetres: int("releaseDistanceMetres"),
+  releasePhotoUrl: text("releasePhotoUrl"), // optional 3rd photo taken at release
 });
 
 export type DogRecord = typeof dogRecords.$inferSelect;

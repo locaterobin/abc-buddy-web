@@ -239,6 +239,7 @@ export async function saveReleaseData(
     releaseLongitude: number | null;
     releaseAreaName: string | null;
     releaseDistanceMetres: number | null;
+    releasePhotoUrl?: string | null;
   }
 ): Promise<boolean> {
   const db = await getDb();
@@ -252,6 +253,7 @@ export async function saveReleaseData(
       releaseLongitude: data.releaseLongitude,
       releaseAreaName: data.releaseAreaName,
       releaseDistanceMetres: data.releaseDistanceMetres,
+      ...(data.releasePhotoUrl !== undefined ? { releasePhotoUrl: data.releasePhotoUrl } : {}),
     })
     .where(and(eq(dogRecords.id, id), eq(dogRecords.teamIdentifier, teamIdentifier)));
 
@@ -351,6 +353,7 @@ export async function getReleasePlanDogs(planId: number) {
       longitude: dogRecords.longitude,
       recordedAt: dogRecords.recordedAt,
       releasedAt: dogRecords.releasedAt,
+      releasePhotoUrl: dogRecords.releasePhotoUrl,
     })
     .from(releasePlanDogs)
     .leftJoin(dogRecords, eq(releasePlanDogs.dogId, dogRecords.dogId))

@@ -134,3 +134,10 @@
 - [x] Add photo2Url column to release_plan_dogs table
 - [x] Upload second photo to S3 and store URL in release_plan_dogs
 - [x] Show photo2 as a second thumbnail next to the original in the plan detail dog list
+
+## Release - Third Photo (Photo 3)
+- [x] Add releasePhotoUrl column to dog_records table
+- [x] Update saveRelease tRPC to accept optional photo3Base64, upload to S3, store URL
+- [x] Add photo3 camera/gallery option in the release confirmation modal
+- [x] Show all 3 photos side by side in RecordDetailModal for released records
+- [x] Show all 3 photos side by side in Releases plan detail dog list

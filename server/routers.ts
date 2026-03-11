@@ -400,15 +400,28 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
         releaseLongitude: z.number().nullable(),
         releaseAreaName: z.string().nullable(),
         releaseDistanceMetres: z.number().int().nullable(),
+        photo3Base64: z.string().optional(), // optional release photo
       })
     )
     .mutation(async ({ input }) => {
+      let releasePhotoUrl: string | undefined;
+      if (input.photo3Base64) {
+        const imgBuffer = Buffer.from(
+          input.photo3Base64.replace(/^data:image\/\w+;base64,/, ""),
+          "base64"
+        );
+        const suffix = Math.random().toString(36).slice(2, 10);
+        const fileKey = `release-photos/${input.teamIdentifier}/${input.id}-${suffix}.jpg`;
+        const { url } = await storagePut(fileKey, imgBuffer, "image/jpeg");
+        releasePhotoUrl = url;
+      }
       const saved = await saveReleaseData(input.id, input.teamIdentifier, {
         releasedAt: new Date(input.releasedAt),
         releaseLatitude: input.releaseLatitude,
         releaseLongitude: input.releaseLongitude,
         releaseAreaName: input.releaseAreaName,
         releaseDistanceMetres: input.releaseDistanceMetres,
+        releasePhotoUrl,
       });
       return { success: saved };
     }),

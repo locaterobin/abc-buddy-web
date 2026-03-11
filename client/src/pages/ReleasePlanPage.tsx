@@ -195,6 +195,14 @@ export default function ReleasePlanPage() {
                       className="w-12 h-12 rounded-lg object-cover flex-shrink-0 ring-2 ring-primary/30"
                     />
                   )}
+                  {/* Photo 3 (release photo) */}
+                  {dog.releasePhotoUrl && (
+                    <img
+                      src={dog.releasePhotoUrl}
+                      alt={`${dog.dogId} release photo`}
+                      className="w-12 h-12 rounded-lg object-cover flex-shrink-0 ring-2 ring-green-500/40"
+                    />
+                  )}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-mono font-bold text-sm text-foreground">{dog.dogId}</span>
