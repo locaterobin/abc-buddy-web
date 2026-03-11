@@ -85,3 +85,10 @@
 - [x] Create useRecordCache hook with IndexedDB to store last 100 records per team
 - [x] SettingsPage shows cached records instantly on load, then refreshes in background
 - [x] Cache is updated whenever fresh records are fetched from server
+
+## PWA (Offline Support)
+- [x] Add web app manifest (manifest.json) with name, icons, theme color
+- [x] Generate PWA icons (192x192 and 512x512)
+- [x] Add service worker to cache app shell (HTML, JS, CSS) for offline load
+- [x] Register service worker in index.html
+- [x] Add offline fallback page shown when network is unavailable
