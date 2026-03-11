@@ -4,7 +4,7 @@ import { useTeam } from "@/contexts/TeamContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, MapPin, Trash2, Plus, ExternalLink, CalendarDays } from "lucide-react";
+import { ArrowLeft, MapPin, Map, Trash2, Plus, ExternalLink, CalendarDays } from "lucide-react";
 import { toast } from "sonner";
 
 // Format YYMMDD → "Mon, 10 Mar 2026"
@@ -147,16 +147,15 @@ export default function ReleasePlanPage() {
         {/* Google Maps link */}
         {mapsUrl && (
           <div className="px-4 pt-3">
-            <a
-              href={mapsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 w-full bg-primary/10 hover:bg-primary/20 text-primary rounded-xl px-4 py-3 transition-colors font-medium text-sm"
+            <Button
+              asChild
+              className="w-full gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
             >
-              <MapPin size={16} />
-              Open all {dogsWithCoords.length} location{dogsWithCoords.length !== 1 ? "s" : ""} in Google Maps
-              <ExternalLink size={14} className="ml-auto" />
-            </a>
+              <a href={mapsUrl} target="_blank" rel="noopener noreferrer">
+                <Map size={17} />
+                Open {dogsWithCoords.length} location{dogsWithCoords.length !== 1 ? "s" : ""} in Maps
+              </a>
+            </Button>
           </div>
         )}
 

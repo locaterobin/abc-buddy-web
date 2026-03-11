@@ -18,6 +18,8 @@ import {
   StopCircle,
   CalendarCheck,
   CalendarPlus,
+  Camera,
+  Upload,
 } from "lucide-react";
 
 interface RecordDetailModalProps {
@@ -655,28 +657,34 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
                     </div>
                   ) : (
                     <div className="flex gap-2">
-                      <button
+                      <Button
+                        variant="default"
+                        size="sm"
+                        className="flex-1"
                         onClick={() => {
                           if (photo3InputRef.current) {
                             photo3InputRef.current.setAttribute("capture", "environment");
                             photo3InputRef.current.click();
                           }
                         }}
-                        className="flex-1 flex flex-col items-center gap-1 py-3 border border-dashed border-border rounded-lg text-xs text-muted-foreground hover:bg-muted transition-colors"
                       >
-                        <span className="text-lg">📷</span>Camera
-                      </button>
-                      <button
+                        <Camera size={16} className="mr-1.5" />
+                        Camera
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 bg-card"
                         onClick={() => {
                           if (photo3InputRef.current) {
                             photo3InputRef.current.removeAttribute("capture");
                             photo3InputRef.current.click();
                           }
                         }}
-                        className="flex-1 flex flex-col items-center gap-1 py-3 border border-dashed border-border rounded-lg text-xs text-muted-foreground hover:bg-muted transition-colors"
                       >
-                        <span className="text-lg">🖼️</span>Gallery
-                      </button>
+                        <Upload size={16} className="mr-1.5" />
+                        Upload
+                      </Button>
                     </div>
                   )}
                   <input
@@ -755,28 +763,34 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
                     </div>
                   ) : (
                     <div className="flex gap-2">
-                      <button
+                      <Button
+                        variant="default"
+                        size="sm"
+                        className="flex-1"
                         onClick={() => {
                           if (photo2InputRef.current) {
                             photo2InputRef.current.setAttribute("capture", "environment");
                             photo2InputRef.current.click();
                           }
                         }}
-                        className="flex-1 flex flex-col items-center gap-1 py-3 border border-dashed border-border rounded-lg text-xs text-muted-foreground hover:bg-muted transition-colors"
                       >
-                        <span className="text-lg">📷</span>Camera
-                      </button>
-                      <button
+                        <Camera size={16} className="mr-1.5" />
+                        Camera
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 bg-card"
                         onClick={() => {
                           if (photo2InputRef.current) {
                             photo2InputRef.current.removeAttribute("capture");
                             photo2InputRef.current.click();
                           }
                         }}
-                        className="flex-1 flex flex-col items-center gap-1 py-3 border border-dashed border-border rounded-lg text-xs text-muted-foreground hover:bg-muted transition-colors"
                       >
-                        <span className="text-lg">🖼️</span>Gallery
-                      </button>
+                        <Upload size={16} className="mr-1.5" />
+                        Upload
+                      </Button>
                     </div>
                   )}
                   <input

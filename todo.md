@@ -141,3 +141,9 @@
 - [x] Add photo3 camera/gallery option in the release confirmation modal
 - [x] Show all 3 photos side by side in RecordDetailModal for released records
 - [x] Show all 3 photos side by side in Releases plan detail dog list
+
+## UX - Map Button
+- [x] Replace "Open all locations in Google Maps" text link with a styled button with map icon in ReleasePlanPage
+
+## UX - Consistent Photo Buttons
+- [x] Photo2 (plan) and photo3 (release) camera/gallery buttons match the style of the main Camera/Upload buttons on Add and Lookup screens
