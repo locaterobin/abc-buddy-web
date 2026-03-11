@@ -44,6 +44,7 @@ export const releasePlans = mysqlTable("release_plans", {
   id: int("id").autoincrement().primaryKey(),
   teamIdentifier: varchar("teamIdentifier", { length: 64 }).notNull(),
   planDate: varchar("planDate", { length: 6 }).notNull(), // YYMMDD
+  orderIndex: int("orderIndex").notNull().default(1), // 1-based per day per team
   notes: text("notes"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });

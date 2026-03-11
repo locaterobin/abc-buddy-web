@@ -528,9 +528,9 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
 
 const releasePlansRouter = router({
   getPlans: publicProcedure
-    .input(z.object({ teamIdentifier: z.string() }))
+    .input(z.object({ teamIdentifier: z.string(), sinceHours: z.number().optional() }))
     .query(async ({ input }) => {
-      return getReleasePlans(input.teamIdentifier);
+      return getReleasePlans(input.teamIdentifier, input.sinceHours);
     }),
   createPlan: publicProcedure
     .input(z.object({ teamIdentifier: z.string(), planDate: z.string(), notes: z.string().optional() }))

@@ -126,7 +126,7 @@ export default function ReleasePlanPage() {
           </button>
           <div className="flex-1 min-w-0">
             <h2 className="font-bold text-foreground text-base leading-tight">
-              Plan {selectedPlan.planDate}
+              Plan {selectedPlan.planDate}-{selectedPlan.orderIndex}
             </h2>
             <p className="text-xs text-muted-foreground">{formatPlanDate(selectedPlan.planDate)}</p>
           </div>
@@ -257,7 +257,7 @@ export default function ReleasePlanPage() {
                   <CalendarDays size={18} className="text-primary" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-bold text-foreground text-sm">{plan.planDate}</p>
+                  <p className="font-mono font-bold text-foreground text-sm">{plan.planDate}-{plan.orderIndex}</p>
                   <p className="text-xs text-muted-foreground">{formatPlanDate(plan.planDate)}</p>
                 </div>
                 <ArrowLeft size={16} className="text-muted-foreground rotate-180" />

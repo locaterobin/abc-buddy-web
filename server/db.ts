@@ -295,20 +295,31 @@ export async function getRecordDates(teamIdentifier: string): Promise<string[]> 
 
 // ── Release Plans ──────────────────────────────────────────────────────────────
 
-export async function getReleasePlans(teamIdentifier: string) {
+export async function getReleasePlans(teamIdentifier: string, sinceHours?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  const conditions = [eq(releasePlans.teamIdentifier, teamIdentifier)];
+  if (sinceHours !== undefined) {
+    const since = new Date(Date.now() - sinceHours * 60 * 60 * 1000);
+    conditions.push(gte(releasePlans.createdAt, since));
+  }
   return db
     .select()
     .from(releasePlans)
-    .where(eq(releasePlans.teamIdentifier, teamIdentifier))
+    .where(and(...conditions))
     .orderBy(desc(releasePlans.planDate));
 }
 
 export async function createReleasePlan(teamIdentifier: string, planDate: string, notes?: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(releasePlans).values({ teamIdentifier, planDate, notes });
+  // Count existing plans for this date+team to get next orderIndex
+  const existing = await db
+    .select({ id: releasePlans.id })
+    .from(releasePlans)
+    .where(and(eq(releasePlans.teamIdentifier, teamIdentifier), eq(releasePlans.planDate, planDate)));
+  const orderIndex = existing.length + 1;
+  const result = await db.insert(releasePlans).values({ teamIdentifier, planDate, orderIndex, notes });
   return (result[0] as any).insertId as number;
 }
 

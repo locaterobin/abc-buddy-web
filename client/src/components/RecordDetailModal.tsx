@@ -194,7 +194,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
 
   // Release plans
   const { data: plans = [] } = trpc.releasePlans.getPlans.useQuery(
-    { teamIdentifier: teamId },
+    { teamIdentifier: teamId, sinceHours: 48 },
     { enabled: showPlanPicker }
   );
   const { data: dogPlanIds = [] } = trpc.releasePlans.getDogPlans.useQuery(
@@ -665,7 +665,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
                           : "hover:bg-muted text-foreground"
                       }`}
                     >
-                      <span className="font-mono font-medium">{plan.planDate}</span>
+                      <span className="font-mono font-medium">{plan.planDate}-{plan.orderIndex}</span>
                       {inPlan ? (
                         <CalendarCheck size={15} className="text-green-600" />
                       ) : (

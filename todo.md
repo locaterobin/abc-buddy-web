@@ -104,3 +104,13 @@
 - [x] New "Release Plan" tab (5th tab) in bottom nav
 - [x] Release Plan list view: plans sorted by date YYMMDD
 - [x] Release Plan detail view: list of dogs in plan + Google Maps link with all capture lat/lngs
+
+## Release Plan - 48h Filter in Record Picker
+- [x] "Add to Release Plan" picker in RecordDetailModal only shows plans created in the past 48 hours
+
+## Release Plan - Order Suffix + 48h Filter
+- [x] Add orderIndex column to release_plans table (auto-increments per planDate per team)
+- [x] Plan display name becomes YYMMDD-N (e.g. 260312-1, 260312-2)
+- [x] createReleasePlan counts existing plans for same date+team, assigns next index
+- [x] Update ReleasePlanPage list and detail header to show YYMMDD-N format
+- [x] "Add to Release Plan" picker in RecordDetailModal only shows plans created in the past 48 hours

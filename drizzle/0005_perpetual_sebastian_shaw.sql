@@ -1,0 +1,1 @@
+ALTER TABLE `release_plans` ADD `orderIndex` int DEFAULT 1 NOT NULL;
