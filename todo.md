@@ -152,3 +152,7 @@
 - [x] Remove save-to-gallery code from camera click handlers
 - [x] Unify all image uploads (photo1, photo2, photo3) to use resizeImage compression function
 - [x] Swipeable photo carousel in dog record detail modal (swipe left/right to see photos 1, 2, 3)
+
+## Records List - Release Plan Status
+- [x] Disable "Add to Release Plan" button in RecordDetailModal when dog is already released
+- [x] Show yellow "Checked" badge on record list cards for dogs that are in any release plan

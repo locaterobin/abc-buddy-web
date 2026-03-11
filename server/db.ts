@@ -146,7 +146,7 @@ export async function getRecordsPaginated(
     dateTo?: string;
     status?: "all" | "active" | "released";
   }
-): Promise<{ records: DogRecord[]; total: number; hasMore: boolean }> {
+): Promise<{ records: (DogRecord & { inReleasePlan: boolean })[]; total: number; hasMore: boolean }> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   const { page, pageSize, search, dateFrom, dateTo, status } = opts;
@@ -176,13 +176,24 @@ export async function getRecordsPaginated(
     .from(dogRecords)
     .where(where);
   const total = Number(countRow?.count ?? 0);
-  const records = await db
+  const rawRecords = await db
     .select()
     .from(dogRecords)
     .where(where)
     .orderBy(desc(dogRecords.createdAt))
     .limit(pageSize)
     .offset((page - 1) * pageSize);
+  // Fetch which dogIds are in any release plan
+  const dogIds = rawRecords.map((r) => r.dogId);
+  let planDogIds = new Set<string>();
+  if (dogIds.length > 0) {
+    const planRows = await db
+      .selectDistinct({ dogId: releasePlanDogs.dogId })
+      .from(releasePlanDogs)
+      .where(sql`${releasePlanDogs.dogId} IN (${sql.join(dogIds.map((id) => sql`${id}`), sql`, `)})`);
+    planDogIds = new Set(planRows.map((r) => r.dogId));
+  }
+  const records = rawRecords.map((r) => ({ ...r, inReleasePlan: planDogIds.has(r.dogId) }));
   return { records, total, hasMore: page * pageSize < total };
 }
 

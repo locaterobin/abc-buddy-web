@@ -253,6 +253,12 @@ export default function RecordsPage() {
                             Released
                           </span>
                         )}
+                        {!rec.releasedAt && rec.inReleasePlan && (
+                          <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400 border border-yellow-300/50 dark:border-yellow-700/50">
+                            <CheckCircle2 size={9} />
+                            Checked
+                          </span>
+                        )}
                       </div>
                       <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
                         <Clock size={11} />

@@ -831,6 +831,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
           <Button
             variant="outline"
             className="w-full border-primary/30 text-primary hover:bg-primary/10"
+            disabled={released}
             onClick={() => { setShowPlanPicker((v) => !v); setPendingPlanId(null); setPhoto2Base64(null); }}
           >
             <CalendarPlus size={16} className="mr-2" />
