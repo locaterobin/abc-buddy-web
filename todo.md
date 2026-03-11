@@ -114,3 +114,16 @@
 - [x] createReleasePlan counts existing plans for same date+team, assigns next index
 - [x] Update ReleasePlanPage list and detail header to show YYMMDD-N format
 - [x] "Add to Release Plan" picker in RecordDetailModal only shows plans created in the past 48 hours
+
+## Nav Restructure - Hamburger Menu
+- [ ] Remove Settings tab from bottom nav (4 tabs: Add, Lookup, Records, Plans)
+- [ ] Add hamburger icon to top-right of header
+- [ ] Slide-out drawer from right with Settings link (and any future items)
+- [ ] Replace team name in header with @peepalfarm in same style
+
+## Nav Restructure - Hamburger Menu + Renames
+- [x] Remove Settings tab from bottom nav (4 tabs: Add, Lookup, Records, Releases)
+- [x] Rename Plans tab to "Releases"
+- [x] Add hamburger icon to top-right of header
+- [x] Slide-out drawer from right with Settings link
+- [x] Replace team name in header with @peepalfarm in same style
