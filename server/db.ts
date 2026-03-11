@@ -341,6 +341,7 @@ export async function getReleasePlanDogs(planId: number) {
       id: releasePlanDogs.id,
       planId: releasePlanDogs.planId,
       dogId: releasePlanDogs.dogId,
+      photo2Url: releasePlanDogs.photo2Url,
       addedAt: releasePlanDogs.addedAt,
       recordId: dogRecords.id,
       imageUrl: dogRecords.imageUrl,
@@ -358,7 +359,7 @@ export async function getReleasePlanDogs(planId: number) {
   return rows;
 }
 
-export async function addDogToReleasePlan(planId: number, dogId: string): Promise<boolean> {
+export async function addDogToReleasePlan(planId: number, dogId: string, photo2Url?: string): Promise<boolean> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   const existing = await db
@@ -366,8 +367,17 @@ export async function addDogToReleasePlan(planId: number, dogId: string): Promis
     .from(releasePlanDogs)
     .where(and(eq(releasePlanDogs.planId, planId), eq(releasePlanDogs.dogId, dogId)))
     .limit(1);
-  if (existing.length > 0) return false;
-  await db.insert(releasePlanDogs).values({ planId, dogId });
+  if (existing.length > 0) {
+    // Update photo2Url if provided even if already in plan
+    if (photo2Url) {
+      await db
+        .update(releasePlanDogs)
+        .set({ photo2Url })
+        .where(and(eq(releasePlanDogs.planId, planId), eq(releasePlanDogs.dogId, dogId)));
+    }
+    return false;
+  }
+  await db.insert(releasePlanDogs).values({ planId, dogId, photo2Url });
   return true;
 }
 

@@ -56,6 +56,7 @@ export const releasePlanDogs = mysqlTable("release_plan_dogs", {
   id: int("id").autoincrement().primaryKey(),
   planId: int("planId").notNull(),
   dogId: varchar("dogId", { length: 32 }).notNull(),
+  photo2Url: text("photo2Url"), // optional second photo added when adding to plan
   addedAt: timestamp("addedAt").defaultNow().notNull(),
 });
 

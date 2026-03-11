@@ -175,6 +175,7 @@ export default function ReleasePlanPage() {
             planDogs.map((dog) => (
               <Card key={dog.id} className="border border-border/60">
                 <CardContent className="p-3 flex items-center gap-3">
+                  {/* Photo 1 */}
                   {dog.imageUrl ? (
                     <img
                       src={dog.imageUrl}
@@ -185,6 +186,14 @@ export default function ReleasePlanPage() {
                     <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
                       <span className="text-muted-foreground text-xs">No img</span>
                     </div>
+                  )}
+                  {/* Photo 2 (if added when adding to plan) */}
+                  {dog.photo2Url && (
+                    <img
+                      src={dog.photo2Url}
+                      alt={`${dog.dogId} photo2`}
+                      className="w-12 h-12 rounded-lg object-cover flex-shrink-0 ring-2 ring-primary/30"
+                    />
                   )}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">

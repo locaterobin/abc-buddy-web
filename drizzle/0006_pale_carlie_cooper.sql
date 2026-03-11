@@ -1,0 +1,1 @@
+ALTER TABLE `release_plan_dogs` ADD `photo2Url` text;

@@ -549,9 +549,24 @@ const releasePlansRouter = router({
       return getReleasePlanDogs(input.planId);
     }),
   addDog: publicProcedure
-    .input(z.object({ planId: z.number(), dogId: z.string() }))
+    .input(z.object({
+      planId: z.number(),
+      dogId: z.string(),
+      photo2Base64: z.string().optional(), // data:image/jpeg;base64,...
+    }))
     .mutation(async ({ input }) => {
-      return addDogToReleasePlan(input.planId, input.dogId);
+      let photo2Url: string | undefined;
+      if (input.photo2Base64) {
+        const imgBuffer = Buffer.from(
+          input.photo2Base64.replace(/^data:image\/\w+;base64,/, ""),
+          "base64"
+        );
+        const suffix = Math.random().toString(36).slice(2, 10);
+        const fileKey = `release-plan-photos/${input.dogId}-${suffix}.jpg`;
+        const { url } = await storagePut(fileKey, imgBuffer, "image/jpeg");
+        photo2Url = url;
+      }
+      return addDogToReleasePlan(input.planId, input.dogId, photo2Url);
     }),
   removeDog: publicProcedure
     .input(z.object({ planId: z.number(), dogId: z.string() }))

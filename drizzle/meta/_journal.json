@@ -43,6 +43,13 @@
       "when": 1773255041248,
       "tag": "0005_perpetual_sebastian_shaw",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1773256999409,
+      "tag": "0006_pale_carlie_cooper",
+      "breakpoints": true
     }
   ]
 }

@@ -127,3 +127,10 @@
 - [x] Add hamburger icon to top-right of header
 - [x] Slide-out drawer from right with Settings link
 - [x] Replace team name in header with @peepalfarm in same style
+
+## Release Plan - Button Order + Second Photo
+- [x] Move "Add to Release Plan" button above "Released" button in RecordDetailModal
+- [x] After selecting a plan in the picker, prompt user to optionally take/upload a second photo
+- [x] Add photo2Url column to release_plan_dogs table
+- [x] Upload second photo to S3 and store URL in release_plan_dogs
+- [x] Show photo2 as a second thumbnail next to the original in the plan detail dog list

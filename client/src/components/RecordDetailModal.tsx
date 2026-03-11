@@ -191,6 +191,9 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
   const [confirming, setConfirming] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [showPlanPicker, setShowPlanPicker] = useState(false);
+  const [pendingPlanId, setPendingPlanId] = useState<number | null>(null);
+  const [photo2Base64, setPhoto2Base64] = useState<string | null>(null);
+  const photo2InputRef = useRef<HTMLInputElement>(null);
 
   // Release plans
   const { data: plans = [] } = trpc.releasePlans.getPlans.useQuery(
@@ -207,9 +210,36 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
       else toast.info("Already in this plan");
       utils.releasePlans.getDogPlans.invalidate({ dogId: record.dogId });
       utils.releasePlans.getPlanDogs.invalidate();
+      setPendingPlanId(null);
+      setPhoto2Base64(null);
     },
     onError: () => toast.error("Failed to add to plan"),
   });
+
+  function handlePhoto2Change(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const b64 = ev.target?.result as string;
+      setPhoto2Base64(b64);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function confirmAddToPlan(planId: number) {
+    setPendingPlanId(planId);
+    setPhoto2Base64(null);
+  }
+
+  function submitAddToPlan() {
+    if (pendingPlanId === null) return;
+    addDogToPlan.mutate({
+      planId: pendingPlanId,
+      dogId: record.dogId,
+      photo2Base64: photo2Base64 ?? undefined,
+    });
+  }
 
   // Push a history entry when modal opens so back button can close it
   useEffect(() => {
@@ -603,6 +633,114 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
             </div>
           )}
 
+          {/* Add to Release Plan Button */}
+          <Button
+            variant="outline"
+            className="w-full border-primary/30 text-primary hover:bg-primary/10"
+            onClick={() => { setShowPlanPicker((v) => !v); setPendingPlanId(null); setPhoto2Base64(null); }}
+          >
+            <CalendarPlus size={16} className="mr-2" />
+            Add to Release Plan
+          </Button>
+
+          {/* Plan Picker */}
+          {showPlanPicker && (
+            <div className="border border-border rounded-xl overflow-hidden bg-muted/30">
+              {plans.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-4">
+                  No plans yet. Create one in the Releases tab.
+                </p>
+              ) : pendingPlanId !== null ? (
+                /* Step 2: optional photo */
+                <div className="p-4 space-y-3">
+                  <p className="text-xs font-medium text-foreground">
+                    Add a second photo? <span className="text-muted-foreground">(optional)</span>
+                  </p>
+                  {photo2Base64 ? (
+                    <div className="relative">
+                      <img src={photo2Base64} alt="photo2" className="w-full h-32 object-cover rounded-lg" />
+                      <button
+                        onClick={() => setPhoto2Base64(null)}
+                        className="absolute top-1 right-1 bg-black/60 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs"
+                      >✕</button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          if (photo2InputRef.current) {
+                            photo2InputRef.current.setAttribute("capture", "environment");
+                            photo2InputRef.current.click();
+                          }
+                        }}
+                        className="flex-1 flex flex-col items-center gap-1 py-3 border border-dashed border-border rounded-lg text-xs text-muted-foreground hover:bg-muted transition-colors"
+                      >
+                        <span className="text-lg">📷</span>Camera
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (photo2InputRef.current) {
+                            photo2InputRef.current.removeAttribute("capture");
+                            photo2InputRef.current.click();
+                          }
+                        }}
+                        className="flex-1 flex flex-col items-center gap-1 py-3 border border-dashed border-border rounded-lg text-xs text-muted-foreground hover:bg-muted transition-colors"
+                      >
+                        <span className="text-lg">🖼️</span>Gallery
+                      </button>
+                    </div>
+                  )}
+                  <input
+                    ref={photo2InputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handlePhoto2Change}
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => setPendingPlanId(null)}
+                    >Back</Button>
+                    <Button
+                      size="sm"
+                      className="flex-1"
+                      onClick={submitAddToPlan}
+                      disabled={addDogToPlan.isPending}
+                    >
+                      {addDogToPlan.isPending ? <Loader2 size={14} className="animate-spin" /> : "Confirm"}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                plans.map((plan) => {
+                  const inPlan = dogPlanIds.includes(plan.id);
+                  return (
+                    <button
+                      key={plan.id}
+                      onClick={() => { if (!inPlan) confirmAddToPlan(plan.id); }}
+                      disabled={inPlan || addDogToPlan.isPending}
+                      className={`w-full flex items-center justify-between px-4 py-3 text-sm border-b border-border/50 last:border-b-0 transition-colors ${
+                        inPlan
+                          ? "text-green-600 bg-green-50 dark:bg-green-950/20 cursor-default"
+                          : "hover:bg-muted text-foreground"
+                      }`}
+                    >
+                      <span className="font-mono font-medium">{plan.planDate}-{plan.orderIndex}</span>
+                      {inPlan ? (
+                        <CalendarCheck size={15} className="text-green-600" />
+                      ) : (
+                        <CalendarPlus size={15} className="text-muted-foreground" />
+                      )}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          )}
+
           {/* Released Button */}
           <Button
             variant="outline"
@@ -631,52 +769,6 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
               </>
             )}
           </Button>
-
-          {/* Add to Release Plan Button */}
-          <Button
-            variant="outline"
-            className="w-full border-primary/30 text-primary hover:bg-primary/10"
-            onClick={() => setShowPlanPicker((v) => !v)}
-          >
-            <CalendarPlus size={16} className="mr-2" />
-            Add to Release Plan
-          </Button>
-
-          {/* Plan Picker */}
-          {showPlanPicker && (
-            <div className="border border-border rounded-xl overflow-hidden bg-muted/30">
-              {plans.length === 0 ? (
-                <p className="text-xs text-muted-foreground text-center py-4">
-                  No plans yet. Create one in the Plans tab.
-                </p>
-              ) : (
-                plans.map((plan) => {
-                  const inPlan = dogPlanIds.includes(plan.id);
-                  return (
-                    <button
-                      key={plan.id}
-                      onClick={() => {
-                        if (!inPlan) addDogToPlan.mutate({ planId: plan.id, dogId: record.dogId });
-                      }}
-                      disabled={inPlan || addDogToPlan.isPending}
-                      className={`w-full flex items-center justify-between px-4 py-3 text-sm border-b border-border/50 last:border-b-0 transition-colors ${
-                        inPlan
-                          ? "text-green-600 bg-green-50 dark:bg-green-950/20 cursor-default"
-                          : "hover:bg-muted text-foreground"
-                      }`}
-                    >
-                      <span className="font-mono font-medium">{plan.planDate}-{plan.orderIndex}</span>
-                      {inPlan ? (
-                        <CalendarCheck size={15} className="text-green-600" />
-                      ) : (
-                        <CalendarPlus size={15} className="text-muted-foreground" />
-                      )}
-                    </button>
-                  );
-                })
-              )}
-            </div>
-          )}
 
           {/* Delete Button */}
           <Button
