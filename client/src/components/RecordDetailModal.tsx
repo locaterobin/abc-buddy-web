@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import { useTeam } from "@/contexts/TeamContext";
 import { Button } from "@/components/ui/button";
@@ -65,6 +65,117 @@ interface ReleaseConfirmData {
   distanceMetres: number | null;
 }
 
+/** Full-screen pinch-to-zoom image viewer */
+function LightboxViewer({ src, alt, onClose }: { src: string; alt: string; onClose: () => void }) {
+  const imgRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+  const [translate, setTranslate] = useState({ x: 0, y: 0 });
+  const lastTap = useRef(0);
+  const lastDist = useRef<number | null>(null);
+  const lastTranslate = useRef({ x: 0, y: 0 });
+  const dragStart = useRef<{ x: number; y: number } | null>(null);
+
+  // Close on back button
+  useEffect(() => {
+    history.pushState({ lightbox: true }, "");
+    const handlePop = () => onClose();
+    window.addEventListener("popstate", handlePop);
+    return () => window.removeEventListener("popstate", handlePop);
+  }, []); // eslint-disable-line
+
+  const clampTranslate = useCallback((x: number, y: number, s: number) => {
+    const el = imgRef.current;
+    if (!el) return { x, y };
+    const maxX = Math.max(0, (el.clientWidth * (s - 1)) / 2);
+    const maxY = Math.max(0, (el.clientHeight * (s - 1)) / 2);
+    return { x: Math.min(maxX, Math.max(-maxX, x)), y: Math.min(maxY, Math.max(-maxY, y)) };
+  }, []);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      lastDist.current = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      lastTranslate.current = translate;
+    } else if (e.touches.length === 1) {
+      // Double-tap detection
+      const now = Date.now();
+      if (now - lastTap.current < 300) {
+        if (scale > 1) {
+          setScale(1);
+          setTranslate({ x: 0, y: 0 });
+        } else {
+          setScale(2.5);
+        }
+        lastTap.current = 0;
+        return;
+      }
+      lastTap.current = now;
+      dragStart.current = { x: e.touches[0].clientX - translate.x, y: e.touches[0].clientY - translate.y };
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    e.preventDefault();
+    if (e.touches.length === 2 && lastDist.current !== null) {
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      const newScale = Math.min(5, Math.max(1, scale * (dist / lastDist.current)));
+      lastDist.current = dist;
+      setScale(newScale);
+      if (newScale === 1) setTranslate({ x: 0, y: 0 });
+    } else if (e.touches.length === 1 && dragStart.current && scale > 1) {
+      const x = e.touches[0].clientX - dragStart.current.x;
+      const y = e.touches[0].clientY - dragStart.current.y;
+      setTranslate(clampTranslate(x, y, scale));
+    }
+  };
+
+  const handleTouchEnd = () => {
+    lastDist.current = null;
+    dragStart.current = null;
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] bg-black flex items-center justify-center"
+      onClick={() => { if (scale === 1) onClose(); }}
+    >
+      <button
+        onClick={onClose}
+        className="absolute top-4 right-4 z-10 bg-black/60 text-white rounded-full p-2 hover:bg-black/80"
+      >
+        <X size={20} />
+      </button>
+      <div
+        ref={imgRef}
+        className="w-full h-full flex items-center justify-center overflow-hidden"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        style={{ touchAction: "none" }}
+      >
+        <img
+          src={src}
+          alt={alt}
+          draggable={false}
+          style={{
+            transform: `scale(${scale}) translate(${translate.x / scale}px, ${translate.y / scale}px)`,
+            transition: lastDist.current !== null ? "none" : "transform 0.1s ease",
+            maxWidth: "100%",
+            maxHeight: "100%",
+            objectFit: "contain",
+            userSelect: "none",
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
 export default function RecordDetailModal({ record, onClose, onDelete }: RecordDetailModalProps) {
   const { teamId, webhookUrl } = useTeam();
   const utils = trpc.useUtils();
@@ -76,6 +187,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
   const [released, setReleased] = useState(() => !!record.releasedAt);
   const [confirmData, setConfirmData] = useState<ReleaseConfirmData | null>(null);
   const [confirming, setConfirming] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   // Push a history entry when modal opens so back button can close it
   useEffect(() => {
@@ -257,13 +369,23 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
         </button>
 
         {record.imageUrl && (
-          <div className="bg-black/5">
+          <div
+            className="bg-black/5 cursor-zoom-in"
+            onClick={() => setLightboxOpen(true)}
+          >
             <img
               src={record.imageUrl}
               alt={record.dogId}
-              className="w-full max-h-[60vh] object-contain"
+              className="w-full max-h-[60vh] object-contain pointer-events-none"
             />
           </div>
+        )}
+        {lightboxOpen && record.imageUrl && (
+          <LightboxViewer
+            src={record.imageUrl}
+            alt={record.dogId}
+            onClose={() => setLightboxOpen(false)}
+          />
         )}
 
         <div className="p-4 space-y-3">

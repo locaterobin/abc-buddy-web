@@ -77,3 +77,6 @@
 
 ## Auto-save to Gallery
 - [x] When camera is used, immediately save the original photo to device gallery (not on upload)
+
+## Full-screen Photo Zoom
+- [x] Add pinch-to-zoom and double-tap zoom to full-screen photo viewer in record detail modal
