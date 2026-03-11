@@ -5,6 +5,13 @@ import { useTeam } from "@/contexts/TeamContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import {
   Search,
@@ -17,8 +24,6 @@ import {
 } from "lucide-react";
 import RecordDetailModal from "@/components/RecordDetailModal";
 
-type TimeRange = "3days" | "7days" | "30days";
-
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -28,16 +33,36 @@ function fileToBase64(file: File): Promise<string> {
   });
 }
 
+/** Format a YYYY-MM-DD string as "Mon, 10 Mar 2026" in IST */
+function formatDateOption(dateStr: string): string {
+  // Parse as IST noon to avoid any date-shifting
+  const d = new Date(dateStr + "T12:00:00+05:30");
+  return d.toLocaleDateString("en-GB", {
+    timeZone: "Asia/Kolkata",
+    weekday: "short",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
 export default function Lookup() {
   const { teamId } = useTeam();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
-  const [timeRange, setTimeRange] = useState<TimeRange>("3days");
+  const [timeRange, setTimeRange] = useState<string>("7days");
   const [imageBase64, setImageBase64] = useState("");
   const [selectedRecord, setSelectedRecord] = useState<any>(null);
 
   const lookupMutation = trpc.dogs.lookupDog.useMutation();
+
+  // Fetch distinct dates that have records in the past 30 days
+  const { data: datesData } = trpc.dogs.getRecordDates.useQuery(
+    { teamIdentifier: teamId },
+    { enabled: !!teamId, staleTime: 60_000 }
+  );
+  const recordDates: string[] = datesData?.dates ?? [];
 
   const handleFile = useCallback(async (file: File) => {
     try {
@@ -74,22 +99,25 @@ export default function Lookup() {
 
   return (
     <div className="container py-4 pb-6 max-w-lg mx-auto space-y-4">
-      {/* Time Range Selector */}
-      <div className="flex gap-2">
-        {(["3days", "7days", "30days"] as TimeRange[]).map((range) => (
-          <button
-            key={range}
-            onClick={() => setTimeRange(range)}
-            className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
-              timeRange === range
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted text-muted-foreground hover:bg-muted/80"
-            }`}
-          >
-            {range === "3days" ? "3 Days" : range === "7days" ? "7 Days" : "30 Days"}
-          </button>
-        ))}
-      </div>
+      {/* Date Range Dropdown */}
+      <Select value={timeRange} onValueChange={setTimeRange}>
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder="Select date range" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="7days">Last 7 days</SelectItem>
+          <SelectItem value="30days">Last 30 days</SelectItem>
+          {recordDates.length > 0 && (
+            <>
+              {recordDates.map((date) => (
+                <SelectItem key={date} value={date}>
+                  {formatDateOption(date)}
+                </SelectItem>
+              ))}
+            </>
+          )}
+        </SelectContent>
+      </Select>
 
       {/* Upload Area */}
       <Card className={`border-2 ${imageBase64 ? "border-border" : "border-dashed border-primary/30 bg-primary/5"}`}>
@@ -211,7 +239,7 @@ export default function Lookup() {
             <Search size={32} className="text-muted-foreground mx-auto mb-3 opacity-50" />
             <p className="font-medium text-foreground">No matches found</p>
             <p className="text-sm text-muted-foreground mt-1">
-              Try expanding the time range or uploading a clearer photo
+              Try expanding the date range or uploading a clearer photo
             </p>
           </CardContent>
         </Card>
@@ -253,6 +281,7 @@ export default function Lookup() {
                         <Clock size={12} />
                         <span>
                           {new Date(rec.recordedAt).toLocaleDateString("en-GB", {
+                            timeZone: "Asia/Kolkata",
                             day: "2-digit",
                             month: "short",
                             year: "numeric",

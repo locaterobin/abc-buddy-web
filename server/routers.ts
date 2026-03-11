@@ -13,6 +13,7 @@ import {
   getRecordsPaginated,
   deleteRecordById,
   saveReleaseData,
+  getRecordDates,
 } from "./db";
 import { storagePut } from "./storage";
 import { createOpenAI } from "@ai-sdk/openai";
@@ -405,27 +406,38 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
       return { success: saved };
     }),
 
+  getRecordDates: publicProcedure
+    .input(z.object({ teamIdentifier: z.string() }))
+    .query(async ({ input }) => {
+      const dates = await getRecordDates(input.teamIdentifier);
+      return { dates };
+    }),
+
   lookupDog: publicProcedure
     .input(
       z.object({
         teamIdentifier: z.string(),
         imageBase64: z.string(),
-        timeRange: z.enum(["3days", "7days", "30days"]),
+        // timeRange: preset window OR a specific YYYY-MM-DD date
+        timeRange: z.union([z.enum(["7days", "30days"]), z.string().regex(/^\d{4}-\d{2}-\d{2}$/)]),
       })
     )
     .mutation(async ({ input }) => {
       // Determine date filter
       let sinceDate: Date | undefined;
+      let untilDate: Date | undefined;
       const now = new Date();
-      if (input.timeRange === "3days") {
-        sinceDate = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
-      } else if (input.timeRange === "7days") {
+      if (input.timeRange === "7days") {
         sinceDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       } else if (input.timeRange === "30days") {
         sinceDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      } else {
+        // Specific date: YYYY-MM-DD in IST — search that full IST day
+        sinceDate = new Date(input.timeRange + "T00:00:00+05:30");
+        untilDate = new Date(input.timeRange + "T23:59:59+05:30");
       }
 
-      const records = await getRecordsByTeamWithTimeRange(input.teamIdentifier, sinceDate);
+      const records = await getRecordsByTeamWithTimeRange(input.teamIdentifier, sinceDate, untilDate);
 
       if (records.length === 0) {
         return { matches: [] };

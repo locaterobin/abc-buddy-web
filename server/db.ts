@@ -199,14 +199,17 @@ export async function getRecordsByTeam(teamIdentifier: string): Promise<DogRecor
 
 export async function getRecordsByTeamWithTimeRange(
   teamIdentifier: string,
-  sinceDate?: Date
+  sinceDate?: Date,
+  untilDate?: Date
 ): Promise<DogRecord[]> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-
   const conditions = [eq(dogRecords.teamIdentifier, teamIdentifier)];
   if (sinceDate) {
     conditions.push(gte(dogRecords.recordedAt, sinceDate));
+  }
+  if (untilDate) {
+    conditions.push(lte(dogRecords.recordedAt, untilDate));
   }
 
   return db
@@ -266,4 +269,26 @@ export async function getRecordByDogId(dogId: string, teamIdentifier: string): P
     .limit(1);
 
   return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getRecordDates(teamIdentifier: string): Promise<string[]> {
+  // Returns distinct IST dates (YYYY-MM-DD) that have records in the past 30 days
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const since30 = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const utcSince = since30.toISOString().replace("T", " ").replace("Z", "").slice(0, 23);
+  // Extract date in IST (UTC+5:30) using MySQL CONVERT_TZ
+  const rows = await db.execute(
+    sql`SELECT DISTINCT DATE(CONVERT_TZ(${dogRecords.recordedAt}, '+00:00', '+05:30')) as ist_date
+        FROM ${dogRecords}
+        WHERE ${dogRecords.teamIdentifier} = ${teamIdentifier}
+          AND ${dogRecords.recordedAt} >= ${utcSince}
+        ORDER BY ist_date DESC`
+  );
+  const result = (rows[0] as unknown) as Array<{ ist_date: string | Date }>;
+  return result.map((r) => {
+    const d = r.ist_date;
+    if (d instanceof Date) return d.toISOString().slice(0, 10);
+    return String(d).slice(0, 10);
+  });
 }

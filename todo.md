@@ -50,7 +50,7 @@
 - [x] Fire POST to {webhookUrl}/delete with dogId when a record is deleted
 
 ## Back Button
-- [ ] Phone back button closes RecordDetailModal
+- [x] Phone back button closes RecordDetailModal
 
 ## Release Dialog UX
 - [x] Replace window.confirm with custom styled Dialog
@@ -69,3 +69,8 @@
 
 ## Upload Flow Bug Fix
 - [x] Description field should always be editable after image upload, even if AI returns empty description
+
+## Lookup Date Dropdown
+- [x] Replace 3-day/7-day/30-day toggle buttons with a dropdown
+- [x] Dropdown options: "Last 7 days", "Last 30 days", then individual dates that have records in past 30 days
+- [x] Add getRecordDates tRPC procedure to fetch distinct capture dates from past 30 days
