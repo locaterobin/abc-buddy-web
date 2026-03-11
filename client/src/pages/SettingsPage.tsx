@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { getCachedRecords, setCachedRecords } from "@/hooks/useRecordCache";
 import {
   FileJson,
   FileText,
@@ -35,7 +36,18 @@ export default function RecordsPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [page, setPage] = useState(1);
   const [allRecords, setAllRecords] = useState<any[]>([]);
+  const [cachedRecords, setCachedRecordsState] = useState<any[]>([]);
+  const [cacheLoaded, setCacheLoaded] = useState(false);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Load IndexedDB cache on mount for instant display
+  useEffect(() => {
+    if (!teamId) return;
+    getCachedRecords(teamId).then((cached) => {
+      setCachedRecordsState(cached);
+      setCacheLoaded(true);
+    });
+  }, [teamId]);
 
   // Debounce search input
   const handleSearchChange = useCallback((val: string) => {
@@ -67,11 +79,15 @@ export default function RecordsPage() {
     { enabled: !!teamId }
   );
 
-  // Accumulate pages
+  // Accumulate pages + update IndexedDB cache when first page loads
   useEffect(() => {
     if (!query.data) return;
     if (page === 1) {
       setAllRecords(query.data.records);
+      // Update cache with fresh first-page data (only when no filters active)
+      if (!search && !filterDate && statusFilter === "all" && teamId) {
+        setCachedRecords(teamId, query.data.records);
+      }
     } else {
       setAllRecords((prev) => {
         const existingIds = new Set(prev.map((r: any) => r.id));
@@ -79,7 +95,7 @@ export default function RecordsPage() {
         return [...prev, ...newOnes];
       });
     }
-  }, [query.data, page]);
+  }, [query.data, page, search, filterDate, statusFilter, teamId]);
 
   const handleExportJson = () => {
     if (allRecords.length === 0) {
@@ -100,8 +116,13 @@ export default function RecordsPage() {
 
   const total = query.data?.total ?? 0;
   const hasMore = query.data?.hasMore ?? false;
-  const isLoading = query.isLoading && page === 1;
+  // Show cached records while the first server fetch is in flight
+  const displayRecords = (query.isLoading && page === 1 && cacheLoaded && cachedRecords.length > 0)
+    ? cachedRecords
+    : allRecords;
+  const isLoading = query.isLoading && page === 1 && cachedRecords.length === 0;
   const isLoadingMore = query.isFetching && page > 1;
+  const showingCache = query.isLoading && page === 1 && cachedRecords.length > 0;
 
   return (
     <div className="container py-4 pb-6 max-w-lg mx-auto space-y-5">
@@ -183,19 +204,27 @@ export default function RecordsPage() {
             </div>
           </div>
 
+          {/* Cache refresh indicator */}
+          {showingCache && (
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-2">
+              <Loader2 size={11} className="animate-spin" />
+              <span>Refreshing…</span>
+            </div>
+          )}
+
           {/* Records list */}
           {isLoading ? (
             <div className="py-8 text-center">
               <Loader2 size={24} className="animate-spin text-primary mx-auto" />
             </div>
-          ) : allRecords.length === 0 ? (
+          ) : displayRecords.length === 0 ? (
             <div className="py-8 text-center">
               <Dog size={32} className="text-muted-foreground mx-auto mb-2 opacity-40" />
               <p className="text-sm text-muted-foreground">No records found</p>
             </div>
           ) : (
             <div className="space-y-1">
-              {allRecords.map((rec: any) => (
+              {displayRecords.map((rec: any) => (
                 <div key={rec.id} className="flex items-center gap-1">
                   <button
                     onClick={() => setSelectedRecord(rec)}

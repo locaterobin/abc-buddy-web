@@ -80,3 +80,8 @@
 
 ## Full-screen Photo Zoom
 - [x] Add pinch-to-zoom and double-tap zoom to full-screen photo viewer in record detail modal
+
+## IndexedDB Record Cache
+- [x] Create useRecordCache hook with IndexedDB to store last 100 records per team
+- [x] SettingsPage shows cached records instantly on load, then refreshes in background
+- [x] Cache is updated whenever fresh records are fetched from server
