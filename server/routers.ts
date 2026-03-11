@@ -14,6 +14,13 @@ import {
   deleteRecordById,
   saveReleaseData,
   getRecordDates,
+  getReleasePlans,
+  createReleasePlan,
+  deleteReleasePlan,
+  getReleasePlanDogs,
+  addDogToReleasePlan,
+  removeDogFromReleasePlan,
+  getDogReleasePlans,
 } from "./db";
 import { storagePut } from "./storage";
 import { createOpenAI } from "@ai-sdk/openai";
@@ -519,6 +526,45 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
     }),
 });
 
+const releasePlansRouter = router({
+  getPlans: publicProcedure
+    .input(z.object({ teamIdentifier: z.string() }))
+    .query(async ({ input }) => {
+      return getReleasePlans(input.teamIdentifier);
+    }),
+  createPlan: publicProcedure
+    .input(z.object({ teamIdentifier: z.string(), planDate: z.string(), notes: z.string().optional() }))
+    .mutation(async ({ input }) => {
+      const id = await createReleasePlan(input.teamIdentifier, input.planDate, input.notes);
+      return { id };
+    }),
+  deletePlan: publicProcedure
+    .input(z.object({ planId: z.number(), teamIdentifier: z.string() }))
+    .mutation(async ({ input }) => {
+      return deleteReleasePlan(input.planId, input.teamIdentifier);
+    }),
+  getPlanDogs: publicProcedure
+    .input(z.object({ planId: z.number() }))
+    .query(async ({ input }) => {
+      return getReleasePlanDogs(input.planId);
+    }),
+  addDog: publicProcedure
+    .input(z.object({ planId: z.number(), dogId: z.string() }))
+    .mutation(async ({ input }) => {
+      return addDogToReleasePlan(input.planId, input.dogId);
+    }),
+  removeDog: publicProcedure
+    .input(z.object({ planId: z.number(), dogId: z.string() }))
+    .mutation(async ({ input }) => {
+      return removeDogFromReleasePlan(input.planId, input.dogId);
+    }),
+  getDogPlans: publicProcedure
+    .input(z.object({ dogId: z.string() }))
+    .query(async ({ input }) => {
+      return getDogReleasePlans(input.dogId);
+    }),
+});
+
 export const appRouter = router({
   system: systemRouter,
   auth: router({
@@ -530,6 +576,7 @@ export const appRouter = router({
     }),
   }),
   dogs: dogsRouter,
+  releasePlans: releasePlansRouter,
 });
 
 export type AppRouter = typeof appRouter;

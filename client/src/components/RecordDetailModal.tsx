@@ -16,6 +16,8 @@ import {
   CheckCircle,
   AlertTriangle,
   StopCircle,
+  CalendarCheck,
+  CalendarPlus,
 } from "lucide-react";
 
 interface RecordDetailModalProps {
@@ -188,6 +190,26 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
   const [confirmData, setConfirmData] = useState<ReleaseConfirmData | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [showPlanPicker, setShowPlanPicker] = useState(false);
+
+  // Release plans
+  const { data: plans = [] } = trpc.releasePlans.getPlans.useQuery(
+    { teamIdentifier: teamId },
+    { enabled: showPlanPicker }
+  );
+  const { data: dogPlanIds = [] } = trpc.releasePlans.getDogPlans.useQuery(
+    { dogId: record.dogId },
+    { enabled: showPlanPicker }
+  );
+  const addDogToPlan = trpc.releasePlans.addDog.useMutation({
+    onSuccess: (added) => {
+      if (added) toast.success("Added to release plan");
+      else toast.info("Already in this plan");
+      utils.releasePlans.getDogPlans.invalidate({ dogId: record.dogId });
+      utils.releasePlans.getPlanDogs.invalidate();
+    },
+    onError: () => toast.error("Failed to add to plan"),
+  });
 
   // Push a history entry when modal opens so back button can close it
   useEffect(() => {
@@ -609,6 +631,52 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
               </>
             )}
           </Button>
+
+          {/* Add to Release Plan Button */}
+          <Button
+            variant="outline"
+            className="w-full border-primary/30 text-primary hover:bg-primary/10"
+            onClick={() => setShowPlanPicker((v) => !v)}
+          >
+            <CalendarPlus size={16} className="mr-2" />
+            Add to Release Plan
+          </Button>
+
+          {/* Plan Picker */}
+          {showPlanPicker && (
+            <div className="border border-border rounded-xl overflow-hidden bg-muted/30">
+              {plans.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-4">
+                  No plans yet. Create one in the Plans tab.
+                </p>
+              ) : (
+                plans.map((plan) => {
+                  const inPlan = dogPlanIds.includes(plan.id);
+                  return (
+                    <button
+                      key={plan.id}
+                      onClick={() => {
+                        if (!inPlan) addDogToPlan.mutate({ planId: plan.id, dogId: record.dogId });
+                      }}
+                      disabled={inPlan || addDogToPlan.isPending}
+                      className={`w-full flex items-center justify-between px-4 py-3 text-sm border-b border-border/50 last:border-b-0 transition-colors ${
+                        inPlan
+                          ? "text-green-600 bg-green-50 dark:bg-green-950/20 cursor-default"
+                          : "hover:bg-muted text-foreground"
+                      }`}
+                    >
+                      <span className="font-mono font-medium">{plan.planDate}</span>
+                      {inPlan ? (
+                        <CalendarCheck size={15} className="text-green-600" />
+                      ) : (
+                        <CalendarPlus size={15} className="text-muted-foreground" />
+                      )}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          )}
 
           {/* Delete Button */}
           <Button

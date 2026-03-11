@@ -1,6 +1,6 @@
 import { and, desc, eq, gte, isNotNull, isNull, like, lte, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, dogRecords, InsertDogRecord, DogRecord } from "../drizzle/schema";
+import { InsertUser, users, dogRecords, InsertDogRecord, DogRecord, releasePlans, releasePlanDogs } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -291,4 +291,90 @@ export async function getRecordDates(teamIdentifier: string): Promise<string[]> 
     if (d instanceof Date) return d.toISOString().slice(0, 10);
     return String(d).slice(0, 10);
   });
+}
+
+// ── Release Plans ──────────────────────────────────────────────────────────────
+
+export async function getReleasePlans(teamIdentifier: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db
+    .select()
+    .from(releasePlans)
+    .where(eq(releasePlans.teamIdentifier, teamIdentifier))
+    .orderBy(desc(releasePlans.planDate));
+}
+
+export async function createReleasePlan(teamIdentifier: string, planDate: string, notes?: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(releasePlans).values({ teamIdentifier, planDate, notes });
+  return (result[0] as any).insertId as number;
+}
+
+export async function deleteReleasePlan(planId: number, teamIdentifier: string): Promise<boolean> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(releasePlanDogs).where(eq(releasePlanDogs.planId, planId));
+  const result = await db
+    .delete(releasePlans)
+    .where(and(eq(releasePlans.id, planId), eq(releasePlans.teamIdentifier, teamIdentifier)));
+  return ((result[0] as any).affectedRows ?? 0) > 0;
+}
+
+export async function getReleasePlanDogs(planId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const rows = await db
+    .select({
+      id: releasePlanDogs.id,
+      planId: releasePlanDogs.planId,
+      dogId: releasePlanDogs.dogId,
+      addedAt: releasePlanDogs.addedAt,
+      recordId: dogRecords.id,
+      imageUrl: dogRecords.imageUrl,
+      description: dogRecords.description,
+      areaName: dogRecords.areaName,
+      latitude: dogRecords.latitude,
+      longitude: dogRecords.longitude,
+      recordedAt: dogRecords.recordedAt,
+      releasedAt: dogRecords.releasedAt,
+    })
+    .from(releasePlanDogs)
+    .leftJoin(dogRecords, eq(releasePlanDogs.dogId, dogRecords.dogId))
+    .where(eq(releasePlanDogs.planId, planId))
+    .orderBy(releasePlanDogs.addedAt);
+  return rows;
+}
+
+export async function addDogToReleasePlan(planId: number, dogId: string): Promise<boolean> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const existing = await db
+    .select()
+    .from(releasePlanDogs)
+    .where(and(eq(releasePlanDogs.planId, planId), eq(releasePlanDogs.dogId, dogId)))
+    .limit(1);
+  if (existing.length > 0) return false;
+  await db.insert(releasePlanDogs).values({ planId, dogId });
+  return true;
+}
+
+export async function removeDogFromReleasePlan(planId: number, dogId: string): Promise<boolean> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db
+    .delete(releasePlanDogs)
+    .where(and(eq(releasePlanDogs.planId, planId), eq(releasePlanDogs.dogId, dogId)));
+  return ((result[0] as any).affectedRows ?? 0) > 0;
+}
+
+export async function getDogReleasePlans(dogId: string): Promise<number[]> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const rows = await db
+    .select({ planId: releasePlanDogs.planId })
+    .from(releasePlanDogs)
+    .where(eq(releasePlanDogs.dogId, dogId));
+  return rows.map((r) => r.planId);
 }

@@ -95,3 +95,12 @@
 
 ## Lookup Date Cache (Offline)
 - [x] Cache record dates in IndexedDB so Lookup dropdown works offline
+
+## Release Plan Feature
+- [x] Add releasePlans table (id, teamIdentifier, planDate YYMMDD, createdAt)
+- [x] Add releasePlanDogs table (planId, dogId, addedAt)
+- [x] tRPC: createReleasePlan, getReleasePlans, getReleasePlanDogs, addDogToPlan, removeDogFromPlan
+- [x] "Add to Release Plan" button on each record in RecordDetailModal
+- [x] New "Release Plan" tab (5th tab) in bottom nav
+- [x] Release Plan list view: plans sorted by date YYMMDD
+- [x] Release Plan detail view: list of dogs in plan + Google Maps link with all capture lat/lngs

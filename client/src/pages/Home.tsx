@@ -1,12 +1,13 @@
 import { useState } from "react";
-import { PlusCircle, Search, ClipboardList, Settings } from "lucide-react";
+import { PlusCircle, Search, ClipboardList, Settings, CalendarCheck } from "lucide-react";
 import { useTeam } from "@/contexts/TeamContext";
 import AddRecord from "./AddRecord";
 import Lookup from "./Lookup";
 import SettingsPage from "./SettingsPage";
 import ConfigPage from "./ConfigPage";
+import ReleasePlanPage from "./ReleasePlanPage";
 
-type Tab = "add" | "lookup" | "records" | "settings";
+type Tab = "add" | "lookup" | "records" | "plans" | "settings";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>("add");
@@ -32,11 +33,12 @@ export default function Home() {
       </header>
 
       {/* Content */}
-      <main className="flex-1 overflow-y-auto">
-        {activeTab === "add" && <AddRecord />}
-        {activeTab === "lookup" && <Lookup />}
-        {activeTab === "records" && <SettingsPage />}
-        {activeTab === "settings" && <ConfigPage />}
+      <main className="flex-1 overflow-hidden">
+        {activeTab === "add" && <div className="h-full overflow-y-auto"><AddRecord /></div>}
+        {activeTab === "lookup" && <div className="h-full overflow-y-auto"><Lookup /></div>}
+        {activeTab === "records" && <div className="h-full overflow-y-auto"><SettingsPage /></div>}
+        {activeTab === "plans" && <div className="h-full overflow-y-auto"><ReleasePlanPage /></div>}
+        {activeTab === "settings" && <div className="h-full overflow-y-auto"><ConfigPage /></div>}
       </main>
 
       {/* Bottom Navigation */}
@@ -45,25 +47,31 @@ export default function Home() {
           <TabButton
             active={activeTab === "add"}
             onClick={() => setActiveTab("add")}
-            icon={<PlusCircle size={22} />}
-            label="Add Record"
+            icon={<PlusCircle size={20} />}
+            label="Add"
           />
           <TabButton
             active={activeTab === "lookup"}
             onClick={() => setActiveTab("lookup")}
-            icon={<Search size={22} />}
+            icon={<Search size={20} />}
             label="Lookup"
           />
           <TabButton
             active={activeTab === "records"}
             onClick={() => setActiveTab("records")}
-            icon={<ClipboardList size={22} />}
+            icon={<ClipboardList size={20} />}
             label="Records"
+          />
+          <TabButton
+            active={activeTab === "plans"}
+            onClick={() => setActiveTab("plans")}
+            icon={<CalendarCheck size={20} />}
+            label="Plans"
           />
           <TabButton
             active={activeTab === "settings"}
             onClick={() => setActiveTab("settings")}
-            icon={<Settings size={22} />}
+            icon={<Settings size={20} />}
             label="Settings"
           />
         </div>
@@ -95,7 +103,7 @@ function TabButton({
       }`}
     >
       {icon}
-      <span className="text-[11px] font-medium">{label}</span>
+      <span className="text-[10px] font-medium">{label}</span>
     </button>
   );
 }

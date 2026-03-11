@@ -39,3 +39,24 @@ export const dogRecords = mysqlTable("dog_records", {
 
 export type DogRecord = typeof dogRecords.$inferSelect;
 export type InsertDogRecord = typeof dogRecords.$inferInsert;
+
+export const releasePlans = mysqlTable("release_plans", {
+  id: int("id").autoincrement().primaryKey(),
+  teamIdentifier: varchar("teamIdentifier", { length: 64 }).notNull(),
+  planDate: varchar("planDate", { length: 6 }).notNull(), // YYMMDD
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ReleasePlan = typeof releasePlans.$inferSelect;
+export type InsertReleasePlan = typeof releasePlans.$inferInsert;
+
+export const releasePlanDogs = mysqlTable("release_plan_dogs", {
+  id: int("id").autoincrement().primaryKey(),
+  planId: int("planId").notNull(),
+  dogId: varchar("dogId", { length: 32 }).notNull(),
+  addedAt: timestamp("addedAt").defaultNow().notNull(),
+});
+
+export type ReleasePlanDog = typeof releasePlanDogs.$inferSelect;
+export type InsertReleasePlanDog = typeof releasePlanDogs.$inferInsert;
