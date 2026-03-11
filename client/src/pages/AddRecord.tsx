@@ -219,18 +219,6 @@ export default function AddRecord() {
         requestDeviceGps();
         // Auto-run AI analysis (description only, no metadata extraction)
         runAnalysis(base64, "camera");
-        // Auto-save original photo to device gallery (best-effort)
-        try {
-          const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
-          const a = document.createElement("a");
-          a.href = rawBase64;
-          a.download = `abc-buddy-${timestamp}.jpg`;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-        } catch {
-          // Silently ignore if browser doesn't support download trigger
-        }
       } catch {
         toast.error("Failed to read image");
       }

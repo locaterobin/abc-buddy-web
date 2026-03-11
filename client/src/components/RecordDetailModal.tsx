@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
+import { resizeImage } from "@/lib/resizeImage";
 import { useTeam } from "@/contexts/TeamContext";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -69,8 +70,86 @@ interface ReleaseConfirmData {
   distanceMetres: number | null;
 }
 
-/** Full-screen pinch-to-zoom image viewer */
-function LightboxViewer({ src, alt, onClose }: { src: string; alt: string; onClose: () => void }) {
+/** Swipeable thumbnail carousel for the record detail modal */
+function PhotoCarousel({
+  photos,
+  labels,
+  dogId,
+  onPhotoClick,
+}: {
+  photos: string[];
+  labels: string[];
+  dogId: string;
+  onPhotoClick: (index: number) => void;
+}) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const swipeStartX = useRef<number | null>(null);
+
+  const goTo = (i: number) => {
+    if (i >= 0 && i < photos.length) setActiveIndex(i);
+  };
+
+  return (
+    <div className="relative bg-black/5 overflow-hidden">
+      {/* Main photo */}
+      <div
+        className="cursor-zoom-in"
+        onClick={() => onPhotoClick(activeIndex)}
+        onTouchStart={(e) => { swipeStartX.current = e.touches[0].clientX; }}
+        onTouchEnd={(e) => {
+          if (swipeStartX.current === null) return;
+          const dx = e.changedTouches[0].clientX - swipeStartX.current;
+          if (Math.abs(dx) > 40) {
+            if (dx < 0) goTo(activeIndex + 1);
+            else goTo(activeIndex - 1);
+          }
+          swipeStartX.current = null;
+        }}
+      >
+        <img
+          key={activeIndex}
+          src={photos[activeIndex]}
+          alt={`${dogId} ${labels[activeIndex]}`}
+          className="w-full h-56 object-cover"
+        />
+      </div>
+      {/* Label */}
+      <div className="absolute top-2 left-2 bg-black/50 text-white text-xs px-2 py-0.5 rounded-full">
+        {labels[activeIndex]}
+      </div>
+      {/* Dot indicators */}
+      {photos.length > 1 && (
+        <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5">
+          {photos.map((_, i) => (
+            <button
+              key={i}
+              onClick={(e) => { e.stopPropagation(); goTo(i); }}
+              className={`w-1.5 h-1.5 rounded-full transition-all ${
+                i === activeIndex ? 'bg-white scale-125' : 'bg-white/50'
+              }`}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Full-screen pinch-to-zoom image viewer with swipe-to-navigate carousel */
+function LightboxViewer({
+  photos,
+  initialIndex = 0,
+  alt,
+  onClose,
+}: {
+  photos: string[];
+  initialIndex?: number;
+  alt: string;
+  onClose: () => void;
+}) {
+  const [currentIndex, setCurrentIndex] = useState(initialIndex);
+  const src = photos[currentIndex];
+  const swipeStart = useRef<number | null>(null);
   const imgRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
   const [translate, setTranslate] = useState({ x: 0, y: 0 });
@@ -138,9 +217,20 @@ function LightboxViewer({ src, alt, onClose }: { src: string; alt: string; onClo
     }
   };
 
-  const handleTouchEnd = () => {
+  const handleTouchEnd = (e: React.TouchEvent) => {
     lastDist.current = null;
+    // Swipe left/right to navigate between photos (only when not zoomed)
+    if (scale === 1 && swipeStart.current !== null && e.changedTouches.length === 1) {
+      const dx = e.changedTouches[0].clientX - swipeStart.current;
+      if (Math.abs(dx) > 50) {
+        if (dx < 0 && currentIndex < photos.length - 1) setCurrentIndex(i => i + 1);
+        if (dx > 0 && currentIndex > 0) setCurrentIndex(i => i - 1);
+        setScale(1);
+        setTranslate({ x: 0, y: 0 });
+      }
+    }
     dragStart.current = null;
+    swipeStart.current = null;
   };
 
   return (
@@ -154,15 +244,33 @@ function LightboxViewer({ src, alt, onClose }: { src: string; alt: string; onClo
       >
         <X size={20} />
       </button>
+      {/* Dot indicators */}
+      {photos.length > 1 && (
+        <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-2 z-10">
+          {photos.map((_, i) => (
+            <button
+              key={i}
+              onClick={(e) => { e.stopPropagation(); setCurrentIndex(i); setScale(1); setTranslate({ x: 0, y: 0 }); }}
+              className={`w-2 h-2 rounded-full transition-all ${
+                i === currentIndex ? 'bg-white scale-125' : 'bg-white/40'
+              }`}
+            />
+          ))}
+        </div>
+      )}
       <div
         ref={imgRef}
         className="w-full h-full flex items-center justify-center overflow-hidden"
-        onTouchStart={handleTouchStart}
+        onTouchStart={(e) => {
+          if (e.touches.length === 1) swipeStart.current = e.touches[0].clientX;
+          handleTouchStart(e);
+        }}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
         style={{ touchAction: "none" }}
       >
         <img
+          key={src}
           src={src}
           alt={alt}
           draggable={false}
@@ -191,7 +299,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
   const [released, setReleased] = useState(() => !!record.releasedAt);
   const [confirmData, setConfirmData] = useState<ReleaseConfirmData | null>(null);
   const [confirming, setConfirming] = useState(false);
-  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [showPlanPicker, setShowPlanPicker] = useState(false);
   const [pendingPlanId, setPendingPlanId] = useState<number | null>(null);
   const [photo2Base64, setPhoto2Base64] = useState<string | null>(null);
@@ -220,26 +328,28 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
     onError: () => toast.error("Failed to add to plan"),
   });
 
-  function handlePhoto2Change(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handlePhoto2Change(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const b64 = ev.target?.result as string;
+    try {
+      const b64 = await resizeImage(file, 1280, 0.82);
       setPhoto2Base64(b64);
-    };
-    reader.readAsDataURL(file);
+    } catch {
+      toast.error("Failed to process image");
+    }
+    e.target.value = "";
   }
 
-  function handlePhoto3Change(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handlePhoto3Change(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const b64 = ev.target?.result as string;
+    try {
+      const b64 = await resizeImage(file, 1280, 0.82);
       setPhoto3Base64(b64);
-    };
-    reader.readAsDataURL(file);
+    } catch {
+      toast.error("Failed to process image");
+    }
+    e.target.value = "";
   }
 
   function confirmAddToPlan(planId: number) {
@@ -437,53 +547,40 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
           <X size={18} />
         </button>
 
-        {/* Photos row: photo1, photo2 (plan), photo3 (release) */}
-        {(record.imageUrl || record.photo2Url || record.releasePhotoUrl) && (
-          <div className={`bg-black/5 ${
-            [record.imageUrl, record.photo2Url, record.releasePhotoUrl].filter(Boolean).length > 1
-              ? 'grid grid-cols-3 gap-0.5'
-              : ''
-          }`}>
-            {record.imageUrl && (
-              <div className="cursor-zoom-in" onClick={() => setLightboxOpen(true)}>
-                <img
-                  src={record.imageUrl}
-                  alt={`${record.dogId} capture`}
-                  className={`w-full object-cover pointer-events-none ${
-                    [record.imageUrl, record.photo2Url, record.releasePhotoUrl].filter(Boolean).length > 1
-                      ? 'h-32'
-                      : 'max-h-[60vh] object-contain'
-                  }`}
+        {/* Photo carousel: swipe left/right to see all photos */}
+        {(() => {
+          const photos = [record.imageUrl, record.photo2Url, record.releasePhotoUrl].filter(Boolean) as string[];
+          const labels = [record.imageUrl && 'Capture', record.photo2Url && 'Plan', record.releasePhotoUrl && 'Release'].filter(Boolean) as string[];
+          if (photos.length === 0) return null;
+          return (
+            <>
+              {photos.length === 1 ? (
+                <div className="cursor-zoom-in" onClick={() => setLightboxIndex(0)}>
+                  <img
+                    src={photos[0]}
+                    alt={`${record.dogId} capture`}
+                    className="w-full max-h-[60vh] object-contain bg-black/5"
+                  />
+                </div>
+              ) : (
+                <PhotoCarousel
+                  photos={photos}
+                  labels={labels}
+                  dogId={record.dogId}
+                  onPhotoClick={(i: number) => setLightboxIndex(i)}
                 />
-              </div>
-            )}
-            {record.photo2Url && (
-              <div>
-                <img
-                  src={record.photo2Url}
-                  alt={`${record.dogId} plan photo`}
-                  className="w-full h-32 object-cover"
+              )}
+              {lightboxIndex !== null && (
+                <LightboxViewer
+                  photos={photos}
+                  initialIndex={lightboxIndex}
+                  alt={record.dogId}
+                  onClose={() => setLightboxIndex(null)}
                 />
-              </div>
-            )}
-            {record.releasePhotoUrl && (
-              <div>
-                <img
-                  src={record.releasePhotoUrl}
-                  alt={`${record.dogId} release photo`}
-                  className="w-full h-32 object-cover"
-                />
-              </div>
-            )}
-          </div>
-        )}
-        {lightboxOpen && record.imageUrl && (
-          <LightboxViewer
-            src={record.imageUrl}
-            alt={record.dogId}
-            onClose={() => setLightboxOpen(false)}
-          />
-        )}
+              )}
+            </>
+          );
+        })()}
 
         <div className="p-4 space-y-3">
           <h2 className="font-mono font-bold text-xl text-foreground">{record.dogId}</h2>

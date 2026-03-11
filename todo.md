@@ -147,3 +147,8 @@
 
 ## UX - Consistent Photo Buttons
 - [x] Photo2 (plan) and photo3 (release) camera/gallery buttons match the style of the main Camera/Upload buttons on Add and Lookup screens
+
+## Bug Fixes - Image Upload
+- [x] Remove save-to-gallery code from camera click handlers
+- [x] Unify all image uploads (photo1, photo2, photo3) to use resizeImage compression function
+- [x] Swipeable photo carousel in dog record detail modal (swipe left/right to see photos 1, 2, 3)
