@@ -74,3 +74,6 @@
 - [x] Replace 3-day/7-day/30-day toggle buttons with a dropdown
 - [x] Dropdown options: "Last 7 days", "Last 30 days", then individual dates that have records in past 30 days
 - [x] Add getRecordDates tRPC procedure to fetch distinct capture dates from past 30 days
+
+## Auto-save to Gallery
+- [x] When camera is used, immediately save the original photo to device gallery (not on upload)
