@@ -81,16 +81,16 @@ export default function Home() {
             label="Lookup"
           />
           <TabButton
-            active={activeTab === "records"}
-            onClick={() => setActiveTab("records")}
-            icon={<ClipboardList size={20} />}
-            label="Records"
-          />
-          <TabButton
             active={activeTab === "releases"}
             onClick={() => setActiveTab("releases")}
             icon={<CalendarCheck size={20} />}
             label="Releases"
+          />
+          <TabButton
+            active={activeTab === "records"}
+            onClick={() => setActiveTab("records")}
+            icon={<ClipboardList size={20} />}
+            label="Records"
           />
         </div>
         <div className="h-[env(safe-area-inset-bottom)]" />
