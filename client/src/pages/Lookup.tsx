@@ -313,7 +313,7 @@ export default function Lookup() {
                         </div>
                       )}
                       {match.reason && (
-                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2 italic">
+                        <p className="text-xs text-muted-foreground mt-1 italic">
                           {match.reason}
                         </p>
                       )}

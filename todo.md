@@ -170,3 +170,9 @@
 
 ## Bug - Photo 2 Missing in Records Tab Carousel
 - [x] photo2Url (plan photo) not included in getRecords query so carousel only shows photo1 and photo3 when opened from Records tab
+
+## UX - Remove from Release Plan Button
+- [ ] Replace disabled "Already in Release Plan" with red "Remove from Release Plan" button in RecordDetailModal
+
+## Bug - Match Reason Truncated in Lookup
+- [x] Match reason text in Lookup results is being trimmed/truncated — remove truncate class

@@ -318,6 +318,15 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
     { enabled: !!record.dogId && !released }
   );
   const isInAnyPlan = dogPlanIds.length > 0;
+  const removeDogFromPlan = trpc.releasePlans.removeDog.useMutation({
+    onSuccess: () => {
+      toast.success("Removed from release plan");
+      utils.releasePlans.getDogPlans.invalidate({ dogId: record.dogId });
+      utils.releasePlans.getPlanDogs.invalidate();
+      utils.dogs.getRecords.invalidate();
+    },
+    onError: () => toast.error("Failed to remove from plan"),
+  });
   const addDogToPlan = trpc.releasePlans.addDog.useMutation({
     onSuccess: (added) => {
       if (added) toast.success("Added to release plan");
