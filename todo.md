@@ -202,3 +202,8 @@
 - [x] When all dogs in a plan are released, set archivedAt on the plan
 - [x] getReleasePlans excludes archived plans from the active list
 - [x] Plans with at least one released dog (but not all) show "In Progress" badge
+
+## Release Plan - Manual Archive Button
+- [x] Remove auto-archive logic from saveRelease in routers.ts
+- [x] Add archivePlan tRPC mutation in routers.ts
+- [x] Add Archive button to each plan card in ReleasePlanPage

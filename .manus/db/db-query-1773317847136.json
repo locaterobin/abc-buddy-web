@@ -1,0 +1,21 @@
+{
+  "query": "SELECT * FROM release_plans LIMIT 20;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4YKkGxc6t8uKQwU.5f0d0a62126a --database hPjpqQFScRPNzVz7QPH5a8 --execute SELECT * FROM release_plans LIMIT 20;",
+  "rows": [
+    {
+      "id": "3",
+      "teamIdentifier": "bold-otter",
+      "planDate": "260312",
+      "notes": "NULL",
+      "createdAt": "2026-03-11 18:50:48",
+      "orderIndex": "1",
+      "firstReleasedAt": "NULL",
+      "lastReleasedAt": "NULL",
+      "archivedAt": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tteamIdentifier\tplanDate\tnotes\tcreatedAt\torderIndex\tfirstReleasedAt\tlastReleasedAt\tarchivedAt\n3\tbold-otter\t260312\tNULL\t2026-03-11 18:50:48\t1\tNULL\tNULL\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 1605
+}

@@ -1,0 +1,8 @@
+{
+  "query": "\nSELECT rp.id, rp.teamIdentifier, rp.planDate, rp.orderIndex, rp.createdAt, rp.firstReleasedAt, rp.lastReleasedAt, rp.archivedAt,\n       rpd.dogId, dr.status, dr.updatedAt\nFROM release_plans rp\nLEFT JOIN release_plan_dogs rpd ON rp.id = rpd.planId\nLEFT JOIN dog_records dr ON rpd.dogId = dr.dogId;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4YKkGxc6t8uKQwU.5f0d0a62126a --database hPjpqQFScRPNzVz7QPH5a8 --execute \nSELECT rp.id, rp.teamIdentifier, rp.planDate, rp.orderIndex, rp.createdAt, rp.firstReleasedAt, rp.lastReleasedAt, rp.archivedAt,\n       rpd.dogId, dr.status, dr.updatedAt\nFROM release_plans rp\nLEFT JOIN release_plan_dogs rpd ON rp.id = rpd.planId\nLEFT JOIN dog_records dr ON rpd.dogId = dr.dogId;\n",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 2: Unknown column 'dr.status' in 'field list'"
+  ]
+}

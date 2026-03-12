@@ -362,28 +362,12 @@ export async function getReleasePlans(teamIdentifier: string, sinceHours?: numbe
   return enriched;
 }
 
-// Called after a dog in a plan is released — updates timestamps and archives if all done
+// Called after a dog in a plan is released — updates first/last release timestamps only
 export async function updatePlanAfterRelease(planId: number): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // Get all dogs in this plan with their release status
-  const planDogs = await db
-    .select({ dogId: releasePlanDogs.dogId })
-    .from(releasePlanDogs)
-    .where(eq(releasePlanDogs.planId, planId));
-
-  if (planDogs.length === 0) return;
-
-  // Check which dogs are released
-  const dogIds = planDogs.map((d) => d.dogId);
-  const releasedDogs = await db
-    .select({ dogId: dogRecords.dogId })
-    .from(dogRecords)
-    .where(and(inArray(dogRecords.dogId, dogIds), isNotNull(dogRecords.releasedAt)));
-
   const now = new Date();
-  const allReleased = releasedDogs.length === planDogs.length;
 
   // Get current plan to check firstReleasedAt
   const plan = await db
@@ -398,11 +382,18 @@ export async function updatePlanAfterRelease(planId: number): Promise<void> {
   if (!plan[0]?.firstReleasedAt) {
     updateData.firstReleasedAt = now;
   }
-  if (allReleased) {
-    updateData.archivedAt = now;
-  }
 
   await db.update(releasePlans).set(updateData).where(eq(releasePlans.id, planId));
+}
+
+// Manually archive a plan
+export async function archiveReleasePlan(planId: number, teamIdentifier: string): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db
+    .update(releasePlans)
+    .set({ archivedAt: new Date() })
+    .where(and(eq(releasePlans.id, planId), eq(releasePlans.teamIdentifier, teamIdentifier)));
 }
 
 export async function createReleasePlan(teamIdentifier: string, planDate: string, notes?: string) {

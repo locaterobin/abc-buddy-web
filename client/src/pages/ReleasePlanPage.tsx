@@ -3,7 +3,7 @@ import { trpc } from "@/lib/trpc";
 import { useTeam } from "@/contexts/TeamContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, Map, Trash2, Plus, CalendarDays, Clock, CheckCircle2, Dog, GripVertical } from "lucide-react";
+import { ArrowLeft, Map, Trash2, Plus, CalendarDays, Clock, CheckCircle2, Dog, GripVertical, Archive } from "lucide-react";
 import { toast } from "sonner";
 import RecordDetailModal from "@/components/RecordDetailModal";
 import {
@@ -189,6 +189,14 @@ export default function ReleasePlanPage() {
       setLocalOrder(null);
       toast.error("Failed to save order");
     },
+  });
+
+  const archivePlan = trpc.releasePlans.archivePlan.useMutation({
+    onSuccess: () => {
+      utils.releasePlans.getPlans.invalidate();
+      toast.success("Plan archived");
+    },
+    onError: () => toast.error("Failed to archive plan"),
   });
 
   function handleCreatePlan() {
@@ -394,6 +402,18 @@ export default function ReleasePlanPage() {
                   </div>
                   <p className="text-xs text-muted-foreground">{formatPlanDate(plan.planDate)}{(plan as any).totalDogs > 0 ? ` · ${(plan as any).totalDogs} dogs` : ''}</p>
                 </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (confirm(`Archive plan ${plan.planDate}-${plan.orderIndex}? It will be hidden from this list.`)) {
+                      archivePlan.mutate({ planId: plan.id, teamIdentifier });
+                    }
+                  }}
+                  className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+                  title="Archive plan"
+                >
+                  <Archive size={16} />
+                </button>
                 <ArrowLeft size={16} className="text-muted-foreground rotate-180" />
               </CardContent>
             </Card>

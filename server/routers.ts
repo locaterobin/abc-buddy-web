@@ -25,6 +25,7 @@ import {
   reorderPlanDogs,
   updatePlanAfterRelease,
   getDogIdByRecordId,
+  archiveReleasePlan,
 } from "./db";
 import { storagePut } from "./storage";
 import { createOpenAI } from "@ai-sdk/openai";
@@ -427,7 +428,7 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
         releaseDistanceMetres: input.releaseDistanceMetres,
         releasePhotoUrl,
       });
-      // Update plan timestamps and archive if all dogs released
+      // Update plan timestamps (first/last release) — no auto-archive
       if (saved) {
         const dogIdForRecord = await getDogIdByRecordId(input.id);
         if (dogIdForRecord) {
@@ -614,6 +615,12 @@ const releasePlansRouter = router({
     .input(z.object({ planId: z.number(), orderedDogIds: z.array(z.string()) }))
     .mutation(async ({ input }) => {
       await reorderPlanDogs(input.planId, input.orderedDogIds);
+      return { success: true };
+    }),
+  archivePlan: publicProcedure
+    .input(z.object({ planId: z.number(), teamIdentifier: z.string() }))
+    .mutation(async ({ input }) => {
+      await archiveReleasePlan(input.planId, input.teamIdentifier);
       return { success: true };
     }),
 });

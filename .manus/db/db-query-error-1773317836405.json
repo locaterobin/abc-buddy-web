@@ -1,0 +1,8 @@
+{
+  "query": "\nSELECT rp.planId, rp.teamId, rp.createdAt, rp.firstReleasedAt, rp.lastReleasedAt, rp.archivedAt,\n       COUNT(rpd.dogId) AS totalDogs,\n       SUM(CASE WHEN dr.status = 'released' THEN 1 ELSE 0 END) AS releasedDogs\nFROM release_plans rp\nLEFT JOIN release_plan_dogs rpd ON rp.planId = rpd.planId\nLEFT JOIN dog_records dr ON rpd.dogId = dr.dogId\nGROUP BY rp.planId;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4YKkGxc6t8uKQwU.5f0d0a62126a --database hPjpqQFScRPNzVz7QPH5a8 --execute \nSELECT rp.planId, rp.teamId, rp.createdAt, rp.firstReleasedAt, rp.lastReleasedAt, rp.archivedAt,\n       COUNT(rpd.dogId) AS totalDogs,\n       SUM(CASE WHEN dr.status = 'released' THEN 1 ELSE 0 END) AS releasedDogs\nFROM release_plans rp\nLEFT JOIN release_plan_dogs rpd ON rp.planId = rpd.planId\nLEFT JOIN dog_records dr ON rpd.dogId = dr.dogId\nGROUP BY rp.planId;\n",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 2: Unknown column 'rp.planid' in 'on clause'"
+  ]
+}

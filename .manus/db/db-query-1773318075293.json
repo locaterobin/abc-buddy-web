@@ -1,0 +1,100 @@
+{
+  "query": "\nSELECT rp.id, rp.planDate, rp.orderIndex, rp.firstReleasedAt, rp.lastReleasedAt, rp.archivedAt,\n       rpd.dogId, dr.releasedAt AS dogReleasedAt\nFROM release_plans rp\nLEFT JOIN release_plan_dogs rpd ON rp.id = rpd.planId\nLEFT JOIN dog_records dr ON rpd.dogId = dr.dogId\nORDER BY rp.id, rpd.dogId;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4YKkGxc6t8uKQwU.5f0d0a62126a --database hPjpqQFScRPNzVz7QPH5a8 --execute \nSELECT rp.id, rp.planDate, rp.orderIndex, rp.firstReleasedAt, rp.lastReleasedAt, rp.archivedAt,\n       rpd.dogId, dr.releasedAt AS dogReleasedAt\nFROM release_plans rp\nLEFT JOIN release_plan_dogs rpd ON rp.id = rpd.planId\nLEFT JOIN dog_records dr ON rpd.dogId = dr.dogId\nORDER BY rp.id, rpd.dogId;\n",
+  "rows": [
+    {
+      "id": "3",
+      "planDate": "260312",
+      "orderIndex": "1",
+      "firstReleasedAt": "NULL",
+      "lastReleasedAt": "NULL",
+      "archivedAt": "NULL",
+      "dogId": "20260309-001",
+      "dogReleasedAt": "2026-03-12 06:50:02"
+    },
+    {
+      "id": "3",
+      "planDate": "260312",
+      "orderIndex": "1",
+      "firstReleasedAt": "NULL",
+      "lastReleasedAt": "NULL",
+      "archivedAt": "NULL",
+      "dogId": "20260309-002",
+      "dogReleasedAt": "2026-03-12 05:10:55"
+    },
+    {
+      "id": "3",
+      "planDate": "260312",
+      "orderIndex": "1",
+      "firstReleasedAt": "NULL",
+      "lastReleasedAt": "NULL",
+      "archivedAt": "NULL",
+      "dogId": "20260309-003",
+      "dogReleasedAt": "2026-03-12 05:09:57"
+    },
+    {
+      "id": "3",
+      "planDate": "260312",
+      "orderIndex": "1",
+      "firstReleasedAt": "NULL",
+      "lastReleasedAt": "NULL",
+      "archivedAt": "NULL",
+      "dogId": "20260309-004",
+      "dogReleasedAt": "2026-03-12 05:24:49"
+    },
+    {
+      "id": "3",
+      "planDate": "260312",
+      "orderIndex": "1",
+      "firstReleasedAt": "NULL",
+      "lastReleasedAt": "NULL",
+      "archivedAt": "NULL",
+      "dogId": "20260309-005",
+      "dogReleasedAt": "2026-03-12 05:39:21"
+    },
+    {
+      "id": "3",
+      "planDate": "260312",
+      "orderIndex": "1",
+      "firstReleasedAt": "NULL",
+      "lastReleasedAt": "NULL",
+      "archivedAt": "NULL",
+      "dogId": "20260309-006",
+      "dogReleasedAt": "2026-03-12 05:38:09"
+    },
+    {
+      "id": "3",
+      "planDate": "260312",
+      "orderIndex": "1",
+      "firstReleasedAt": "NULL",
+      "lastReleasedAt": "NULL",
+      "archivedAt": "NULL",
+      "dogId": "20260309-007",
+      "dogReleasedAt": "2026-03-12 05:32:08"
+    },
+    {
+      "id": "3",
+      "planDate": "260312",
+      "orderIndex": "1",
+      "firstReleasedAt": "NULL",
+      "lastReleasedAt": "NULL",
+      "archivedAt": "NULL",
+      "dogId": "20260309-008",
+      "dogReleasedAt": "2026-03-12 05:21:29"
+    },
+    {
+      "id": "3",
+      "planDate": "260312",
+      "orderIndex": "1",
+      "firstReleasedAt": "NULL",
+      "lastReleasedAt": "NULL",
+      "archivedAt": "NULL",
+      "dogId": "20260309-009",
+      "dogReleasedAt": "2026-03-12 04:57:29"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tplanDate\torderIndex\tfirstReleasedAt\tlastReleasedAt\tarchivedAt\tdogId\tdogReleasedAt\n3\t260312\t1\tNULL\tNULL\tNULL\t20260309-001\t2026-03-12 06:50:02\n3\t260312\t1\tNULL\tNULL\tNULL\t20260309-002\t2026-03-12 05:10:55\n3\t260312\t1\tNULL\tNULL\tNULL\t20260309-003\t2026-03-12 05:09:57\n3\t260312\t1\tNULL\tNULL\tNULL\t20260309-004\t2026-03-12 05:24:49\n3\t260312\t1\tNULL\tNULL\tNULL\t20260309-005\t2026-03-12 05:39:21\n3\t260312\t1\tNULL\tNULL\tNULL\t20260309-006\t2026-03-12 05:38:09\n3\t260312\t1\tNULL\tNULL\tNULL\t20260309-007\t2026-03-12 05:32:08\n3\t260312\t1\tNULL\tNULL\tNULL\t20260309-008\t2026-03-12 05:21:29\n3\t260312\t1\tNULL\tNULL\tNULL\t20260309-009\t2026-03-12 04:57:29\n",
+  "stderr": "",
+  "execution_time_ms": 1511
+}

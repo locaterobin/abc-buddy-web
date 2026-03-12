@@ -1,0 +1,8 @@
+{
+  "query": "\nSELECT rp.plan_id, rp.team_id, rp.created_at, rp.first_released_at, rp.last_released_at, rp.archived_at,\n       rpd.dog_id, dr.status, dr.updated_at\nFROM release_plans rp\nLEFT JOIN release_plan_dogs rpd ON rp.plan_id = rpd.plan_id\nLEFT JOIN dog_records dr ON rpd.dog_id = dr.dog_id;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4YKkGxc6t8uKQwU.5f0d0a62126a --database hPjpqQFScRPNzVz7QPH5a8 --execute \nSELECT rp.plan_id, rp.team_id, rp.created_at, rp.first_released_at, rp.last_released_at, rp.archived_at,\n       rpd.dog_id, dr.status, dr.updated_at\nFROM release_plans rp\nLEFT JOIN release_plan_dogs rpd ON rp.plan_id = rpd.plan_id\nLEFT JOIN dog_records dr ON rpd.dog_id = dr.dog_id;\n",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 2: Unknown column 'rp.plan_id' in 'on clause'"
+  ]
+}
