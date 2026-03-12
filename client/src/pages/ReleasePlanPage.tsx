@@ -3,10 +3,25 @@ import { trpc } from "@/lib/trpc";
 import { useTeam } from "@/contexts/TeamContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Map, Trash2, Plus, CalendarDays, Clock, CheckCircle2, Dog } from "lucide-react";
+import { ArrowLeft, Map, Trash2, Plus, CalendarDays, Clock, CheckCircle2, Dog, GripVertical } from "lucide-react";
 import { toast } from "sonner";
 import RecordDetailModal from "@/components/RecordDetailModal";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 // Format YYMMDD → "Mon, 10 Mar 2026"
 function formatPlanDate(yymmdd: string): string {
@@ -35,10 +50,95 @@ function todayYYMMDD(): string {
   return `${yy}${mm}${dd}`;
 }
 
+// Sortable dog card
+function SortableDogCard({
+  dog,
+  onOpen,
+  onRemove,
+}: {
+  dog: any;
+  onOpen: () => void;
+  onRemove: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: dog.dogId,
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 50 : undefined,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <Card className="border border-border/60 hover:border-primary/40 hover:bg-muted/30 transition-colors">
+        <CardContent className="p-3 flex items-center gap-2">
+          {/* Drag handle */}
+          <button
+            {...attributes}
+            {...listeners}
+            className="p-1 text-muted-foreground/40 hover:text-muted-foreground cursor-grab active:cursor-grabbing touch-none flex-shrink-0"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <GripVertical size={16} />
+          </button>
+
+          {/* Photo thumbnail — clickable */}
+          <div className="cursor-pointer" onClick={onOpen}>
+            {dog.imageUrl ? (
+              <img
+                src={dog.imageUrl}
+                alt={dog.dogId}
+                className="w-[56px] h-[56px] rounded-lg object-cover flex-shrink-0"
+              />
+            ) : (
+              <div className="w-[56px] h-[56px] rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                <Dog size={22} className="text-muted-foreground" />
+              </div>
+            )}
+          </div>
+
+          {/* Info — clickable */}
+          <div className="flex-1 min-w-0 cursor-pointer" onClick={onOpen}>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <p className="font-mono font-bold text-sm text-foreground">{dog.dogId}</p>
+              {dog.releasedAt && (
+                <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 border border-green-300/50 dark:border-green-700/50">
+                  <CheckCircle2 size={9} />
+                  Released
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+              <Clock size={11} />
+              <span>{dog.recordedAt ? new Date(dog.recordedAt).toLocaleString() : ""}</span>
+            </div>
+            {dog.areaName && (
+              <p className="text-xs text-muted-foreground truncate">{dog.areaName}</p>
+            )}
+          </div>
+
+          {/* Remove button */}
+          <button
+            onClick={(e) => { e.stopPropagation(); onRemove(); }}
+            className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors flex-shrink-0"
+          >
+            <Trash2 size={15} />
+          </button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export default function ReleasePlanPage() {
   const { teamId: teamIdentifier } = useTeam();
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
   const [selectedRecord, setSelectedRecord] = useState<any>(null);
+  // Local order state for optimistic drag reorder
+  const [localOrder, setLocalOrder] = useState<string[] | null>(null);
 
   const utils = trpc.useUtils();
 
@@ -53,6 +153,11 @@ export default function ReleasePlanPage() {
     { planId: selectedPlanId! },
     { enabled: selectedPlanId !== null }
   );
+
+  // Reset local order whenever server data refreshes
+  const planDogsKey = planDogs.map((d) => d.dogId).join(",");
+  // We use a ref-free approach: if localOrder has same set as planDogs, keep it; otherwise reset
+  // (handled in orderedDogs computation below)
 
   const createPlan = trpc.releasePlans.createPlan.useMutation({
     onSuccess: () => {
@@ -79,10 +184,16 @@ export default function ReleasePlanPage() {
     onError: () => toast.error("Failed to remove dog"),
   });
 
+  const reorderDogs = trpc.releasePlans.reorderDogs.useMutation({
+    onError: () => {
+      setLocalOrder(null);
+      toast.error("Failed to save order");
+    },
+  });
+
   function handleCreatePlan() {
     if (!teamIdentifier) return;
     const date = todayYYMMDD();
-    // Check if plan for today already exists
     const existing = plans.find((p) => p.planDate === date);
     if (existing) {
       setSelectedPlanId(existing.id);
@@ -100,7 +211,6 @@ export default function ReleasePlanPage() {
     if (coords.length === 1) {
       return `https://www.google.com/maps/search/?api=1&query=${coords[0]}`;
     }
-    // Multi-stop: origin + destination + waypoints
     const origin = coords[0];
     const destination = coords[coords.length - 1];
     const waypoints = coords.slice(1, -1).join("|");
@@ -109,136 +219,137 @@ export default function ReleasePlanPage() {
     return url;
   }
 
+  // Drag sensors — pointer (mouse/stylus) + touch
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } })
+  );
+
+  // Ordered dogs list (local optimistic order takes priority)
+  const orderedDogs = localOrder
+    ? localOrder.map((id) => planDogs.find((d) => d.dogId === id)).filter(Boolean) as typeof planDogs
+    : planDogs;
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const ids = orderedDogs.map((d) => d.dogId);
+    const oldIndex = ids.indexOf(active.id as string);
+    const newIndex = ids.indexOf(over.id as string);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const newOrder = arrayMove(ids, oldIndex, newIndex);
+    setLocalOrder(newOrder);
+
+    reorderDogs.mutate(
+      { planId: selectedPlanId!, orderedDogIds: newOrder },
+      {
+        onSuccess: () => {
+          utils.releasePlans.getPlanDogs.invalidate({ planId: selectedPlanId! });
+        },
+      }
+    );
+  }
+
   const selectedPlan = plans.find((p) => p.id === selectedPlanId);
 
   // ── Plan Detail View ──────────────────────────────────────────────────────────
   if (selectedPlanId !== null && selectedPlan) {
-    const mapsUrl = buildMapsUrl(planDogs);
-    const dogsWithCoords = planDogs.filter((d) => d.latitude != null && d.longitude != null);
+    const mapsUrl = buildMapsUrl(orderedDogs);
+    const dogsWithCoords = orderedDogs.filter((d) => d.latitude != null && d.longitude != null);
 
     return (
       <>
-      <div className="flex flex-col h-full bg-background">
-        {/* Header */}
-        <div className="flex items-center gap-3 px-4 pt-4 pb-3 border-b border-border">
-          <button
-            onClick={() => setSelectedPlanId(null)}
-            className="p-1.5 rounded-lg hover:bg-muted transition-colors"
-          >
-            <ArrowLeft size={20} className="text-foreground" />
-          </button>
-          <div className="flex-1 min-w-0">
-            <h2 className="font-bold text-foreground text-base leading-tight">
-              Plan {selectedPlan.planDate}-{selectedPlan.orderIndex}
-            </h2>
-            <p className="text-xs text-muted-foreground">{formatPlanDate(selectedPlan.planDate)}</p>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-destructive hover:text-destructive hover:bg-destructive/10 px-2"
-            onClick={() => {
-              if (confirm("Delete this entire release plan?")) {
-                deletePlan.mutate({ planId: selectedPlanId, teamIdentifier });
-              }
-            }}
-          >
-            <Trash2 size={16} />
-          </Button>
-        </div>
-
-        {/* Google Maps link */}
-        {mapsUrl && (
-          <div className="px-4 pt-3">
-            <Button
-              asChild
-              className="w-full gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
+        <div className="flex flex-col h-full bg-background">
+          {/* Header */}
+          <div className="flex items-center gap-3 px-4 pt-4 pb-3 border-b border-border">
+            <button
+              onClick={() => setSelectedPlanId(null)}
+              className="p-1.5 rounded-lg hover:bg-muted transition-colors"
             >
-              <a href={mapsUrl} target="_blank" rel="noopener noreferrer">
-                <Map size={17} />
-                Open {dogsWithCoords.length} location{dogsWithCoords.length !== 1 ? "s" : ""} in Maps
-              </a>
+              <ArrowLeft size={20} className="text-foreground" />
+            </button>
+            <div className="flex-1 min-w-0">
+              <h2 className="font-bold text-foreground text-base leading-tight">
+                Plan {selectedPlan.planDate}-{selectedPlan.orderIndex}
+              </h2>
+              <p className="text-xs text-muted-foreground">{formatPlanDate(selectedPlan.planDate)}</p>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-destructive hover:text-destructive hover:bg-destructive/10 px-2"
+              onClick={() => {
+                if (confirm("Delete this entire release plan?")) {
+                  deletePlan.mutate({ planId: selectedPlanId, teamIdentifier });
+                }
+              }}
+            >
+              <Trash2 size={16} />
             </Button>
           </div>
-        )}
 
-        {/* Dogs list */}
-        <div className="flex-1 overflow-y-auto px-4 pt-3 pb-4 space-y-2">
-          {dogsLoading ? (
-            <div className="text-center text-muted-foreground py-8 text-sm">Loading…</div>
-          ) : planDogs.length === 0 ? (
-            <div className="text-center text-muted-foreground py-12 text-sm">
-              <CalendarDays size={32} className="mx-auto mb-2 opacity-30" />
-              No dogs in this plan yet.
-              <br />
-              Open a record and tap "Add to Release Plan".
-            </div>
-          ) : (
-            planDogs.map((dog) => (
-              <Card
-                key={dog.id}
-                className="border border-border/60 cursor-pointer hover:border-primary/40 hover:bg-muted/30 transition-colors"
-                onClick={() => setSelectedRecord(dog)}
+          {/* Google Maps button */}
+          {mapsUrl && (
+            <div className="px-4 pt-3">
+              <Button
+                asChild
+                className="w-full gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
               >
-                <CardContent className="p-3 flex items-center gap-3">
-                  {/* Photo thumbnail */}
-                  {dog.imageUrl ? (
-                    <img
-                      src={dog.imageUrl}
-                      alt={dog.dogId}
-                      className="w-[60px] h-[60px] rounded-lg object-cover flex-shrink-0"
-                    />
-                  ) : (
-                    <div className="w-[60px] h-[60px] rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
-                      <Dog size={24} className="text-muted-foreground" />
-                    </div>
-                  )}
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <p className="font-mono font-bold text-sm text-foreground">{dog.dogId}</p>
-                      {dog.releasedAt && (
-                        <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 border border-green-300/50 dark:border-green-700/50">
-                          <CheckCircle2 size={9} />
-                          Released
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
-                      <Clock size={11} />
-                      <span>{dog.recordedAt ? new Date(dog.recordedAt).toLocaleString() : ""}</span>
-                    </div>
-                    {dog.areaName && (
-                      <p className="text-xs text-muted-foreground truncate">{dog.areaName}</p>
-                    )}
-                  </div>
-                  {/* Remove button */}
-                  <button
-                    onClick={(e) => { e.stopPropagation(); removeDog.mutate({ planId: selectedPlanId, dogId: dog.dogId }); }}
-                    className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors flex-shrink-0"
-                  >
-                    <Trash2 size={15} />
-                  </button>
-                </CardContent>
-              </Card>
-            ))
+                <a href={mapsUrl} target="_blank" rel="noopener noreferrer">
+                  <Map size={17} />
+                  Open {dogsWithCoords.length} location{dogsWithCoords.length !== 1 ? "s" : ""} in Maps
+                </a>
+              </Button>
+            </div>
           )}
+
+          {/* Dogs list */}
+          <div className="flex-1 overflow-y-auto px-4 pt-3 pb-4 space-y-2">
+            {dogsLoading ? (
+              <div className="text-center text-muted-foreground py-8 text-sm">Loading…</div>
+            ) : orderedDogs.length === 0 ? (
+              <div className="text-center text-muted-foreground py-12 text-sm">
+                <CalendarDays size={32} className="mx-auto mb-2 opacity-30" />
+                No dogs in this plan yet.
+                <br />
+                Open a record and tap "Add to Release Plan".
+              </div>
+            ) : (
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext
+                  items={orderedDogs.map((d) => d.dogId)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  {orderedDogs.map((dog) => (
+                    <SortableDogCard
+                      key={dog.dogId}
+                      dog={dog}
+                      onOpen={() => setSelectedRecord(dog)}
+                      onRemove={() => removeDog.mutate({ planId: selectedPlanId, dogId: dog.dogId })}
+                    />
+                  ))}
+                </SortableContext>
+              </DndContext>
+            )}
+          </div>
         </div>
-      </div>
-      {/* Record Detail Modal */}
-      {selectedRecord && (
-        <RecordDetailModal
-          record={selectedRecord}
-          onClose={() => {
-            setSelectedRecord(null);
-            utils.releasePlans.getPlanDogs.invalidate();
-          }}
-          onDelete={() => {
-            setSelectedRecord(null);
-            utils.releasePlans.getPlanDogs.invalidate();
-          }}
-        />
-      )}
+
+        {/* Record Detail Modal */}
+        {selectedRecord && (
+          <RecordDetailModal
+            record={selectedRecord}
+            onClose={() => {
+              setSelectedRecord(null);
+              utils.releasePlans.getPlanDogs.invalidate();
+            }}
+            onDelete={() => {
+              setSelectedRecord(null);
+              utils.releasePlans.getPlanDogs.invalidate();
+            }}
+          />
+        )}
       </>
     );
   }

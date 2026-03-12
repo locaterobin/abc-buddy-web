@@ -341,8 +341,10 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
       else toast.info("Already in this plan");
       utils.releasePlans.getDogPlans.invalidate({ dogId: record.dogId });
       utils.releasePlans.getPlanDogs.invalidate();
+      utils.releasePlans.getFullRecord.invalidate({ dogId: record.dogId });
       setPendingPlanId(null);
       setPhoto2Base64(null);
+      setShowPlanPicker(false);
     },
     onError: () => toast.error("Failed to add to plan"),
   });

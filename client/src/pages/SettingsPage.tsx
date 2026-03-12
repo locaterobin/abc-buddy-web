@@ -32,7 +32,9 @@ export default function RecordsPage() {
   const [selectedRecord, setSelectedRecord] = useState<any>(null);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState(""); // debounced
-  const [filterDate, setFilterDate] = useState("");
+  const [filterDate, setFilterDate] = useState(() => {
+    try { return localStorage.getItem("records_filterDate") ?? ""; } catch { return ""; }
+  });
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [page, setPage] = useState(1);
   const [allRecords, setAllRecords] = useState<any[]>([]);
@@ -59,6 +61,11 @@ export default function RecordsPage() {
       setAllRecords([]);
     }, 350);
   }, []);
+
+  // Persist filterDate to localStorage
+  useEffect(() => {
+    try { localStorage.setItem("records_filterDate", filterDate); } catch {}
+  }, [filterDate]);
 
   // Reset when filters change
   useEffect(() => {

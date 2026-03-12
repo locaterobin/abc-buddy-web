@@ -21,6 +21,7 @@ import {
   Clock,
   MapPin,
   X,
+  CheckCircle2,
 } from "lucide-react";
 import RecordDetailModal from "@/components/RecordDetailModal";
 import { getCachedRecordDates, setCachedRecordDates } from "@/hooks/useRecordCache";
@@ -36,7 +37,6 @@ function fileToBase64(file: File): Promise<string> {
 
 /** Format a YYYY-MM-DD string as "Mon, 10 Mar 2026" in IST */
 function formatDateOption(dateStr: string): string {
-  // Parse as IST noon to avoid any date-shifting
   const d = new Date(dateStr + "T12:00:00+05:30");
   return d.toLocaleDateString("en-GB", {
     timeZone: "Asia/Kolkata",
@@ -45,6 +45,22 @@ function formatDateOption(dateStr: string): string {
     month: "short",
     year: "numeric",
   });
+}
+
+/** Convert timeRange value to dateFrom / dateTo for getRecordsPaginated */
+function timeRangeToDateFilter(timeRange: string): { dateFrom?: string; dateTo?: string } {
+  if (timeRange === "7days") {
+    const d = new Date();
+    d.setDate(d.getDate() - 7);
+    return { dateFrom: d.toISOString().slice(0, 10) };
+  }
+  if (timeRange === "30days") {
+    const d = new Date();
+    d.setDate(d.getDate() - 30);
+    return { dateFrom: d.toISOString().slice(0, 10) };
+  }
+  // Specific date
+  return { dateFrom: timeRange, dateTo: timeRange };
 }
 
 export default function Lookup() {
@@ -64,7 +80,7 @@ export default function Lookup() {
     if (teamId) getCachedRecordDates(teamId).then(setCachedDates);
   }, [teamId]);
 
-  // Fetch distinct dates that have records in the past 30 days
+  // Fetch distinct dates that have records
   const { data: datesData } = trpc.dogs.getRecordDates.useQuery(
     { teamIdentifier: teamId },
     { enabled: !!teamId, staleTime: 60_000 }
@@ -79,8 +95,22 @@ export default function Lookup() {
     }
   }, [teamId, freshDates.join("|")]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Use fresh dates if available, fall back to cache when offline
   const recordDates: string[] = freshDates.length > 0 ? freshDates : cachedDates;
+
+  // Default list: all records in the selected time range (no photo needed)
+  const { dateFrom, dateTo } = timeRangeToDateFilter(timeRange);
+  const defaultListQuery = trpc.dogs.getRecordsPaginated.useQuery(
+    {
+      teamIdentifier: teamId,
+      page: 1,
+      pageSize: 100,
+      dateFrom,
+      dateTo,
+      status: "all",
+    },
+    { enabled: !!teamId && !lookupMutation.isSuccess }
+  );
+  const defaultRecords: any[] = defaultListQuery.data?.records ?? [];
 
   const handleFile = useCallback(async (file: File) => {
     try {
@@ -92,20 +122,14 @@ export default function Lookup() {
     }
   }, []);
 
-  const handleSearch = () => {
-    if (!imageBase64) {
-      toast.error("Please upload an image first");
-      return;
-    }
+  // Auto-search when image is set
+  useEffect(() => {
+    if (!imageBase64 || !teamId) return;
     lookupMutation.mutate(
       { teamIdentifier: teamId, imageBase64, timeRange },
-      {
-        onError: (err) => {
-          toast.error("Search failed: " + err.message);
-        },
-      }
+      { onError: (err) => toast.error("Search failed: " + err.message) }
     );
-  };
+  }, [imageBase64]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const confidenceConfig = {
     high: { label: "High match", className: "bg-green-100 text-green-800 border-green-200" },
@@ -115,10 +139,23 @@ export default function Lookup() {
 
   const matches = lookupMutation.data?.matches || [];
 
+  // Which list to show
+  const showSearchResults = lookupMutation.isSuccess || lookupMutation.isPending;
+
   return (
     <div className="container py-4 pb-6 max-w-lg mx-auto space-y-4">
       {/* Date Range Dropdown */}
-      <Select value={timeRange} onValueChange={setTimeRange}>
+      <Select
+        value={timeRange}
+        onValueChange={(v) => {
+          setTimeRange(v);
+          // Reset search results when filter changes
+          if (lookupMutation.isSuccess) {
+            lookupMutation.reset();
+            setImageBase64("");
+          }
+        }}
+      >
         <SelectTrigger className="w-full">
           <SelectValue placeholder="Select date range" />
         </SelectTrigger>
@@ -139,13 +176,13 @@ export default function Lookup() {
 
       {/* Upload Area */}
       <Card className={`border-2 ${imageBase64 ? "border-border" : "border-dashed border-primary/30 bg-primary/5"}`}>
-        <CardContent className={imageBase64 ? "p-0" : "py-8"}>
+        <CardContent className={imageBase64 ? "p-0" : "py-6"}>
           {imageBase64 ? (
             <div className="relative">
               <img
                 src={imageBase64}
                 alt="Query"
-                className="w-full max-h-[35vh] object-contain bg-black/5 rounded-lg"
+                className="w-full max-h-[30vh] object-contain bg-black/5 rounded-lg"
               />
               <button
                 onClick={() => {
@@ -167,13 +204,13 @@ export default function Lookup() {
                 if (file?.type.startsWith("image/")) handleFile(file);
               }}
             >
-              <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
-                <Search className="text-primary" size={24} />
+              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                <Search className="text-primary" size={20} />
               </div>
               <div className="text-center">
-                <p className="font-semibold text-foreground">Upload a photo to search</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Find matching dogs in your records
+                <p className="font-semibold text-foreground text-sm">Upload photo to narrow results</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Or browse all records below
                 </p>
               </div>
               <div className="flex gap-3">
@@ -194,7 +231,6 @@ export default function Lookup() {
                   Upload
                 </Button>
               </div>
-              {/* Camera input — opens rear camera directly */}
               <input
                 ref={cameraInputRef}
                 type="file"
@@ -207,7 +243,6 @@ export default function Lookup() {
                   e.target.value = "";
                 }}
               />
-              {/* Upload input — opens gallery/file picker */}
               <input
                 ref={fileInputRef}
                 type="file"
@@ -224,33 +259,17 @@ export default function Lookup() {
         </CardContent>
       </Card>
 
-      {/* Search Button */}
-      {imageBase64 && (
-        <Button
-          className="w-full"
-          size="lg"
-          onClick={handleSearch}
-          disabled={lookupMutation.isPending}
-        >
-          {lookupMutation.isPending ? (
-            <Loader2 size={16} className="mr-2 animate-spin" />
-          ) : (
-            <Search size={16} className="mr-2" />
-          )}
-          {lookupMutation.isPending ? "Searching..." : "Search Records"}
-        </Button>
-      )}
-
-      {/* Results */}
+      {/* Search in progress */}
       {lookupMutation.isPending && (
         <div className="text-center py-8">
           <Loader2 size={32} className="animate-spin text-primary mx-auto mb-3" />
           <p className="text-sm text-muted-foreground">
-            Comparing against records... This may take a moment.
+            Comparing against records… This may take a moment.
           </p>
         </div>
       )}
 
+      {/* No photo-search matches */}
       {lookupMutation.isSuccess && matches.length === 0 && (
         <Card>
           <CardContent className="py-8 text-center">
@@ -263,7 +282,8 @@ export default function Lookup() {
         </Card>
       )}
 
-      {matches.length > 0 && (
+      {/* Photo-search results */}
+      {showSearchResults && matches.length > 0 && (
         <div className="space-y-2">
           <p className="text-sm font-medium text-muted-foreground">
             {matches.length} result{matches.length !== 1 ? "s" : ""} found
@@ -309,7 +329,7 @@ export default function Lookup() {
                       {rec.areaName && (
                         <div className="flex items-center gap-1 text-xs text-muted-foreground">
                           <MapPin size={12} />
-                          <span className="truncate">{rec.areaName}</span>
+                          <span>{rec.areaName}</span>
                         </div>
                       )}
                       {match.reason && (
@@ -323,6 +343,85 @@ export default function Lookup() {
               </Card>
             );
           })}
+        </div>
+      )}
+
+      {/* Default list: all records in the selected range (shown when no photo search active) */}
+      {!showSearchResults && (
+        <div className="space-y-2">
+          {defaultListQuery.isLoading ? (
+            <div className="text-center py-6">
+              <Loader2 size={24} className="animate-spin text-primary mx-auto" />
+            </div>
+          ) : defaultRecords.length === 0 ? (
+            <Card>
+              <CardContent className="py-8 text-center">
+                <Search size={32} className="text-muted-foreground mx-auto mb-3 opacity-50" />
+                <p className="font-medium text-foreground">No records in this period</p>
+                <p className="text-sm text-muted-foreground mt-1">Try selecting a different date range</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              <p className="text-sm font-medium text-muted-foreground">
+                {defaultRecords.length} record{defaultRecords.length !== 1 ? "s" : ""} in this period
+              </p>
+              {defaultRecords.map((rec: any) => (
+                <Card
+                  key={rec.id}
+                  className="cursor-pointer hover:shadow-md transition-shadow"
+                  onClick={() => setSelectedRecord(rec)}
+                >
+                  <CardContent className="p-3">
+                    <div className="flex gap-3">
+                      {rec.imageUrl && (
+                        <img
+                          src={rec.imageUrl}
+                          alt={rec.dogId}
+                          className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
+                        />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <span className="font-mono font-bold text-sm text-foreground">
+                            {rec.dogId}
+                          </span>
+                          {rec.releasedAt && (
+                            <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 border border-green-300/50">
+                              <CheckCircle2 size={9} />
+                              Released
+                            </span>
+                          )}
+                          {rec.inReleasePlan && !rec.releasedAt && (
+                            <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400 border border-yellow-300/50">
+                              Checked
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                          <Clock size={12} />
+                          <span>
+                            {new Date(rec.recordedAt).toLocaleDateString("en-GB", {
+                              timeZone: "Asia/Kolkata",
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                            })}
+                          </span>
+                        </div>
+                        {rec.areaName && (
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <MapPin size={12} />
+                            <span>{rec.areaName}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </>
+          )}
         </div>
       )}
 

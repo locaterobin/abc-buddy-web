@@ -179,3 +179,10 @@
 
 ## Bug - RecordDetailModal uses stale partial data
 - [x] RecordDetailModal should always fetch full record data (incl. photo2Url) from a single getRecordById query on open
+
+## UX Batch - 5 Improvements
+- [x] Lookup: show all records by default filtered by dropdown; photo upload narrows results
+- [x] Move Records tab to hamburger menu (above Settings)
+- [x] Records: persist last selected date filter via localStorage
+- [x] Add to Release Plan: auto-close picker after confirming
+- [x] Release plan: drag-to-reorder dogs (sortOrder column in release_plan_dogs)

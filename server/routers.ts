@@ -22,6 +22,7 @@ import {
   removeDogFromReleasePlan,
   getDogReleasePlans,
   getFullRecordByDogId,
+  reorderPlanDogs,
 } from "./db";
 import { storagePut } from "./storage";
 import { createOpenAI } from "@ai-sdk/openai";
@@ -596,6 +597,12 @@ const releasePlansRouter = router({
     .input(z.object({ dogId: z.string() }))
     .query(async ({ input }) => {
       return getFullRecordByDogId(input.dogId);
+    }),
+  reorderDogs: publicProcedure
+    .input(z.object({ planId: z.number(), orderedDogIds: z.array(z.string()) }))
+    .mutation(async ({ input }) => {
+      await reorderPlanDogs(input.planId, input.orderedDogIds);
+      return { success: true };
     }),
 });
 

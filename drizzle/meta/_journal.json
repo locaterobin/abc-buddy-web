@@ -57,6 +57,13 @@
       "when": 1773258201200,
       "tag": "0007_spooky_pestilence",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "5",
+      "when": 1773292443924,
+      "tag": "0008_flashy_nighthawk",
+      "breakpoints": true
     }
   ]
 }

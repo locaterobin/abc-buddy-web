@@ -86,12 +86,6 @@ export default function Home() {
             icon={<CalendarCheck size={20} />}
             label="Releases"
           />
-          <TabButton
-            active={activeTab === "records"}
-            onClick={() => setActiveTab("records")}
-            icon={<ClipboardList size={20} />}
-            label="Records"
-          />
         </div>
         <div className="h-[env(safe-area-inset-bottom)]" />
       </nav>
@@ -120,6 +114,15 @@ export default function Home() {
 
             {/* Drawer items */}
             <div className="flex-1 py-2">
+              <DrawerItem
+                icon={<ClipboardList size={18} />}
+                label="Records"
+                active={activeTab === "records"}
+                onClick={() => {
+                  setDrawerOpen(false);
+                  setActiveTab("records");
+                }}
+              />
               <DrawerItem
                 icon={<Settings size={18} />}
                 label="Settings"
@@ -188,17 +191,21 @@ function DrawerItem({
   icon,
   label,
   onClick,
+  active,
 }: {
   icon: React.ReactNode;
   label: string;
   onClick: () => void;
+  active?: boolean;
 }) {
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-foreground hover:bg-muted transition-colors"
+      className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors ${
+        active ? "text-primary bg-primary/5" : "text-foreground hover:bg-muted"
+      }`}
     >
-      <span className="text-muted-foreground">{icon}</span>
+      <span className={active ? "text-primary" : "text-muted-foreground"}>{icon}</span>
       {label}
     </button>
   );

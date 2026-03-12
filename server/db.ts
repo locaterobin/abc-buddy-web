@@ -363,6 +363,7 @@ export async function getReleasePlanDogs(planId: number) {
       planId: releasePlanDogs.planId,
       photo2Url: releasePlanDogs.photo2Url,
       addedAt: releasePlanDogs.addedAt,
+      sortOrder: releasePlanDogs.sortOrder,
       // full dog_records fields
       id: dogRecords.id,
       dogId: dogRecords.dogId,
@@ -385,7 +386,7 @@ export async function getReleasePlanDogs(planId: number) {
     .from(releasePlanDogs)
     .innerJoin(dogRecords, eq(releasePlanDogs.dogId, dogRecords.dogId))
     .where(eq(releasePlanDogs.planId, planId))
-    .orderBy(releasePlanDogs.addedAt);
+    .orderBy(releasePlanDogs.sortOrder, releasePlanDogs.addedAt);
   return rows;
 }
 
@@ -441,8 +442,32 @@ export async function addDogToReleasePlan(planId: number, dogId: string, photo2U
     }
     return false;
   }
-  await db.insert(releasePlanDogs).values({ planId, dogId, photo2Url });
+  // Assign sortOrder as max + 1 for this plan
+  const maxRow = await db
+    .select({ maxSort: releasePlanDogs.sortOrder })
+    .from(releasePlanDogs)
+    .where(eq(releasePlanDogs.planId, planId))
+    .orderBy(releasePlanDogs.sortOrder)
+    .limit(1);
+  // Get actual max
+  const allRows = await db
+    .select({ s: releasePlanDogs.sortOrder })
+    .from(releasePlanDogs)
+    .where(eq(releasePlanDogs.planId, planId));
+  const maxSort = allRows.length > 0 ? Math.max(...allRows.map((r) => r.s)) : -1;
+  await db.insert(releasePlanDogs).values({ planId, dogId, photo2Url, sortOrder: maxSort + 1 });
   return true;
+}
+
+export async function reorderPlanDogs(planId: number, orderedDogIds: string[]): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  for (let i = 0; i < orderedDogIds.length; i++) {
+    await db
+      .update(releasePlanDogs)
+      .set({ sortOrder: i })
+      .where(and(eq(releasePlanDogs.planId, planId), eq(releasePlanDogs.dogId, orderedDogIds[i])));
+  }
 }
 
 export async function removeDogFromReleasePlan(planId: number, dogId: string): Promise<boolean> {
