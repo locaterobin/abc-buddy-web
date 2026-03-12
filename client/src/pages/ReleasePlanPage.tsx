@@ -194,12 +194,6 @@ export default function ReleasePlanPage() {
   function handleCreatePlan() {
     if (!teamIdentifier) return;
     const date = todayYYMMDD();
-    const existing = plans.find((p) => p.planDate === date);
-    if (existing) {
-      setSelectedPlanId(existing.id);
-      toast.info("Plan for today already exists");
-      return;
-    }
     createPlan.mutate({ teamIdentifier, planDate: date });
   }
 

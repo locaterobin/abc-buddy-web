@@ -189,3 +189,6 @@
 
 ## UX - Tab Rename
 - [x] Rename "Add" tab to "Catching" in bottom nav
+
+## Bug - Multiple Plans Per Day Blocked
+- [x] Remove "plan already exists for today" guard from createReleasePlan — sortOrder suffix already handles same-day disambiguation
