@@ -242,10 +242,10 @@ export default function RecordsPage() {
                       <img
                         src={rec.imageUrl}
                         alt={rec.dogId}
-                        className="w-[60px] h-[60px] rounded-lg object-cover flex-shrink-0"
+                        className="w-[80px] h-[80px] rounded-lg object-cover flex-shrink-0"
                       />
                     ) : (
-                      <div className="w-[60px] h-[60px] rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                      <div className="w-[80px] h-[80px] rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
                         <Dog size={24} className="text-muted-foreground" />
                       </div>
                     )}
