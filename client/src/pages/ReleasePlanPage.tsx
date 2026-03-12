@@ -386,8 +386,13 @@ export default function ReleasePlanPage() {
                   <CalendarDays size={18} className="text-primary" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-mono font-bold text-foreground text-sm">{plan.planDate}-{plan.orderIndex}</p>
-                  <p className="text-xs text-muted-foreground">{formatPlanDate(plan.planDate)}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-mono font-bold text-foreground text-sm">{plan.planDate}-{plan.orderIndex}</p>
+                    {(plan as any).totalDogs > 1 && (plan as any).releasedDogs > 0 && (plan as any).releasedDogs < (plan as any).totalDogs && (
+                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-yellow-500/20 text-yellow-600 border border-yellow-500/30">In Progress</span>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">{formatPlanDate(plan.planDate)}{(plan as any).totalDogs > 0 ? ` · ${(plan as any).totalDogs} dogs` : ''}</p>
                 </div>
                 <ArrowLeft size={16} className="text-muted-foreground rotate-180" />
               </CardContent>

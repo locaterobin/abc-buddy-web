@@ -23,6 +23,8 @@ import {
   getDogReleasePlans,
   getFullRecordByDogId,
   reorderPlanDogs,
+  updatePlanAfterRelease,
+  getDogIdByRecordId,
 } from "./db";
 import { storagePut } from "./storage";
 import { createOpenAI } from "@ai-sdk/openai";
@@ -425,6 +427,16 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
         releaseDistanceMetres: input.releaseDistanceMetres,
         releasePhotoUrl,
       });
+      // Update plan timestamps and archive if all dogs released
+      if (saved) {
+        const dogIdForRecord = await getDogIdByRecordId(input.id);
+        if (dogIdForRecord) {
+          const planIdsForDog = await getDogReleasePlans(dogIdForRecord);
+          for (const planId of planIdsForDog) {
+            await updatePlanAfterRelease(planId);
+          }
+        }
+      }
       return { success: saved };
     }),
 

@@ -195,3 +195,10 @@
 
 ## Lookup - Exclude Released Dogs
 - [x] Lookup should only show dogs that are not yet released (filter out released records)
+
+## Release Plan - Archiving & Status
+- [x] Add firstReleasedAt, lastReleasedAt, archivedAt columns to release_plans table
+- [x] saveRelease updates firstReleasedAt (first time) and lastReleasedAt (every time) on the plan
+- [x] When all dogs in a plan are released, set archivedAt on the plan
+- [x] getReleasePlans excludes archived plans from the active list
+- [x] Plans with at least one released dog (but not all) show "In Progress" badge

@@ -48,6 +48,9 @@ export const releasePlans = mysqlTable("release_plans", {
   orderIndex: int("orderIndex").notNull().default(1), // 1-based per day per team
   notes: text("notes"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
+  firstReleasedAt: timestamp("firstReleasedAt"),
+  lastReleasedAt: timestamp("lastReleasedAt"),
+  archivedAt: timestamp("archivedAt"),
 });
 
 export type ReleasePlan = typeof releasePlans.$inferSelect;

@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, isNotNull, isNull, like, lte, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNotNull, isNull, like, lte, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, users, dogRecords, InsertDogRecord, DogRecord, releasePlans, releasePlanDogs } from "../drizzle/schema";
 import { ENV } from './_core/env';
@@ -315,19 +315,94 @@ export async function getRecordDates(teamIdentifier: string): Promise<string[]> 
 
 // ── Release Plans ──────────────────────────────────────────────────────────────
 
+export async function getDogIdByRecordId(id: number): Promise<string | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select({ dogId: dogRecords.dogId }).from(dogRecords).where(eq(dogRecords.id, id)).limit(1);
+  return rows[0]?.dogId ?? null;
+}
+
 export async function getReleasePlans(teamIdentifier: string, sinceHours?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const conditions = [eq(releasePlans.teamIdentifier, teamIdentifier)];
+  const conditions = [
+    eq(releasePlans.teamIdentifier, teamIdentifier),
+    isNull(releasePlans.archivedAt), // exclude archived plans
+  ];
   if (sinceHours !== undefined) {
     const since = new Date(Date.now() - sinceHours * 60 * 60 * 1000);
     conditions.push(gte(releasePlans.createdAt, since));
   }
-  return db
+  const plans = await db
     .select()
     .from(releasePlans)
     .where(and(...conditions))
     .orderBy(desc(releasePlans.planDate));
+
+  // Enrich each plan with dog counts
+  const enriched = await Promise.all(
+    plans.map(async (plan) => {
+      const planDogs = await db
+        .select({ dogId: releasePlanDogs.dogId })
+        .from(releasePlanDogs)
+        .where(eq(releasePlanDogs.planId, plan.id));
+      const totalDogs = planDogs.length;
+      let releasedDogs = 0;
+      if (totalDogs > 0) {
+        const dogIds = planDogs.map((d) => d.dogId);
+        const released = await db
+          .select({ dogId: dogRecords.dogId })
+          .from(dogRecords)
+          .where(and(inArray(dogRecords.dogId, dogIds), isNotNull(dogRecords.releasedAt)));
+        releasedDogs = released.length;
+      }
+      return { ...plan, totalDogs, releasedDogs };
+    })
+  );
+  return enriched;
+}
+
+// Called after a dog in a plan is released — updates timestamps and archives if all done
+export async function updatePlanAfterRelease(planId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Get all dogs in this plan with their release status
+  const planDogs = await db
+    .select({ dogId: releasePlanDogs.dogId })
+    .from(releasePlanDogs)
+    .where(eq(releasePlanDogs.planId, planId));
+
+  if (planDogs.length === 0) return;
+
+  // Check which dogs are released
+  const dogIds = planDogs.map((d) => d.dogId);
+  const releasedDogs = await db
+    .select({ dogId: dogRecords.dogId })
+    .from(dogRecords)
+    .where(and(inArray(dogRecords.dogId, dogIds), isNotNull(dogRecords.releasedAt)));
+
+  const now = new Date();
+  const allReleased = releasedDogs.length === planDogs.length;
+
+  // Get current plan to check firstReleasedAt
+  const plan = await db
+    .select({ firstReleasedAt: releasePlans.firstReleasedAt })
+    .from(releasePlans)
+    .where(eq(releasePlans.id, planId))
+    .limit(1);
+
+  const updateData: Record<string, unknown> = {
+    lastReleasedAt: now,
+  };
+  if (!plan[0]?.firstReleasedAt) {
+    updateData.firstReleasedAt = now;
+  }
+  if (allReleased) {
+    updateData.archivedAt = now;
+  }
+
+  await db.update(releasePlans).set(updateData).where(eq(releasePlans.id, planId));
 }
 
 export async function createReleasePlan(teamIdentifier: string, planDate: string, notes?: string) {
