@@ -21,6 +21,7 @@ import {
   addDogToReleasePlan,
   removeDogFromReleasePlan,
   getDogReleasePlans,
+  getFullRecordByDogId,
 } from "./db";
 import { storagePut } from "./storage";
 import { createOpenAI } from "@ai-sdk/openai";
@@ -590,6 +591,11 @@ const releasePlansRouter = router({
     .input(z.object({ dogId: z.string() }))
     .query(async ({ input }) => {
       return getDogReleasePlans(input.dogId);
+    }),
+  getFullRecord: publicProcedure
+    .input(z.object({ dogId: z.string() }))
+    .query(async ({ input }) => {
+      return getFullRecordByDogId(input.dogId);
     }),
 });
 

@@ -176,3 +176,6 @@
 
 ## Bug - Match Reason Truncated in Lookup
 - [x] Match reason text in Lookup results is being trimmed/truncated — remove truncate class
+
+## Bug - RecordDetailModal uses stale partial data
+- [x] RecordDetailModal should always fetch full record data (incl. photo2Url) from a single getRecordById query on open

@@ -389,6 +389,40 @@ export async function getReleasePlanDogs(planId: number) {
   return rows;
 }
 
+export async function getFullRecordByDogId(dogId: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const rows = await db
+    .select({
+      planDogId: releasePlanDogs.id,
+      planId: releasePlanDogs.planId,
+      photo2Url: releasePlanDogs.photo2Url,
+      addedAt: releasePlanDogs.addedAt,
+      id: dogRecords.id,
+      dogId: dogRecords.dogId,
+      teamIdentifier: dogRecords.teamIdentifier,
+      imageUrl: dogRecords.imageUrl,
+      description: dogRecords.description,
+      areaName: dogRecords.areaName,
+      latitude: dogRecords.latitude,
+      longitude: dogRecords.longitude,
+      recordedAt: dogRecords.recordedAt,
+      releasedAt: dogRecords.releasedAt,
+      releasePhotoUrl: dogRecords.releasePhotoUrl,
+      releaseLatitude: dogRecords.releaseLatitude,
+      releaseLongitude: dogRecords.releaseLongitude,
+      releaseAreaName: dogRecords.releaseAreaName,
+      releaseDistanceMetres: dogRecords.releaseDistanceMetres,
+      notes: dogRecords.notes,
+      createdAt: dogRecords.createdAt,
+    })
+    .from(dogRecords)
+    .leftJoin(releasePlanDogs, eq(releasePlanDogs.dogId, dogRecords.dogId))
+    .where(eq(dogRecords.dogId, dogId))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
 export async function addDogToReleasePlan(planId: number, dogId: string, photo2Url?: string): Promise<boolean> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");

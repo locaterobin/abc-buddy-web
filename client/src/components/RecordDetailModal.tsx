@@ -307,6 +307,14 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
   const [photo3Base64, setPhoto3Base64] = useState<string | null>(null);
   const photo3InputRef = useRef<HTMLInputElement>(null);
 
+  // Always fetch the full record (with photo2Url from release_plan_dogs) as the source of truth
+  const { data: freshRecord } = trpc.releasePlans.getFullRecord.useQuery(
+    { dogId: record.dogId },
+    { enabled: !!record.dogId }
+  );
+  // Merge: use freshRecord when available, fall back to prop for initial render
+  const rec = freshRecord ?? record;
+
   // Release plans
   const { data: plans = [] } = trpc.releasePlans.getPlans.useQuery(
     { teamIdentifier: teamId, sinceHours: 48 },
@@ -560,8 +568,8 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
 
         {/* Photo carousel: swipe left/right to see all photos */}
         {(() => {
-          const photos = [record.imageUrl, record.photo2Url, record.releasePhotoUrl].filter(Boolean) as string[];
-          const labels = [record.imageUrl && 'Capture', record.photo2Url && 'Plan', record.releasePhotoUrl && 'Release'].filter(Boolean) as string[];
+          const photos = [rec.imageUrl, rec.photo2Url, rec.releasePhotoUrl].filter(Boolean) as string[];
+          const labels = [rec.imageUrl && 'Capture', rec.photo2Url && 'Plan', rec.releasePhotoUrl && 'Release'].filter(Boolean) as string[];
           if (photos.length === 0) return null;
           return (
             <>
@@ -569,7 +577,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
                 <div className="cursor-zoom-in" onClick={() => setLightboxIndex(0)}>
                   <img
                     src={photos[0]}
-                    alt={`${record.dogId} capture`}
+                    alt={`${rec.dogId} capture`}
                     className="w-full max-h-[60vh] object-contain bg-black/5"
                   />
                 </div>
@@ -577,7 +585,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
                 <PhotoCarousel
                   photos={photos}
                   labels={labels}
-                  dogId={record.dogId}
+                  dogId={rec.dogId}
                   onPhotoClick={(i: number) => setLightboxIndex(i)}
                 />
               )}
@@ -585,7 +593,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
                 <LightboxViewer
                   photos={photos}
                   initialIndex={lightboxIndex}
-                  alt={record.dogId}
+                  alt={rec.dogId}
                   onClose={() => setLightboxIndex(null)}
                 />
               )}
@@ -594,31 +602,31 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
         })()}
 
         <div className="p-4 space-y-3">
-          <h2 className="font-mono font-bold text-xl text-foreground">{record.dogId}</h2>
+          <h2 className="font-mono font-bold text-xl text-foreground">{rec.dogId}</h2>
 
           {/* Capture date */}
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Clock size={16} className="flex-shrink-0" />
-            <span>{formatDate(record.recordedAt)}</span>
+            <span>{formatDate(rec.recordedAt)}</span>
           </div>
 
           {/* Capture location */}
-          {(record.areaName || gpsLink) && (
+          {(rec.areaName || gpsLink) && (
             <div className="flex items-start gap-2 text-sm">
               <MapPin size={16} className="flex-shrink-0 text-muted-foreground mt-0.5" />
               <div>
-                {record.areaName && gpsLink ? (
+                {rec.areaName && gpsLink ? (
                   <a
                     href={gpsLink}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-primary hover:underline inline-flex items-center gap-1"
                   >
-                    {record.areaName} · {record.latitude?.toFixed(5)}, {record.longitude?.toFixed(5)}
+                    {rec.areaName} · {rec.latitude?.toFixed(5)}, {rec.longitude?.toFixed(5)}
                     <ExternalLink size={12} />
                   </a>
-                ) : record.areaName ? (
-                  <span className="text-foreground">{record.areaName}</span>
+                ) : rec.areaName ? (
+                  <span className="text-foreground">{rec.areaName}</span>
                 ) : gpsLink ? (
                   <a
                     href={gpsLink}
@@ -626,7 +634,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
                     rel="noopener noreferrer"
                     className="text-primary hover:underline inline-flex items-center gap-1"
                   >
-                    {record.latitude?.toFixed(5)}, {record.longitude?.toFixed(5)}
+                    {rec.latitude?.toFixed(5)}, {rec.longitude?.toFixed(5)}
                     <ExternalLink size={12} />
                   </a>
                 ) : null}
@@ -635,28 +643,28 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
           )}
 
           {/* Notes */}
-          {record.notes && (
+          {rec.notes && (
             <div className="flex items-start gap-2 text-sm">
               <StickyNote size={16} className="flex-shrink-0 text-muted-foreground mt-0.5" />
-              <p className="text-foreground">{record.notes}</p>
+              <p className="text-foreground">{rec.notes}</p>
             </div>
           )}
 
           {/* AI Description */}
-          {record.description && (
+          {rec.description && (
             <div className="bg-accent/50 rounded-lg p-3 border border-primary/10">
               <div className="flex items-start gap-2">
                 <Sparkles size={16} className="text-primary flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="text-xs font-medium text-primary mb-1">AI Description</p>
-                  <p className="text-sm text-foreground leading-relaxed">{record.description}</p>
+                  <p className="text-sm text-foreground leading-relaxed">{rec.description}</p>
                 </div>
               </div>
             </div>
           )}
 
           {/* Release info (if already released) */}
-          {record.releasedAt && (
+          {rec.releasedAt && (
             <div className="bg-green-50 dark:bg-green-950/30 rounded-lg p-3 border border-green-500/20 space-y-1.5">
               <div className="flex items-center gap-2">
                 <CheckCircle2
@@ -667,23 +675,23 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
               </div>
               <div className="flex items-center gap-2 text-xs text-green-700/80 dark:text-green-400/80">
                 <Clock size={12} className="flex-shrink-0" />
-                <span>{formatDate(record.releasedAt)}</span>
+                <span>{formatDate(rec.releasedAt)}</span>
               </div>
-              {(record.releaseAreaName || releaseGpsLink) && (
+              {(rec.releaseAreaName || releaseGpsLink) && (
                 <div className="flex items-start gap-2 text-xs text-green-700/80 dark:text-green-400/80">
                   <MapPin size={12} className="flex-shrink-0 mt-0.5" />
-                  {record.releaseAreaName && releaseGpsLink ? (
+                  {rec.releaseAreaName && releaseGpsLink ? (
                     <a
                       href={releaseGpsLink}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="hover:underline inline-flex items-center gap-1"
                     >
-                      {record.releaseAreaName}
+                      {rec.releaseAreaName}
                       <ExternalLink size={10} />
                     </a>
-                  ) : record.releaseAreaName ? (
-                    <span>{record.releaseAreaName}</span>
+                  ) : rec.releaseAreaName ? (
+                    <span>{rec.releaseAreaName}</span>
                   ) : releaseGpsLink ? (
                     <a
                       href={releaseGpsLink}
@@ -691,15 +699,15 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
                       rel="noopener noreferrer"
                       className="hover:underline inline-flex items-center gap-1"
                     >
-                      {record.releaseLatitude?.toFixed(5)}, {record.releaseLongitude?.toFixed(5)}
+                      {rec.releaseLatitude?.toFixed(5)}, {rec.releaseLongitude?.toFixed(5)}
                       <ExternalLink size={10} />
                     </a>
                   ) : null}
                 </div>
               )}
-              {record.releaseDistanceMetres != null && (
+              {rec.releaseDistanceMetres != null && (
                 <p className="text-xs text-green-700/70 dark:text-green-400/70 pl-[20px]">
-                  {formatDistance(record.releaseDistanceMetres)} from capture
+                  {formatDistance(rec.releaseDistanceMetres)} from capture
                 </p>
               )}
             </div>
