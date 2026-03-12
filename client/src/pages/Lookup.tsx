@@ -106,7 +106,7 @@ export default function Lookup() {
       pageSize: 100,
       dateFrom,
       dateTo,
-      status: "all",
+      status: "active",
     },
     { enabled: !!teamId && !lookupMutation.isSuccess }
   );

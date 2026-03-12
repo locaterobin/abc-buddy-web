@@ -192,3 +192,6 @@
 
 ## Bug - Multiple Plans Per Day Blocked
 - [x] Remove "plan already exists for today" guard from createReleasePlan — sortOrder suffix already handles same-day disambiguation
+
+## Lookup - Exclude Released Dogs
+- [x] Lookup should only show dogs that are not yet released (filter out released records)
