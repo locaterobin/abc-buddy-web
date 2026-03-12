@@ -183,17 +183,24 @@ export async function getRecordsPaginated(
     .orderBy(desc(dogRecords.createdAt))
     .limit(pageSize)
     .offset((page - 1) * pageSize);
-  // Fetch which dogIds are in any release plan
+  // Fetch which dogIds are in any release plan and their photo2Url
   const dogIds = rawRecords.map((r) => r.dogId);
-  let planDogIds = new Set<string>();
+  let planDogMap = new Map<string, string | null>(); // dogId -> photo2Url
   if (dogIds.length > 0) {
     const planRows = await db
-      .selectDistinct({ dogId: releasePlanDogs.dogId })
+      .select({ dogId: releasePlanDogs.dogId, photo2Url: releasePlanDogs.photo2Url })
       .from(releasePlanDogs)
       .where(sql`${releasePlanDogs.dogId} IN (${sql.join(dogIds.map((id) => sql`${id}`), sql`, `)})`);
-    planDogIds = new Set(planRows.map((r) => r.dogId));
+    // Use the most recent plan entry per dog (last one wins)
+    for (const row of planRows) {
+      planDogMap.set(row.dogId, row.photo2Url ?? null);
+    }
   }
-  const records = rawRecords.map((r) => ({ ...r, inReleasePlan: planDogIds.has(r.dogId) }));
+  const records = rawRecords.map((r) => ({
+    ...r,
+    inReleasePlan: planDogMap.has(r.dogId),
+    photo2Url: planDogMap.get(r.dogId) ?? null,
+  }));
   return { records, total, hasMore: page * pageSize < total };
 }
 

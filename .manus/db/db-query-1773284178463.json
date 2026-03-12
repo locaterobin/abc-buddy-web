@@ -1,0 +1,16 @@
+{
+  "query": "SELECT dogId, imageUrl IS NOT NULL as hasPhoto1, releasePhotoUrl IS NOT NULL as hasPhoto3, LEFT(releasePhotoUrl, 60) as photo3Preview FROM dog_records WHERE dogId = '20260312-001' LIMIT 1;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4YKkGxc6t8uKQwU.5f0d0a62126a --database hPjpqQFScRPNzVz7QPH5a8 --execute SELECT dogId, imageUrl IS NOT NULL as hasPhoto1, releasePhotoUrl IS NOT NULL as hasPhoto3, LEFT(releasePhotoUrl, 60) as photo3Preview FROM dog_records WHERE dogId = '20260312-001' LIMIT 1;",
+  "rows": [
+    {
+      "dogId": "20260312-001",
+      "hasPhoto1": "1",
+      "hasPhoto3": "1",
+      "photo3Preview": "https://d2xsxph8kpxj0f.cloudfront.net/310419663032736616/hPj"
+    }
+  ],
+  "messages": [],
+  "stdout": "dogId\thasPhoto1\thasPhoto3\tphoto3Preview\n20260312-001\t1\t1\thttps://d2xsxph8kpxj0f.cloudfront.net/310419663032736616/hPj\n",
+  "stderr": "",
+  "execution_time_ms": 1574
+}

@@ -164,3 +164,9 @@
 
 ## Release Plan - Disable Button if Already in Plan
 - [x] "Add to Release Plan" button disabled when dog is already in any release plan
+
+## Bug - Photo 3 Missing in Carousel
+- [x] Photo carousel in RecordDetailModal shows only 2 photos even when releasePhotoUrl (photo 3) exists
+
+## Bug - Photo 2 Missing in Records Tab Carousel
+- [x] photo2Url (plan photo) not included in getRecords query so carousel only shows photo1 and photo3 when opened from Records tab

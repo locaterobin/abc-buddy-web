@@ -1,0 +1,15 @@
+{
+  "query": "SELECT dogId, CASE WHEN imageUrl IS NOT NULL THEN 'YES' ELSE 'NO' END as hasPhoto1, CASE WHEN releasePhotoUrl IS NOT NULL THEN 'YES' ELSE 'NO' END as hasPhoto3 FROM dog_records WHERE dogId = '20260312-001';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4YKkGxc6t8uKQwU.5f0d0a62126a --database hPjpqQFScRPNzVz7QPH5a8 --execute SELECT dogId, CASE WHEN imageUrl IS NOT NULL THEN 'YES' ELSE 'NO' END as hasPhoto1, CASE WHEN releasePhotoUrl IS NOT NULL THEN 'YES' ELSE 'NO' END as hasPhoto3 FROM dog_records WHERE dogId = '20260312-001';",
+  "rows": [
+    {
+      "dogId": "20260312-001",
+      "hasPhoto1": "YES",
+      "hasPhoto3": "YES"
+    }
+  ],
+  "messages": [],
+  "stdout": "dogId\thasPhoto1\thasPhoto3\n20260312-001\tYES\tYES\n",
+  "stderr": "",
+  "execution_time_ms": 1523
+}
