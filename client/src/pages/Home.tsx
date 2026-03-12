@@ -72,7 +72,7 @@ export default function Home() {
             active={activeTab === "add"}
             onClick={() => setActiveTab("add")}
             icon={<PlusCircle size={20} />}
-            label="Add"
+            label="Catching"
           />
           <TabButton
             active={activeTab === "lookup"}

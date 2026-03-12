@@ -186,3 +186,6 @@
 - [x] Records: persist last selected date filter via localStorage
 - [x] Add to Release Plan: auto-close picker after confirming
 - [x] Release plan: drag-to-reorder dogs (sortOrder column in release_plan_dogs)
+
+## UX - Tab Rename
+- [x] Rename "Add" tab to "Catching" in bottom nav
