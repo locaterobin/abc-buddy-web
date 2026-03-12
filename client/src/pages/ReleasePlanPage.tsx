@@ -4,8 +4,9 @@ import { useTeam } from "@/contexts/TeamContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, MapPin, Map, Trash2, Plus, ExternalLink, CalendarDays } from "lucide-react";
+import { ArrowLeft, Map, Trash2, Plus, CalendarDays, Clock, CheckCircle2, Dog } from "lucide-react";
 import { toast } from "sonner";
+import RecordDetailModal from "@/components/RecordDetailModal";
 
 // Format YYMMDD → "Mon, 10 Mar 2026"
 function formatPlanDate(yymmdd: string): string {
@@ -37,6 +38,7 @@ function todayYYMMDD(): string {
 export default function ReleasePlanPage() {
   const { teamId: teamIdentifier } = useTeam();
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
+  const [selectedRecord, setSelectedRecord] = useState<any>(null);
 
   const utils = trpc.useUtils();
 
@@ -115,6 +117,7 @@ export default function ReleasePlanPage() {
     const dogsWithCoords = planDogs.filter((d) => d.latitude != null && d.longitude != null);
 
     return (
+      <>
       <div className="flex flex-col h-full bg-background">
         {/* Header */}
         <div className="flex items-center gap-3 px-4 pt-4 pb-3 border-b border-border">
@@ -172,56 +175,46 @@ export default function ReleasePlanPage() {
             </div>
           ) : (
             planDogs.map((dog) => (
-              <Card key={dog.id} className="border border-border/60">
+              <Card
+                key={dog.id}
+                className="border border-border/60 cursor-pointer hover:border-primary/40 hover:bg-muted/30 transition-colors"
+                onClick={() => setSelectedRecord(dog)}
+              >
                 <CardContent className="p-3 flex items-center gap-3">
-                  {/* Photo 1 */}
+                  {/* Photo thumbnail */}
                   {dog.imageUrl ? (
                     <img
                       src={dog.imageUrl}
                       alt={dog.dogId}
-                      className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
+                      className="w-[60px] h-[60px] rounded-lg object-cover flex-shrink-0"
                     />
                   ) : (
-                    <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
-                      <span className="text-muted-foreground text-xs">No img</span>
+                    <div className="w-[60px] h-[60px] rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                      <Dog size={24} className="text-muted-foreground" />
                     </div>
                   )}
-                  {/* Photo 2 (if added when adding to plan) */}
-                  {dog.photo2Url && (
-                    <img
-                      src={dog.photo2Url}
-                      alt={`${dog.dogId} photo2`}
-                      className="w-12 h-12 rounded-lg object-cover flex-shrink-0 ring-2 ring-primary/30"
-                    />
-                  )}
-                  {/* Photo 3 (release photo) */}
-                  {dog.releasePhotoUrl && (
-                    <img
-                      src={dog.releasePhotoUrl}
-                      alt={`${dog.dogId} release photo`}
-                      className="w-12 h-12 rounded-lg object-cover flex-shrink-0 ring-2 ring-green-500/40"
-                    />
-                  )}
+                  {/* Info */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-mono font-bold text-sm text-foreground">{dog.dogId}</span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <p className="font-mono font-bold text-sm text-foreground">{dog.dogId}</p>
                       {dog.releasedAt && (
-                        <Badge variant="outline" className="text-xs text-green-600 border-green-400 bg-green-50">
+                        <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 border border-green-300/50 dark:border-green-700/50">
+                          <CheckCircle2 size={9} />
                           Released
-                        </Badge>
+                        </span>
                       )}
                     </div>
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                      <Clock size={11} />
+                      <span>{dog.recordedAt ? new Date(dog.recordedAt).toLocaleString() : ""}</span>
+                    </div>
                     {dog.areaName && (
-                      <p className="text-xs text-muted-foreground truncate mt-0.5">{dog.areaName}</p>
-                    )}
-                    {dog.latitude != null && dog.longitude != null && (
-                      <p className="text-xs text-muted-foreground/70 font-mono">
-                        {dog.latitude.toFixed(5)}, {dog.longitude.toFixed(5)}
-                      </p>
+                      <p className="text-xs text-muted-foreground truncate">{dog.areaName}</p>
                     )}
                   </div>
+                  {/* Remove button */}
                   <button
-                    onClick={() => removeDog.mutate({ planId: selectedPlanId, dogId: dog.dogId })}
+                    onClick={(e) => { e.stopPropagation(); removeDog.mutate({ planId: selectedPlanId, dogId: dog.dogId }); }}
                     className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors flex-shrink-0"
                   >
                     <Trash2 size={15} />
@@ -232,6 +225,21 @@ export default function ReleasePlanPage() {
           )}
         </div>
       </div>
+      {/* Record Detail Modal */}
+      {selectedRecord && (
+        <RecordDetailModal
+          record={selectedRecord}
+          onClose={() => {
+            setSelectedRecord(null);
+            utils.releasePlans.getPlanDogs.invalidate();
+          }}
+          onDelete={() => {
+            setSelectedRecord(null);
+            utils.releasePlans.getPlanDogs.invalidate();
+          }}
+        />
+      )}
+      </>
     );
   }
 

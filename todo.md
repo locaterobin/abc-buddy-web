@@ -156,3 +156,11 @@
 ## Records List - Release Plan Status
 - [x] Disable "Add to Release Plan" button in RecordDetailModal when dog is already released
 - [x] Show yellow "Checked" badge on record list cards for dogs that are in any release plan
+
+## Release Plan - Clickable Dog List
+- [x] getReleasePlanDogs joins dog_records and excludes deleted records (where deletedAt IS NULL)
+- [x] ReleasePlanPage dog list uses same card style as Records list
+- [x] Tapping a dog in the release plan opens RecordDetailModal
+
+## Release Plan - Disable Button if Already in Plan
+- [x] "Add to Release Plan" button disabled when dog is already in any release plan

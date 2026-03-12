@@ -312,10 +312,12 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
     { teamIdentifier: teamId, sinceHours: 48 },
     { enabled: showPlanPicker }
   );
+  // Load eagerly so the button can be disabled immediately
   const { data: dogPlanIds = [] } = trpc.releasePlans.getDogPlans.useQuery(
     { dogId: record.dogId },
-    { enabled: showPlanPicker }
+    { enabled: !!record.dogId && !released }
   );
+  const isInAnyPlan = dogPlanIds.length > 0;
   const addDogToPlan = trpc.releasePlans.addDog.useMutation({
     onSuccess: (added) => {
       if (added) toast.success("Added to release plan");
@@ -831,11 +833,11 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
           <Button
             variant="outline"
             className="w-full border-primary/30 text-primary hover:bg-primary/10"
-            disabled={released}
+            disabled={released || isInAnyPlan}
             onClick={() => { setShowPlanPicker((v) => !v); setPendingPlanId(null); setPhoto2Base64(null); }}
           >
             <CalendarPlus size={16} className="mr-2" />
-            Add to Release Plan
+            {isInAnyPlan ? "Already in Release Plan" : "Add to Release Plan"}
           </Button>
 
           {/* Plan Picker */}

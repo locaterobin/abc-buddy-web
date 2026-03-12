@@ -351,12 +351,15 @@ export async function getReleasePlanDogs(planId: number) {
   if (!db) throw new Error("Database not available");
   const rows = await db
     .select({
-      id: releasePlanDogs.id,
+      // release_plan_dogs fields
+      planDogId: releasePlanDogs.id,
       planId: releasePlanDogs.planId,
-      dogId: releasePlanDogs.dogId,
       photo2Url: releasePlanDogs.photo2Url,
       addedAt: releasePlanDogs.addedAt,
-      recordId: dogRecords.id,
+      // full dog_records fields
+      id: dogRecords.id,
+      dogId: dogRecords.dogId,
+      teamIdentifier: dogRecords.teamIdentifier,
       imageUrl: dogRecords.imageUrl,
       description: dogRecords.description,
       areaName: dogRecords.areaName,
@@ -365,9 +368,15 @@ export async function getReleasePlanDogs(planId: number) {
       recordedAt: dogRecords.recordedAt,
       releasedAt: dogRecords.releasedAt,
       releasePhotoUrl: dogRecords.releasePhotoUrl,
+      releaseLatitude: dogRecords.releaseLatitude,
+      releaseLongitude: dogRecords.releaseLongitude,
+      releaseAreaName: dogRecords.releaseAreaName,
+      releaseDistanceMetres: dogRecords.releaseDistanceMetres,
+      notes: dogRecords.notes,
+      createdAt: dogRecords.createdAt,
     })
     .from(releasePlanDogs)
-    .leftJoin(dogRecords, eq(releasePlanDogs.dogId, dogRecords.dogId))
+    .innerJoin(dogRecords, eq(releasePlanDogs.dogId, dogRecords.dogId))
     .where(eq(releasePlanDogs.planId, planId))
     .orderBy(releasePlanDogs.addedAt);
   return rows;
