@@ -49,6 +49,10 @@ function formatDateOption(dateStr: string): string {
 
 /** Convert timeRange value to dateFrom / dateTo for getRecordsPaginated */
 function timeRangeToDateFilter(timeRange: string): { dateFrom?: string; dateTo?: string } {
+  if (timeRange === "today") {
+    const iso = new Date().toISOString().slice(0, 10);
+    return { dateFrom: iso, dateTo: iso };
+  }
   if (timeRange === "yesterday") {
     const d = new Date();
     d.setDate(d.getDate() - 1);
@@ -74,7 +78,7 @@ export default function Lookup() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
-  const [timeRange, setTimeRange] = useState<string>("yesterday");
+  const [timeRange, setTimeRange] = useState<string>("today");
   const [imageBase64, setImageBase64] = useState("");
   const [selectedRecord, setSelectedRecord] = useState<any>(null);
 
@@ -131,8 +135,9 @@ export default function Lookup() {
     });
   }
 
-  const isOffline = defaultListQuery.isError || (defaultListQuery.fetchStatus === "paused");
-  const defaultRecords: any[] = defaultListQuery.data?.records ?? (isOffline ? filterCachedByTimeRange(cachedRecords, timeRange) : []);
+  // Show cached records whenever server data is not yet available (offline, loading, or error)
+  const serverRecords = defaultListQuery.data?.records;
+  const defaultRecords: any[] = serverRecords ?? filterCachedByTimeRange(cachedRecords, timeRange);
 
   const handleFile = useCallback(async (file: File) => {
     try {
@@ -182,6 +187,7 @@ export default function Lookup() {
           <SelectValue placeholder="Select date range" />
         </SelectTrigger>
         <SelectContent>
+          <SelectItem value="today">Today</SelectItem>
           <SelectItem value="yesterday">Yesterday</SelectItem>
           <SelectItem value="7days">Last 7 days</SelectItem>
           <SelectItem value="30days">Last 30 days</SelectItem>
