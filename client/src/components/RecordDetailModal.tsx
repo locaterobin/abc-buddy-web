@@ -345,6 +345,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
       setPendingPlanId(null);
       setPhoto2Base64(null);
       setShowPlanPicker(false);
+      onClose();
     },
     onError: () => toast.error("Failed to add to plan"),
   });
@@ -571,7 +572,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
         {/* Photo carousel: swipe left/right to see all photos */}
         {(() => {
           const photos = [rec.imageUrl, rec.photo2Url, rec.releasePhotoUrl].filter(Boolean) as string[];
-          const labels = [rec.imageUrl && 'Capture', rec.photo2Url && 'Plan', rec.releasePhotoUrl && 'Release'].filter(Boolean) as string[];
+          const labels = [rec.imageUrl && 'Catching', rec.photo2Url && 'Checked', rec.releasePhotoUrl && 'Release'].filter(Boolean) as string[];
           if (photos.length === 0) return null;
           return (
             <>
