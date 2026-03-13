@@ -1,6 +1,6 @@
 import { and, desc, eq, gte, inArray, isNotNull, isNull, like, lte, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, dogRecords, InsertDogRecord, DogRecord, releasePlans, releasePlanDogs } from "../drizzle/schema";
+import { InsertUser, users, dogRecords, InsertDogRecord, DogRecord, releasePlans, releasePlanDogs, teamSettings } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -553,4 +553,24 @@ export async function getDogReleasePlans(dogId: string): Promise<number[]> {
     .from(releasePlanDogs)
     .where(eq(releasePlanDogs.dogId, dogId));
   return rows.map((r) => r.planId);
+}
+
+export async function getTeamDocxTemplateUrl(teamIdentifier: string): Promise<string | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db
+    .select({ docxTemplateUrl: teamSettings.docxTemplateUrl })
+    .from(teamSettings)
+    .where(eq(teamSettings.teamIdentifier, teamIdentifier))
+    .limit(1);
+  return rows[0]?.docxTemplateUrl ?? null;
+}
+
+export async function saveTeamDocxTemplateUrl(teamIdentifier: string, url: string): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db
+    .insert(teamSettings)
+    .values({ teamIdentifier, docxTemplateUrl: url })
+    .onDuplicateKeyUpdate({ set: { docxTemplateUrl: url } });
 }

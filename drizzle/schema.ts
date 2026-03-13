@@ -67,3 +67,12 @@ export const releasePlanDogs = mysqlTable("release_plan_dogs", {
 
 export type ReleasePlanDog = typeof releasePlanDogs.$inferSelect;
 export type InsertReleasePlanDog = typeof releasePlanDogs.$inferInsert;
+
+export const teamSettings = mysqlTable("team_settings", {
+  id: int("id").autoincrement().primaryKey(),
+  teamIdentifier: varchar("teamIdentifier", { length: 64 }).notNull().unique(),
+  docxTemplateUrl: text("docxTemplateUrl"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type TeamSettings = typeof teamSettings.$inferSelect;

@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 import PizZip from "pizzip";
 import Docxtemplater from "docxtemplater";
-import { getRecordByDogId } from "./db";
+import { getRecordByDogId, getTeamDocxTemplateUrl } from "./db";
 
 const router = Router();
 
@@ -50,9 +50,18 @@ router.get("/record/:dogId/docx", async (req, res) => {
       return res.status(404).json({ error: "Record not found" });
     }
 
-    // Fill the DOCX template
-    const templatePath = getTemplatePath();
-    const content = fs.readFileSync(templatePath, "binary");
+    // Fill the DOCX template — use custom template if set, else fall back to bundled
+    let content: string;
+    const customUrl = teamId ? await getTeamDocxTemplateUrl(teamId) : null;
+    if (customUrl) {
+      const resp = await fetch(customUrl);
+      if (!resp.ok) throw new Error("Failed to fetch custom template");
+      const buf = await resp.arrayBuffer();
+      content = Buffer.from(buf).toString("binary");
+    } else {
+      const templatePath = getTemplatePath();
+      content = fs.readFileSync(templatePath, "binary");
+    }
     const zip = new PizZip(content);
     const doc = new Docxtemplater(zip, {
       paragraphLoop: true,

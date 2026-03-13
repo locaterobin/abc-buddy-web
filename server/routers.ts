@@ -26,6 +26,8 @@ import {
   updatePlanAfterRelease,
   getDogIdByRecordId,
   archiveReleasePlan,
+  getTeamDocxTemplateUrl,
+  saveTeamDocxTemplateUrl,
 } from "./db";
 import { storagePut } from "./storage";
 import { createOpenAI } from "@ai-sdk/openai";
@@ -625,6 +627,24 @@ const releasePlansRouter = router({
     }),
 });
 
+const settingsRouter = router({
+  getDocxTemplate: publicProcedure
+    .input(z.object({ teamIdentifier: z.string() }))
+    .query(async ({ input }) => {
+      const url = await getTeamDocxTemplateUrl(input.teamIdentifier);
+      return { url };
+    }),
+  uploadDocxTemplate: publicProcedure
+    .input(z.object({ teamIdentifier: z.string(), fileBase64: z.string(), fileName: z.string() }))
+    .mutation(async ({ input }) => {
+      const buf = Buffer.from(input.fileBase64, "base64");
+      const key = `docx-templates/${input.teamIdentifier}/${Date.now()}-${input.fileName}`;
+      const { url } = await storagePut(key, buf, "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+      await saveTeamDocxTemplateUrl(input.teamIdentifier, url);
+      return { url };
+    }),
+});
+
 export const appRouter = router({
   system: systemRouter,
   auth: router({
@@ -637,6 +657,7 @@ export const appRouter = router({
   }),
   dogs: dogsRouter,
   releasePlans: releasePlansRouter,
+  settings: settingsRouter,
 });
 
 export type AppRouter = typeof appRouter;

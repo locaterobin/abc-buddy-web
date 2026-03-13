@@ -207,3 +207,9 @@
 - [x] Remove auto-archive logic from saveRelease in routers.ts
 - [x] Add archivePlan tRPC mutation in routers.ts
 - [x] Add Archive button to each plan card in ReleasePlanPage
+
+## Settings - Custom DOCX Template Upload
+- [x] Add team_settings table (or reuse existing) with docxTemplateUrl column
+- [x] Add getTeamSettings / saveDocxTemplate tRPC procedures
+- [x] Update pdf.ts to fetch custom template from S3 URL when set, else use bundled abc.docx
+- [x] Add DOCX template upload UI in Settings page

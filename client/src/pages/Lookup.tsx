@@ -74,7 +74,7 @@ export default function Lookup() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
-  const [timeRange, setTimeRange] = useState<string>("7days");
+  const [timeRange, setTimeRange] = useState<string>("yesterday");
   const [imageBase64, setImageBase64] = useState("");
   const [selectedRecord, setSelectedRecord] = useState<any>(null);
 
