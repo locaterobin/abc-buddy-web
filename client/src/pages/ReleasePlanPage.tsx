@@ -137,6 +137,7 @@ export default function ReleasePlanPage() {
   const { teamId: teamIdentifier } = useTeam();
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
   const [selectedRecord, setSelectedRecord] = useState<any>(null);
+  const [dogIdFilter, setDogIdFilter] = useState("");
   // Local order state for optimistic drag reorder
   const [localOrder, setLocalOrder] = useState<string[] | null>(null);
 
@@ -292,20 +293,16 @@ export default function ReleasePlanPage() {
             </Button>
           </div>
 
-          {/* Google Maps button */}
-          {mapsUrl && (
-            <div className="px-4 pt-3">
-              <Button
-                asChild
-                className="w-full gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
-              >
-                <a href={mapsUrl} target="_blank" rel="noopener noreferrer">
-                  <Map size={17} />
-                  Open {dogsWithCoords.length} location{dogsWithCoords.length !== 1 ? "s" : ""} in Maps
-                </a>
-              </Button>
-            </div>
-          )}
+          {/* ID filter */}
+          <div className="px-4 pt-3">
+            <input
+              type="text"
+              value={dogIdFilter}
+              onChange={(e) => setDogIdFilter(e.target.value)}
+              placeholder="Filter by ID…"
+              className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+            />
+          </div>
 
           {/* Dogs list */}
           <div className="flex-1 overflow-y-auto px-4 pt-3 pb-4 space-y-2">
@@ -324,7 +321,7 @@ export default function ReleasePlanPage() {
                   items={orderedDogs.map((d) => d.dogId)}
                   strategy={verticalListSortingStrategy}
                 >
-                  {orderedDogs.map((dog) => (
+                  {orderedDogs.filter((d) => !dogIdFilter || d.dogId.toLowerCase().includes(dogIdFilter.toLowerCase())).map((dog) => (
                     <SortableDogCard
                       key={dog.dogId}
                       dog={dog}
