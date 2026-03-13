@@ -24,7 +24,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import RecordDetailModal from "@/components/RecordDetailModal";
-import { getCachedRecordDates, setCachedRecordDates } from "@/hooks/useRecordCache";
+import { getCachedRecordDates, setCachedRecordDates, getCachedRecords } from "@/hooks/useRecordCache";
 
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -82,8 +82,11 @@ export default function Lookup() {
 
   // Cached dates for offline support
   const [cachedDates, setCachedDates] = useState<string[]>([]);
+  const [cachedRecords, setCachedRecordsLocal] = useState<any[]>([]);
   useEffect(() => {
-    if (teamId) getCachedRecordDates(teamId).then(setCachedDates);
+    if (!teamId) return;
+    getCachedRecordDates(teamId).then(setCachedDates);
+    getCachedRecords(teamId).then(setCachedRecordsLocal);
   }, [teamId]);
 
   // Fetch distinct dates that have records
@@ -116,7 +119,20 @@ export default function Lookup() {
     },
     { enabled: !!teamId && !lookupMutation.isSuccess }
   );
-  const defaultRecords: any[] = defaultListQuery.data?.records ?? [];
+  // Filter cached records by the selected time range for offline fallback
+  function filterCachedByTimeRange(records: any[], tr: string): any[] {
+    const { dateFrom, dateTo } = timeRangeToDateFilter(tr);
+    return records.filter((r) => {
+      const d = new Date(r.recordedAt).toISOString().slice(0, 10);
+      if (dateFrom && d < dateFrom) return false;
+      if (dateTo && d > dateTo) return false;
+      if (r.releasedAt) return false; // only active
+      return true;
+    });
+  }
+
+  const isOffline = defaultListQuery.isError || (defaultListQuery.fetchStatus === "paused");
+  const defaultRecords: any[] = defaultListQuery.data?.records ?? (isOffline ? filterCachedByTimeRange(cachedRecords, timeRange) : []);
 
   const handleFile = useCallback(async (file: File) => {
     try {
