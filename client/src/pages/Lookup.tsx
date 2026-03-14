@@ -87,7 +87,9 @@ export default function Lookup() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
-  const [timeRange, setTimeRange] = useState<string>("");
+  const [timeRange, setTimeRange] = useState<string>(
+    () => localStorage.getItem("lookup-date-selection") ?? ""
+  );
   const [imageBase64, setImageBase64] = useState("");
   const [selectedRecord, setSelectedRecord] = useState<any>(null);
 
@@ -399,6 +401,7 @@ export default function Lookup() {
         value={timeRange}
         onValueChange={(v) => {
           setTimeRange(v);
+          localStorage.setItem("lookup-date-selection", v);
           // Reset search results when filter changes
           if (lookupMutation.isSuccess) {
             lookupMutation.reset();
