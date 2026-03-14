@@ -19,6 +19,11 @@ import {
   RotateCcw,
   AlertCircle,
 } from "lucide-react";
+import { enqueueRecord, removeFromQueue, updateQueueStatus } from "@/hooks/useOfflineQueue";
+
+function generateQueueId(): string {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
 
 function getDatePrefix(): string {
   const now = new Date();
@@ -138,17 +143,15 @@ export default function AddRecord() {
       try {
         const result = await analyzeMutation.mutateAsync({
           imageBase64: base64,
-          extractMetadata: source === "upload", // only extract burnt-in metadata for uploads
+          extractMetadata: source === "upload",
         });
 
         setDescription(result.description);
 
         if (source === "upload") {
-          // Populate fields from burnt-in metadata if found
           if (result.latitude !== null && result.longitude !== null) {
             setLatitude(result.latitude);
             setLongitude(result.longitude);
-            // If we got coords, also geocode for a clean place name (unless already set)
             if (!areaNameEdited) {
               geocode(result.latitude, result.longitude);
             }
@@ -188,13 +191,11 @@ export default function AddRecord() {
         setImageSource("upload");
         setDescription("");
         setAnalysisError("");
-        // Reset metadata fields so AI can fill them
         setLatitude(null);
         setLongitude(null);
         setAreaName("");
         setAreaNameEdited(false);
         setRecordedAt(toLocalDatetimeValue(new Date()));
-        // Auto-run AI analysis with metadata extraction
         runAnalysis(base64, "upload");
       } catch {
         toast.error("Failed to read image");
@@ -213,11 +214,8 @@ export default function AddRecord() {
         setImageSource("camera");
         setDescription("");
         setAnalysisError("");
-        // Set current device time
         setRecordedAt(toLocalDatetimeValue(new Date()));
-        // Get device GPS
         requestDeviceGps();
-        // Auto-run AI analysis (description only, no metadata extraction)
         runAnalysis(base64, "camera");
       } catch {
         toast.error("Failed to read image");
@@ -241,7 +239,11 @@ export default function AddRecord() {
     utils.dogs.getNextSuffix.invalidate();
   }, [utils]);
 
-  // Save record — fully fire-and-forget for both upload and camera
+  const handleReset = useCallback(() => {
+    resetForm();
+  }, [resetForm]);
+
+  // Save record — enqueue locally first, then sync in background
   const handleSave = () => {
     if (!imageBase64 || !dogId) {
       toast.error("Please upload an image and set a Dog ID");
@@ -263,36 +265,21 @@ export default function AddRecord() {
     const savedAreaName = areaName;
     const savedRecordedAt = new Date(recordedAt).getTime();
     const savedWebhookUrl = webhookUrl;
+    const savedTeamId = teamId;
+    const queueId = generateQueueId();
 
-    // Confirm and reset immediately
-    toast.success(`Record ${savedDogId} saved!`);
+    // Reset form immediately
     resetForm();
     setTimeout(() => utils.dogs.getRecords.invalidate(), 6000);
 
-    // Run annotation (camera) + save entirely in background
+    // Run annotation + save in background, with offline queue tracking
     const runBackground = async () => {
-      let finalImageBase64 = savedImageBase64;
-      if (savedSource === "camera") {
-        try {
-          const annotated = await annotateMutation.mutateAsync({
-            imageBase64: savedImageBase64,
-            dogId: savedDogId,
-            recordedAt: new Date(savedRecordedAt).toISOString(),
-            areaName: savedAreaName || undefined,
-            latitude: savedLat ?? undefined,
-            longitude: savedLng ?? undefined,
-            notes: savedNotes || undefined,
-          });
-          finalImageBase64 = annotated.annotatedBase64;
-        } catch (err) {
-          console.warn("Annotation failed, saving original:", err);
-        }
-      }
-      saveMutation.mutate({
-        teamIdentifier: teamId,
+      // Enqueue first so it's visible in Lookup immediately
+      await enqueueRecord({
+        queueId,
+        teamIdentifier: savedTeamId,
         dogId: savedDogId,
-        imageBase64: finalImageBase64,
-        originalImageBase64: savedImageBase64 !== finalImageBase64 ? savedImageBase64 : undefined,
+        imageBase64: savedImageBase64,
         description: savedDescription || undefined,
         notes: savedNotes || undefined,
         latitude: savedLat ?? undefined,
@@ -302,13 +289,61 @@ export default function AddRecord() {
         recordedAt: savedRecordedAt,
         webhookUrl: savedWebhookUrl || undefined,
       });
+
+      // Show a dismissible pending toast
+      const toastId = toast.loading(`Saving ${savedDogId}…`, { duration: Infinity });
+
+      try {
+        let finalImageBase64 = savedImageBase64;
+        if (savedSource === "camera") {
+          try {
+            const annotated = await annotateMutation.mutateAsync({
+              imageBase64: savedImageBase64,
+              dogId: savedDogId,
+              recordedAt: new Date(savedRecordedAt).toISOString(),
+              areaName: savedAreaName || undefined,
+              latitude: savedLat ?? undefined,
+              longitude: savedLng ?? undefined,
+              notes: savedNotes || undefined,
+            });
+            finalImageBase64 = annotated.annotatedBase64;
+          } catch (err) {
+            console.warn("Annotation failed, saving original:", err);
+          }
+        }
+
+        await saveMutation.mutateAsync({
+          teamIdentifier: savedTeamId,
+          dogId: savedDogId,
+          imageBase64: finalImageBase64,
+          originalImageBase64: savedImageBase64 !== finalImageBase64 ? savedImageBase64 : undefined,
+          description: savedDescription || undefined,
+          notes: savedNotes || undefined,
+          latitude: savedLat ?? undefined,
+          longitude: savedLng ?? undefined,
+          areaName: savedAreaName || undefined,
+          source: savedSource,
+          recordedAt: savedRecordedAt,
+          webhookUrl: savedWebhookUrl || undefined,
+        });
+
+        // Success — remove from queue
+        await removeFromQueue(queueId);
+        toast.dismiss(toastId);
+        toast.success(`${savedDogId} saved!`);
+      } catch (err: any) {
+        // Mark as failed in queue — will appear in Lookup for retry
+        await updateQueueStatus(queueId, "failed", err?.message ?? "Unknown error");
+        toast.dismiss(toastId);
+        toast.error(`${savedDogId} failed to save — check Lookup to retry`, {
+          duration: 10000,
+        });
+      }
     };
+
     runBackground();
   };
 
-  const handleReset = () => resetForm();
-
-  // Save button never blocks — always instant
   const isSaving = false;
   const hasImage = !!imageBase64;
 
@@ -337,7 +372,6 @@ export default function AddRecord() {
                 </p>
               </div>
               <div className="flex gap-3">
-                {/* Camera button — opens actual camera on mobile */}
                 <Button
                   variant="default"
                   size="sm"
@@ -346,7 +380,6 @@ export default function AddRecord() {
                   <Camera size={16} className="mr-1.5" />
                   Camera
                 </Button>
-                {/* Upload button — opens file picker */}
                 <Button
                   variant="outline"
                   size="sm"
@@ -358,7 +391,6 @@ export default function AddRecord() {
                 </Button>
               </div>
 
-              {/* Camera input — capture="environment" forces rear camera on mobile */}
               <input
                 ref={cameraInputRef}
                 type="file"
@@ -371,7 +403,6 @@ export default function AddRecord() {
                   e.target.value = "";
                 }}
               />
-              {/* Gallery/upload input — no capture attribute */}
               <input
                 ref={fileInputRef}
                 type="file"
@@ -402,7 +433,6 @@ export default function AddRecord() {
               >
                 <RotateCcw size={16} />
               </button>
-              {/* AI analysis status overlay */}
               {analysisLoading && (
                 <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center gap-2">
                   <Loader2 size={28} className="animate-spin text-white" />
@@ -414,7 +444,6 @@ export default function AddRecord() {
             </div>
           </Card>
 
-          {/* AI analysis error (non-fatal) */}
           {analysisError && (
             <div className="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
               <AlertCircle size={16} className="flex-shrink-0" />
@@ -422,7 +451,6 @@ export default function AddRecord() {
             </div>
           )}
 
-          {/* AI Description - always show once image is loaded so user can type even if AI found nothing */}
           {hasImage && (
             <div>
               <label className="text-sm font-medium text-foreground mb-1.5 flex items-center gap-1.5">
@@ -439,7 +467,6 @@ export default function AddRecord() {
             </div>
           )}
 
-          {/* Form */}
           <Card>
             <CardContent className="py-4 space-y-4">
               {/* Dog ID */}
@@ -546,7 +573,6 @@ export default function AddRecord() {
             </CardContent>
           </Card>
 
-          {/* Save Button */}
           <Button
             className="w-full"
             size="lg"

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import { resizeImage } from "@/lib/resizeImage";
 import { useTeam } from "@/contexts/TeamContext";
@@ -22,9 +22,17 @@ import {
   MapPin,
   X,
   CheckCircle2,
+  RefreshCw,
+  AlertTriangle,
 } from "lucide-react";
 import RecordDetailModal from "@/components/RecordDetailModal";
 import { getCachedRecordDates, setCachedRecordDates, getCachedRecords } from "@/hooks/useRecordCache";
+import {
+  getPendingRecords,
+  removeFromQueue,
+  updateQueueStatus,
+  type PendingRecord,
+} from "@/hooks/useOfflineQueue";
 
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -74,7 +82,7 @@ function timeRangeToDateFilter(timeRange: string): { dateFrom?: string; dateTo?:
 }
 
 export default function Lookup() {
-  const { teamId } = useTeam();
+  const { teamId, webhookUrl } = useTeam();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
@@ -82,7 +90,14 @@ export default function Lookup() {
   const [imageBase64, setImageBase64] = useState("");
   const [selectedRecord, setSelectedRecord] = useState<any>(null);
 
+  // Offline queue state
+  const [pendingRecords, setPendingRecords] = useState<PendingRecord[]>([]);
+  const [syncingIds, setSyncingIds] = useState<Set<string>>(new Set());
+
   const lookupMutation = trpc.dogs.lookupDog.useMutation();
+  const saveMutation = trpc.dogs.saveRecord.useMutation();
+  const annotateMutation = trpc.dogs.annotateRecord.useMutation();
+  const utils = trpc.useUtils();
 
   // Cached dates for offline support
   const [cachedDates, setCachedDates] = useState<string[]>([]);
@@ -92,6 +107,17 @@ export default function Lookup() {
     getCachedRecordDates(teamId).then(setCachedDates);
     getCachedRecords(teamId).then(setCachedRecordsLocal);
   }, [teamId]);
+
+  // Load pending queue
+  const refreshQueue = useCallback(async () => {
+    if (!teamId) return;
+    const items = await getPendingRecords(teamId);
+    setPendingRecords(items);
+  }, [teamId]);
+
+  useEffect(() => {
+    refreshQueue();
+  }, [refreshQueue]);
 
   // Fetch distinct dates that have records
   const { data: datesData } = trpc.dogs.getRecordDates.useQuery(
@@ -158,6 +184,69 @@ export default function Lookup() {
     );
   }, [imageBase64]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Retry a single pending record
+  const retryRecord = useCallback(async (item: PendingRecord) => {
+    setSyncingIds((prev) => new Set(prev).add(item.queueId));
+    await updateQueueStatus(item.queueId, "syncing");
+
+    try {
+      let finalImageBase64 = item.imageBase64;
+      if (item.source === "camera") {
+        try {
+          const annotated = await annotateMutation.mutateAsync({
+            imageBase64: item.imageBase64,
+            dogId: item.dogId,
+            recordedAt: new Date(item.recordedAt).toISOString(),
+            areaName: item.areaName,
+            latitude: item.latitude,
+            longitude: item.longitude,
+            notes: item.notes,
+          });
+          finalImageBase64 = annotated.annotatedBase64;
+        } catch {
+          // annotation failure is non-fatal
+        }
+      }
+
+      await saveMutation.mutateAsync({
+        teamIdentifier: item.teamIdentifier,
+        dogId: item.dogId,
+        imageBase64: finalImageBase64,
+        originalImageBase64: finalImageBase64 !== item.imageBase64 ? item.imageBase64 : undefined,
+        description: item.description,
+        notes: item.notes,
+        latitude: item.latitude,
+        longitude: item.longitude,
+        areaName: item.areaName,
+        source: item.source,
+        recordedAt: item.recordedAt,
+        webhookUrl: item.webhookUrl,
+      });
+
+      await removeFromQueue(item.queueId);
+      toast.success(`${item.dogId} synced!`);
+      utils.dogs.getRecords.invalidate();
+    } catch (err: any) {
+      await updateQueueStatus(item.queueId, "failed", err?.message ?? "Unknown error");
+      toast.error(`${item.dogId} sync failed: ${err?.message ?? "Unknown error"}`);
+    } finally {
+      setSyncingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(item.queueId);
+        return next;
+      });
+      refreshQueue();
+    }
+  }, [annotateMutation, saveMutation, utils, refreshQueue]);
+
+  // Sync all pending records sequentially
+  const syncAll = useCallback(async () => {
+    const items = await getPendingRecords(teamId);
+    for (const item of items) {
+      await retryRecord(item);
+    }
+  }, [teamId, retryRecord]);
+
   const confidenceConfig = {
     high: { label: "High match", className: "bg-green-100 text-green-800 border-green-200" },
     medium: { label: "Possible match", className: "bg-yellow-100 text-yellow-800 border-yellow-200" },
@@ -171,6 +260,78 @@ export default function Lookup() {
 
   return (
     <div className="container py-4 pb-6 max-w-lg mx-auto space-y-4">
+
+      {/* Pending / failed queue banner */}
+      {pendingRecords.length > 0 && (
+        <Card className="border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-700">
+          <CardContent className="py-3 px-4 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 text-amber-800 dark:text-amber-300 font-medium text-sm">
+                <AlertTriangle size={15} />
+                {pendingRecords.length} record{pendingRecords.length !== 1 ? "s" : ""} pending sync
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs border-amber-400 text-amber-800 dark:text-amber-300 bg-transparent"
+                onClick={syncAll}
+                disabled={syncingIds.size > 0}
+              >
+                {syncingIds.size > 0 ? (
+                  <Loader2 size={12} className="mr-1 animate-spin" />
+                ) : (
+                  <RefreshCw size={12} className="mr-1" />
+                )}
+                Sync All
+              </Button>
+            </div>
+            {pendingRecords.map((item) => {
+              const isSyncing = syncingIds.has(item.queueId);
+              return (
+                <div
+                  key={item.queueId}
+                  className="flex items-center justify-between gap-2 text-xs text-amber-700 dark:text-amber-400"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    {item.imageBase64 && (
+                      <img
+                        src={item.imageBase64}
+                        alt={item.dogId}
+                        className="w-10 h-10 rounded object-cover flex-shrink-0"
+                      />
+                    )}
+                    <div className="min-w-0">
+                      <p className="font-mono font-bold text-sm text-amber-900 dark:text-amber-200">
+                        {item.dogId}
+                      </p>
+                      {item.areaName && (
+                        <p className="truncate text-amber-600 dark:text-amber-500">{item.areaName}</p>
+                      )}
+                      {item.status === "failed" && item.errorMessage && (
+                        <p className="text-red-600 dark:text-red-400 truncate">{item.errorMessage}</p>
+                      )}
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs border-amber-400 text-amber-800 dark:text-amber-300 bg-transparent flex-shrink-0"
+                    onClick={() => retryRecord(item)}
+                    disabled={isSyncing}
+                  >
+                    {isSyncing ? (
+                      <Loader2 size={12} className="animate-spin" />
+                    ) : (
+                      <RefreshCw size={12} />
+                    )}
+                  </Button>
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Date Range Dropdown */}
       <Select
         value={timeRange}

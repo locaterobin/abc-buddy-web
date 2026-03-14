@@ -213,3 +213,8 @@
 - [x] Add getTeamSettings / saveDocxTemplate tRPC procedures
 - [x] Update pdf.ts to fetch custom template from S3 URL when set, else use bundled abc.docx
 - [x] Add DOCX template upload UI in Settings page
+
+## Offline Queue for Camera Submissions
+- [x] Create useOfflineQueue hook (IndexedDB) to store pending submissions with full payload
+- [x] Update AddRecord to save to offline queue first, show persistent pending indicator if server fails
+- [x] Show pending queue records in Lookup with Retry and Sync All buttons
