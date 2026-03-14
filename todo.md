@@ -218,3 +218,8 @@
 - [x] Create useOfflineQueue hook (IndexedDB) to store pending submissions with full payload
 - [x] Update AddRecord to save to offline queue first, show persistent pending indicator if server fails
 - [x] Show pending queue records in Lookup with Retry and Sync All buttons
+
+## Offline Queue Improvements
+- [x] Auto-retry Sync All when device comes back online (navigator.onLine / online event)
+- [x] Raise offline cache to 100 records (pageSize 100 in cache write)
+- [x] Add discard button on each pending queue row in Lookup

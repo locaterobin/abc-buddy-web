@@ -24,6 +24,7 @@ import {
   CheckCircle2,
   RefreshCw,
   AlertTriangle,
+  Trash2,
 } from "lucide-react";
 import RecordDetailModal from "@/components/RecordDetailModal";
 import { getCachedRecordDates, setCachedRecordDates, getCachedRecords } from "@/hooks/useRecordCache";
@@ -247,6 +248,26 @@ export default function Lookup() {
     }
   }, [teamId, retryRecord]);
 
+  // Discard a pending record from the queue
+  const discardRecord = useCallback(async (queueId: string) => {
+    await removeFromQueue(queueId);
+    refreshQueue();
+  }, [refreshQueue]);
+
+  // Auto-retry when device comes back online
+  useEffect(() => {
+    const handleOnline = async () => {
+      const items = await getPendingRecords(teamId);
+      if (items.length > 0) {
+        for (const item of items) {
+          await retryRecord(item);
+        }
+      }
+    };
+    window.addEventListener("online", handleOnline);
+    return () => window.removeEventListener("online", handleOnline);
+  }, [teamId, retryRecord]);
+
   const confidenceConfig = {
     high: { label: "High match", className: "bg-green-100 text-green-800 border-green-200" },
     medium: { label: "Possible match", className: "bg-yellow-100 text-yellow-800 border-yellow-200" },
@@ -312,19 +333,30 @@ export default function Lookup() {
                       )}
                     </div>
                   </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-7 text-xs border-amber-400 text-amber-800 dark:text-amber-300 bg-transparent flex-shrink-0"
-                    onClick={() => retryRecord(item)}
-                    disabled={isSyncing}
-                  >
-                    {isSyncing ? (
-                      <Loader2 size={12} className="animate-spin" />
-                    ) : (
-                      <RefreshCw size={12} />
-                    )}
-                  </Button>
+                  <div className="flex gap-1 flex-shrink-0">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs border-amber-400 text-amber-800 dark:text-amber-300 bg-transparent"
+                      onClick={() => retryRecord(item)}
+                      disabled={isSyncing}
+                    >
+                      {isSyncing ? (
+                        <Loader2 size={12} className="animate-spin" />
+                      ) : (
+                        <RefreshCw size={12} />
+                      )}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs border-red-300 text-red-600 dark:text-red-400 bg-transparent"
+                      onClick={() => discardRecord(item.queueId)}
+                      disabled={isSyncing}
+                    >
+                      <Trash2 size={12} />
+                    </Button>
+                  </div>
                 </div>
               );
             })}

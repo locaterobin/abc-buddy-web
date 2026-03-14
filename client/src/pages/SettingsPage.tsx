@@ -25,7 +25,7 @@ import RecordDetailModal from "@/components/RecordDetailModal";
 
 type StatusFilter = "all" | "active" | "released";
 
-const PAGE_SIZE = 50;
+const PAGE_SIZE = 100;
 
 export default function RecordsPage() {
   const { teamId } = useTeam();
