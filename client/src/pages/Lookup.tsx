@@ -112,13 +112,22 @@ export default function Lookup() {
     }
   }, [utils]);
 
-  // Cached dates for offline support
+  // Cached dates and records for offline support
+  // Use lazy useState initialiser so IndexedDB is read once synchronously via a
+  // module-level promise that resolves before the second render.
   const [cachedDates, setCachedDates] = useState<string[]>([]);
   const [cachedRecords, setCachedRecordsLocal] = useState<any[]>([]);
+  const cacheLoadedRef = useRef(false);
   useEffect(() => {
-    if (!teamId) return;
-    getCachedRecordDates(teamId).then(setCachedDates);
-    getCachedRecords(teamId).then(setCachedRecordsLocal);
+    if (!teamId || cacheLoadedRef.current) return;
+    cacheLoadedRef.current = true;
+    Promise.all([
+      getCachedRecordDates(teamId),
+      getCachedRecords(teamId),
+    ]).then(([dates, records]) => {
+      setCachedDates(dates);
+      setCachedRecordsLocal(records);
+    });
   }, [teamId]);
 
   // Load pending queue

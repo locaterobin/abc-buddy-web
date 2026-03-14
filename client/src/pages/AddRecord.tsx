@@ -243,6 +243,8 @@ export default function AddRecord() {
     resetForm();
   }, [resetForm]);
 
+  const [isSaving, setIsSaving] = useState(false);
+
   // Save record — enqueue locally first, then sync in background
   const handleSave = () => {
     if (!imageBase64 || !dogId) {
@@ -341,10 +343,9 @@ export default function AddRecord() {
       }
     };
 
-    runBackground();
+    setIsSaving(true);
+    runBackground().finally(() => setIsSaving(false));
   };
-
-  const isSaving = false;
   const hasImage = !!imageBase64;
 
   return (

@@ -223,3 +223,7 @@
 - [x] Auto-retry Sync All when device comes back online (navigator.onLine / online event)
 - [x] Raise offline cache to 100 records (pageSize 100 in cache write)
 - [x] Add discard button on each pending queue row in Lookup
+
+## Bug Fixes
+- [x] Fix isSaving hardcoded false in AddRecord — button never disables, causes duplicate submissions
+- [x] Fix Lookup cached records not showing instantly on first render
