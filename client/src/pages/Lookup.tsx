@@ -99,6 +99,18 @@ export default function Lookup() {
   const saveMutation = trpc.dogs.saveRecord.useMutation();
   const annotateMutation = trpc.dogs.annotateRecord.useMutation();
   const utils = trpc.useUtils();
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const handleSync = useCallback(async () => {
+    setIsSyncing(true);
+    try {
+      await utils.dogs.getRecordDates.invalidate();
+      await utils.dogs.getRecordsPaginated.invalidate();
+      await utils.dogs.getRecords.invalidate();
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [utils]);
 
   // Cached dates for offline support
   const [cachedDates, setCachedDates] = useState<string[]>([]);
@@ -371,7 +383,9 @@ export default function Lookup() {
         </Card>
       )}
 
-      {/* Date Range Dropdown */}
+      {/* Date Range Dropdown + Sync */}
+      <div className="flex gap-2">
+      <div className="flex-1">
       <Select
         value={timeRange}
         onValueChange={(v) => {
@@ -394,6 +408,17 @@ export default function Lookup() {
           ))}
         </SelectContent>
       </Select>
+      </div>
+      <Button
+        variant="outline"
+        size="icon"
+        onClick={handleSync}
+        disabled={isSyncing}
+        title="Sync records"
+      >
+        <RefreshCw size={16} className={isSyncing ? "animate-spin" : ""} />
+      </Button>
+      </div>
 
       {/* Upload Area */}
       <Card className={`border-2 ${imageBase64 ? "border-border" : "border-dashed border-primary/30 bg-primary/5"}`}>
