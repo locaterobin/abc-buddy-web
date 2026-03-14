@@ -87,7 +87,7 @@ export default function Lookup() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
-  const [timeRange, setTimeRange] = useState<string>("24hours");
+  const [timeRange, setTimeRange] = useState<string>("");
   const [imageBase64, setImageBase64] = useState("");
   const [selectedRecord, setSelectedRecord] = useState<any>(null);
 
@@ -136,6 +136,13 @@ export default function Lookup() {
   }, [teamId, freshDates.join("|")]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const recordDates: string[] = freshDates.length > 0 ? freshDates : cachedDates;
+
+  // Default to latest date once dates are available
+  useEffect(() => {
+    if (!timeRange && recordDates.length > 0) {
+      setTimeRange(recordDates[0]);
+    }
+  }, [recordDates, timeRange]);
 
   // Default list: all records in the selected time range (no photo needed)
   const { dateFrom, dateTo } = timeRangeToDateFilter(timeRange);
@@ -380,19 +387,11 @@ export default function Lookup() {
           <SelectValue placeholder="Select date range" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="24hours">Last 24 hours</SelectItem>
-          <SelectItem value="48hours">Last 48 hours</SelectItem>
-          <SelectItem value="7days">Last 7 days</SelectItem>
-          <SelectItem value="30days">Last 30 days</SelectItem>
-          {recordDates.length > 0 && (
-            <>
-              {recordDates.map((date) => (
-                <SelectItem key={date} value={date}>
-                  {formatDateOption(date)}
-                </SelectItem>
-              ))}
-            </>
-          )}
+          {recordDates.map((date) => (
+            <SelectItem key={date} value={date}>
+              {formatDateOption(date)}
+            </SelectItem>
+          ))}
         </SelectContent>
       </Select>
 
