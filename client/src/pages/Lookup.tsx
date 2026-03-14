@@ -49,15 +49,15 @@ function formatDateOption(dateStr: string): string {
 
 /** Convert timeRange value to dateFrom / dateTo for getRecordsPaginated */
 function timeRangeToDateFilter(timeRange: string): { dateFrom?: string; dateTo?: string } {
-  if (timeRange === "today") {
-    const iso = new Date().toISOString().slice(0, 10);
-    return { dateFrom: iso, dateTo: iso };
-  }
-  if (timeRange === "yesterday") {
+  if (timeRange === "24hours") {
     const d = new Date();
-    d.setDate(d.getDate() - 1);
-    const iso = d.toISOString().slice(0, 10);
-    return { dateFrom: iso, dateTo: iso };
+    d.setHours(d.getHours() - 24);
+    return { dateFrom: d.toISOString().slice(0, 10) };
+  }
+  if (timeRange === "48hours") {
+    const d = new Date();
+    d.setHours(d.getHours() - 48);
+    return { dateFrom: d.toISOString().slice(0, 10) };
   }
   if (timeRange === "7days") {
     const d = new Date();
@@ -78,7 +78,7 @@ export default function Lookup() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
-  const [timeRange, setTimeRange] = useState<string>("today");
+  const [timeRange, setTimeRange] = useState<string>("24hours");
   const [imageBase64, setImageBase64] = useState("");
   const [selectedRecord, setSelectedRecord] = useState<any>(null);
 
@@ -187,8 +187,8 @@ export default function Lookup() {
           <SelectValue placeholder="Select date range" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="today">Today</SelectItem>
-          <SelectItem value="yesterday">Yesterday</SelectItem>
+          <SelectItem value="24hours">Last 24 hours</SelectItem>
+          <SelectItem value="48hours">Last 48 hours</SelectItem>
           <SelectItem value="7days">Last 7 days</SelectItem>
           <SelectItem value="30days">Last 30 days</SelectItem>
           {recordDates.length > 0 && (
