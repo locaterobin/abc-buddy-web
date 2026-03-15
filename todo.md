@@ -259,3 +259,6 @@
 
 ## Airtable Integration
 - [ ] Store AIRTABLE_API_TOKEN as secret
+
+## Settings Cleanup
+- [x] Remove webhook URL field from Settings page

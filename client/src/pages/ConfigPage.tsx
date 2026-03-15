@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
   Users,
-  Webhook,
   Check,
   RefreshCw,
   Loader2,
@@ -93,12 +92,10 @@ function DocxTemplateSection() {
 }
 
 export default function ConfigPage() {
-  const { teamId, setTeamId, webhookUrl, setWebhookUrl } = useTeam();
+  const { teamId, setTeamId } = useTeam();
 
   const [showTeamInput, setShowTeamInput] = useState(false);
   const [newTeamId, setNewTeamId] = useState("");
-  const [webhookInput, setWebhookInput] = useState(webhookUrl);
-  const [webhookSaved, setWebhookSaved] = useState(false);
 
   const generateMutation = trpc.dogs.generateTeamId.useMutation();
 
@@ -126,13 +123,6 @@ export default function ConfigPage() {
         toast.error("Failed to generate team ID: " + err.message);
       },
     });
-  };
-
-  const handleSaveWebhook = () => {
-    setWebhookUrl(webhookInput);
-    setWebhookSaved(true);
-    setTimeout(() => setWebhookSaved(false), 2000);
-    toast.success("Webhook URL saved");
   };
 
   return (
@@ -205,36 +195,7 @@ export default function ConfigPage() {
       {/* DOCX Template Upload */}
       <DocxTemplateSection />
 
-      {/* Webhook Section */}
-      <Card>
-        <CardContent className="py-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Webhook size={18} className="text-primary" />
-            <h3 className="font-semibold text-foreground">Webhook URL</h3>
-          </div>
-          <div className="flex gap-2">
-            <Input
-              value={webhookInput}
-              onChange={(e) => setWebhookInput(e.target.value)}
-              placeholder="https://hooks.example.com/..."
-              className="text-sm"
-            />
-            <Button size="sm" onClick={handleSaveWebhook}>
-              {webhookSaved ? (
-                <>
-                  <Check size={14} className="mr-1" />
-                  Saved
-                </>
-              ) : (
-                "Save"
-              )}
-            </Button>
-          </div>
-          <p className="text-xs text-muted-foreground mt-2">
-            Fires on every new record save and on release events.
-          </p>
-        </CardContent>
-      </Card>
+
     </div>
   );
 }
