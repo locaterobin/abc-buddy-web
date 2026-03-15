@@ -60,6 +60,18 @@ function formatDateOption(dateStr: string): string {
   });
 }
 
+/** Format how long ago a timestamp was (e.g. "queued 2h ago", "queued 35m ago") */
+function formatAge(ts: number): string {
+  const ms = Date.now() - ts;
+  const mins = Math.floor(ms / 60000);
+  if (mins < 1) return "queued just now";
+  if (mins < 60) return `queued ${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `queued ${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  return `queued ${days}d ago`;
+}
+
 /** Convert timeRange value to dateFrom / dateTo for getRecordsPaginated */
 function timeRangeToDateFilter(timeRange: string): { dateFrom?: string; dateTo?: string } {
   if (timeRange === "24hours") {
@@ -423,6 +435,7 @@ export default function Lookup() {
                       {item.areaName && (
                         <p className="truncate text-amber-600 dark:text-amber-500">{item.areaName}</p>
                       )}
+                      <p className="text-amber-500 dark:text-amber-600 text-[10px]">{formatAge(item.queuedAt)}</p>
                       {item.status === "failed" && item.errorMessage && (
                         <p className="text-red-600 dark:text-red-400 truncate">{item.errorMessage}</p>
                       )}
@@ -502,6 +515,7 @@ export default function Lookup() {
                       <p className="font-mono font-bold text-sm text-blue-900 dark:text-blue-200">
                         {item.dogId ?? (item.type === "release" ? "Release" : "Checked")} — {item.type}
                       </p>
+                      <p className="text-blue-500 dark:text-blue-600 text-[10px]">{formatAge(item.queuedAt)}</p>
                       {item.status === "failed" && item.errorMessage && (
                         <p className="text-red-600 dark:text-red-400 truncate">{item.errorMessage}</p>
                       )}

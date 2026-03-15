@@ -29,6 +29,7 @@ import {
   getTeamDocxTemplateUrl,
   saveTeamDocxTemplateUrl,
   updateDogRecordAnnotation,
+  getRecordByDogId,
 } from "./db";
 import { storagePut } from "./storage";
 import { createOpenAI } from "@ai-sdk/openai";
@@ -319,6 +320,13 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
             );
             const { url } = await storagePut(origKey, origBuffer, "image/jpeg");
             originalImageUrl = url;
+          }
+
+          // Duplicate guard: reject if dogId already exists for this team
+          const existing = await getRecordByDogId(input.dogId, input.teamIdentifier);
+          if (existing) {
+            console.warn(`[saveRecord] Duplicate dogId rejected: ${input.dogId} for team ${input.teamIdentifier}`);
+            return;
           }
 
           const savedRecord = await insertDogRecord({

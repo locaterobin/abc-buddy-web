@@ -251,3 +251,11 @@
 - [x] Add IndexedDB queue helpers for plan photo mutations (addDogToPlan, saveRelease)
 - [x] Update RecordDetailModal to queue plan photo mutations offline and retry on reconnect
 - [x] Show pending plan photo queue items with retry/discard UI
+
+## Queue UX Improvements
+- [ ] Pending badge on Lookup nav tab icon showing count of unsynced items
+- [ ] Server-side duplicate guard (unique constraint on dogId + teamId in dog_records)
+- [ ] Queue age indicator in pending banners (e.g. "queued 2h ago")
+
+## Airtable Integration
+- [ ] Store AIRTABLE_API_TOKEN as secret

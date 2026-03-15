@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { PlusCircle, Search, ClipboardList, CalendarCheck, Menu, X, Settings } from "lucide-react";
+import { getPendingRecords, getPendingPlanPhotos } from "../hooks/useOfflineQueue";
 import AddRecord from "./AddRecord";
 import Lookup from "./Lookup";
 import SettingsPage from "./SettingsPage";
@@ -13,6 +14,31 @@ export default function Home() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
+  const [pendingCount, setPendingCount] = useState(0);
+
+  // Refresh pending count every 5 seconds and on focus
+  const refreshPendingCount = useCallback(async () => {
+    try {
+      const teamId = localStorage.getItem("teamIdentifier") ?? "";
+      const [records, planPhotos] = await Promise.all([
+        getPendingRecords(teamId),
+        getPendingPlanPhotos(),
+      ]);
+      setPendingCount(records.length + planPhotos.length);
+    } catch {
+      // silently ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshPendingCount();
+    const interval = setInterval(refreshPendingCount, 5000);
+    window.addEventListener("focus", refreshPendingCount);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("focus", refreshPendingCount);
+    };
+  }, [refreshPendingCount]);
 
   // Close drawer on outside click
   useEffect(() => {
@@ -79,6 +105,7 @@ export default function Home() {
             onClick={() => setActiveTab("lookup")}
             icon={<Search size={20} />}
             label="Lookup"
+            badge={pendingCount > 0 ? pendingCount : undefined}
           />
           <TabButton
             active={activeTab === "releases"}
@@ -168,11 +195,13 @@ function TabButton({
   onClick,
   icon,
   label,
+  badge,
 }: {
   active: boolean;
   onClick: () => void;
   icon: React.ReactNode;
   label: string;
+  badge?: number;
 }) {
   return (
     <button
@@ -181,7 +210,14 @@ function TabButton({
         active ? "text-primary" : "text-muted-foreground hover:text-foreground"
       }`}
     >
-      {icon}
+      <div className="relative">
+        {icon}
+        {badge !== undefined && badge > 0 && (
+          <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 px-0.5 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center leading-none">
+            {badge > 99 ? "99+" : badge}
+          </span>
+        )}
+      </div>
       <span className="text-[10px] font-medium">{label}</span>
     </button>
   );
