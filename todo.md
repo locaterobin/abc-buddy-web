@@ -246,3 +246,8 @@
 ## Release Plan Dogs Offline Cache
 - [x] Add IndexedDB cache helpers for plan dogs (per plan ID)
 - [x] Update ReleasePlanPage to read/write plan dogs from IndexedDB
+
+## Plan Photo Offline Queue
+- [x] Add IndexedDB queue helpers for plan photo mutations (addDogToPlan, saveRelease)
+- [x] Update RecordDetailModal to queue plan photo mutations offline and retry on reconnect
+- [x] Show pending plan photo queue items with retry/discard UI

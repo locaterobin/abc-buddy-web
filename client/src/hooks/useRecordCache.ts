@@ -5,7 +5,7 @@
  */
 
 const DB_NAME = "abc-buddy-cache";
-const DB_VERSION = 4; // bumped to add plan dogs store
+const DB_VERSION = 5; // consolidated with useOfflineQueue stores
 const RECORDS_STORE = "records";
 const DATES_STORE = "recordDates";
 const PLANS_STORE = "releasePlans";

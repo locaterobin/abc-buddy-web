@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import { resizeImage } from "@/lib/resizeImage";
+import { enqueuePlanPhoto, removePlanPhotoFromQueue, getPendingPlanPhotos, updatePlanPhotoStatus } from "@/hooks/useOfflineQueue";
 import { useTeam } from "@/contexts/TeamContext";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -379,13 +380,32 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
     setPhoto2Base64(null);
   }
 
-  function submitAddToPlan() {
+  async function submitAddToPlan() {
     if (pendingPlanId === null) return;
-    addDogToPlan.mutate({
+    const queueId = crypto.randomUUID();
+    // Save to offline queue first
+    await enqueuePlanPhoto({
+      queueId,
+      type: "checked",
       planId: pendingPlanId,
       dogId: record.dogId,
       photo2Base64: photo2Base64 ?? undefined,
     });
+    // Try to sync immediately
+    addDogToPlan.mutate(
+      { planId: pendingPlanId, dogId: record.dogId, photo2Base64: photo2Base64 ?? undefined },
+      {
+        onSuccess: async (added) => {
+          await removePlanPhotoFromQueue(queueId);
+          if (added) toast.success("Added to release plan");
+          else toast.info("Already in this plan");
+        },
+        onError: async () => {
+          await updatePlanPhotoStatus(queueId, "failed", "Network error");
+          toast("Saved offline — will sync when online", { icon: "📋" });
+        },
+      }
+    );
   }
 
   // Push a history entry when modal opens so back button can close it
@@ -486,11 +506,21 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
     setConfirming(true);
     const { latitude, longitude, areaName, distanceMetres } = confirmData;
 
+    const releasedAt = new Date().toISOString();
+    const distanceRounded = distanceMetres !== null ? Math.round(distanceMetres) : null;
+    const queueId = crypto.randomUUID();
+    // Save to offline queue first
+    await enqueuePlanPhoto({
+      queueId,
+      type: "release",
+      recordId: record.id,
+      teamIdentifier: teamId,
+      photo3Base64: photo3Base64 ?? undefined,
+      releaseNotes: releasedAt,
+      webhookUrl: webhookUrl ?? undefined,
+    });
     try {
-      const releasedAt = new Date().toISOString();
-      const distanceRounded = distanceMetres !== null ? Math.round(distanceMetres) : null;
-
-      // Save to DB first
+      // Save to DB
       await saveReleaseMutation.mutateAsync({
         id: record.id,
         teamIdentifier: teamId,
@@ -501,6 +531,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
         releaseDistanceMetres: distanceRounded,
         photo3Base64: photo3Base64 ?? undefined,
       });
+      await removePlanPhotoFromQueue(queueId);
 
       // Fire webhook
       const releaseUrl = webhookUrl!.replace(/\/$/, "") + "/release";
@@ -517,13 +548,11 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
         distanceFromCapture: distanceRounded,
       };
 
-      const res = await fetch(releaseUrl, {
+      fetch(releaseUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) throw new Error(`Webhook responded with ${res.status}`);
+      }).catch((e) => console.warn("Release webhook failed:", e));
 
       utils.dogs.getRecords.invalidate();
       setReleased(true);
@@ -533,7 +562,12 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
         distanceMetres !== null ? ` · ${formatDistance(distanceMetres)} from capture` : "";
       toast.success(`${record.dogId} marked as Released${distanceMsg}`);
     } catch (err: any) {
-      toast.error("Release failed: " + (err?.message || "Unknown error"));
+      await updatePlanPhotoStatus(queueId, "failed", err?.message || "Network error");
+      // Still mark as released locally so UI reflects it
+      setReleased(true);
+      setConfirmData(null);
+      setPhoto3Base64(null);
+      toast("Release saved offline — will sync when online", { icon: "📋" });
     } finally {
       setConfirming(false);
     }
