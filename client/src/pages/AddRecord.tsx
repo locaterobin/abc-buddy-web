@@ -558,7 +558,7 @@ export default function AddRecord() {
             className="w-full"
             size="lg"
             onClick={handleSave}
-            disabled={isSaving || analysisLoading || !dogId || dogIdCheck.data?.exists}
+            disabled={isSaving || !dogId || dogIdCheck.data?.exists}
           >
             {isSaving ? (
               <>

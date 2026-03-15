@@ -234,3 +234,7 @@
 ## Instant Save (No AI Wait)
 - [x] Remove client-side annotation wait from AddRecord — save immediately without waiting for AI
 - [x] Trigger server-side annotation async after record is saved to DB
+
+## Unblock Save Button
+- [x] Remove analysisLoading from Save button disabled — AI description runs in background, does not block save
+- [x] Remove any annotation blocking — save requires only photo + GPS lat/long
