@@ -269,3 +269,8 @@
 - [ ] Store session in localStorage (name, staffId, role, teamId, teamDetails) — no expiry until logout
 - [ ] Gate entire app behind login; redirect to login if no session
 - [ ] Add logout option in Settings/hamburger menu
+
+## Login / Session
+- [x] Show org/team name from session in header top-right (replace hardcoded @peepalfarm)
+- [x] Add Logout button to drawer in Home.tsx
+- [x] Wire onLogout prop from App.tsx into Home.tsx to clear session and return to login

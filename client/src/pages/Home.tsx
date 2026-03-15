@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { PlusCircle, Search, ClipboardList, CalendarCheck, Menu, X, Settings } from "lucide-react";
+import { PlusCircle, Search, ClipboardList, CalendarCheck, Menu, X, Settings, LogOut } from "lucide-react";
 import { getPendingRecords, getPendingPlanPhotos } from "../hooks/useOfflineQueue";
+import { useTeam } from "../contexts/TeamContext";
+import { clearStaffSession } from "./LoginPage";
 import AddRecord from "./AddRecord";
 import Lookup from "./Lookup";
 import SettingsPage from "./SettingsPage";
@@ -9,7 +11,7 @@ import ReleasePlanPage from "./ReleasePlanPage";
 
 type Tab = "add" | "lookup" | "records" | "releases";
 
-export default function Home() {
+export default function Home({ onLogout }: { onLogout?: () => void }) {
   const [activeTab, setActiveTab] = useState<Tab>("add");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -67,11 +69,8 @@ export default function Home() {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* @peepalfarm badge */}
-          <div className="flex items-center gap-1.5 bg-muted rounded-full px-3 py-1">
-            <div className="w-2 h-2 rounded-full bg-primary" />
-            <span className="text-xs font-mono font-medium text-muted-foreground">@peepalfarm</span>
-          </div>
+          {/* Org name badge from session */}
+          <OrgBadge />
           {/* Hamburger */}
           <button
             onClick={() => setDrawerOpen(true)}
@@ -161,9 +160,21 @@ export default function Home() {
             </div>
 
             {/* Drawer footer */}
-            <div className="px-4 py-4 border-t border-border">
+            <div className="px-4 py-4 border-t border-border space-y-3">
+              {onLogout && (
+                <button
+                  onClick={() => {
+                    clearStaffSession();
+                    setDrawerOpen(false);
+                    onLogout();
+                  }}
+                  className="flex items-center gap-2 w-full text-sm text-destructive hover:text-destructive/80 transition-colors"
+                >
+                  <LogOut size={16} />
+                  Sign Out
+                </button>
+              )}
               <p className="text-[10px] text-muted-foreground font-mono">ABC Buddy v1.0.0</p>
-              <p className="text-[10px] text-muted-foreground font-mono">@peepalfarm</p>
             </div>
           </div>
         </div>
@@ -244,5 +255,18 @@ function DrawerItem({
       <span className={active ? "text-primary" : "text-muted-foreground"}>{icon}</span>
       {label}
     </button>
+  );
+}
+
+function OrgBadge() {
+  const { staffSession } = useTeam();
+  const label = staffSession?.name
+    ? `@${staffSession.name.toLowerCase().replace(/\s+/g, "")}`
+    : "@peepalfarm";
+  return (
+    <div className="flex items-center gap-1.5 bg-muted rounded-full px-3 py-1">
+      <div className="w-2 h-2 rounded-full bg-primary" />
+      <span className="text-xs font-mono font-medium text-muted-foreground">{label}</span>
+    </div>
   );
 }

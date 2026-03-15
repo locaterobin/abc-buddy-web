@@ -711,6 +711,43 @@ const settingsRouter = router({
     }),
 });
 
+// ─── Airtable Login Router ───
+const AIRTABLE_BASE = "appoMiBAQmtIDb1D2";
+const STAFF_TABLE = "tbltkS9ncZmJbGaeh";
+
+const airtableLoginRouter = router({
+  login: publicProcedure
+    .input(z.object({ email: z.string().email(), password: z.string().min(1) }))
+    .mutation(async ({ input }) => {
+      const apiKey = process.env.AIRTABLE_API_TOKEN;
+      if (!apiKey) throw new Error("Airtable API token not configured");
+
+      // Query staff table for matching email
+      const url = `https://api.airtable.com/v0/${AIRTABLE_BASE}/${STAFF_TABLE}?filterByFormula=LOWER({Email})=LOWER('${input.email.replace(/'/g, "\\'")}')`;
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${apiKey}` } });
+      if (!res.ok) throw new Error("Failed to reach Airtable");
+      const data = await res.json() as { records: Array<{ fields: Record<string, string> }> };
+
+      if (!data.records || data.records.length === 0) {
+        throw new Error("Invalid email or password");
+      }
+
+      const staff = data.records[0].fields;
+      if (staff["Password"] !== input.password) {
+        throw new Error("Invalid email or password");
+      }
+
+      // Return user session data
+      return {
+        name: staff["Name"] ?? staff["Full Name"] ?? "",
+        staffId: staff["Staff ID"] ?? staff["StaffID"] ?? staff["staffid"] ?? "",
+        role: staff["Role"] ?? staff["role"] ?? "",
+        teamId: staff["Team ID"] ?? staff["TeamID"] ?? staff["teamid"] ?? "",
+        email: input.email,
+      };
+    }),
+});
+
 export const appRouter = router({
   system: systemRouter,
   auth: router({
@@ -724,6 +761,7 @@ export const appRouter = router({
   dogs: dogsRouter,
   releasePlans: releasePlansRouter,
   settings: settingsRouter,
+  airtable: airtableLoginRouter,
 });
 
 export type AppRouter = typeof appRouter;
