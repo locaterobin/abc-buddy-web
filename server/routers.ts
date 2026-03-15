@@ -349,7 +349,8 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
           });
 
           // Server-side annotation: stamp the image and update DB in background
-          if (input.source === "camera" && !input.description) {
+          // Always annotate camera photos regardless of whether a description exists
+          if (input.source === "camera") {
             Promise.resolve().then(async () => {
               try {
                 const sharp = (await import("sharp")).default;
