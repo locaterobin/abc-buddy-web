@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { getCachedReleasePlans, setCachedReleasePlans } from "@/hooks/useRecordCache";
+import { getCachedReleasePlans, setCachedReleasePlans, getCachedPlanDogs, setCachedPlanDogs } from "@/hooks/useRecordCache";
 import { trpc } from "@/lib/trpc";
 import { useTeam } from "@/contexts/TeamContext";
 import { Button } from "@/components/ui/button";
@@ -170,11 +170,29 @@ export default function ReleasePlanPage() {
   // Use fresh data if available, otherwise fall back to cache
   const plans: any[] = freshPlans ?? cachedPlans;
 
+  // Plan dogs cache
+  const [cachedPlanDogs, setCachedPlanDogsLocal] = useState<any[]>([]);
+  useEffect(() => {
+    if (selectedPlanId === null) return;
+    getCachedPlanDogs(selectedPlanId).then((dogs) => setCachedPlanDogsLocal(dogs));
+  }, [selectedPlanId]);
+
   // Plan dogs (when a plan is selected)
-  const { data: planDogs = [], isLoading: dogsLoading } = trpc.releasePlans.getPlanDogs.useQuery(
+  const { data: freshPlanDogs, isLoading: dogsLoading } = trpc.releasePlans.getPlanDogs.useQuery(
     { planId: selectedPlanId! },
     { enabled: selectedPlanId !== null }
   );
+
+  // Persist fresh plan dogs to cache whenever they arrive
+  useEffect(() => {
+    if (selectedPlanId !== null && freshPlanDogs && freshPlanDogs.length >= 0) {
+      setCachedPlanDogs(selectedPlanId, freshPlanDogs);
+      setCachedPlanDogsLocal(freshPlanDogs);
+    }
+  }, [selectedPlanId, JSON.stringify(freshPlanDogs)]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Use fresh data if available, otherwise fall back to cache
+  const planDogs: any[] = freshPlanDogs ?? cachedPlanDogs;
 
   // Reset local order whenever server data refreshes
   const planDogsKey = planDogs.map((d) => d.dogId).join(",");

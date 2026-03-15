@@ -242,3 +242,7 @@
 ## Release Plans Offline Cache
 - [x] Add IndexedDB cache helpers for release plans and their dogs
 - [x] Update ReleasePlanPage to read from cache when offline
+
+## Release Plan Dogs Offline Cache
+- [x] Add IndexedDB cache helpers for plan dogs (per plan ID)
+- [x] Update ReleasePlanPage to read/write plan dogs from IndexedDB
