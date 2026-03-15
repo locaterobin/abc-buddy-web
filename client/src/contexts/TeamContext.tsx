@@ -6,6 +6,7 @@ interface TeamContextType {
   setTeamId: (id: string) => void;
   webhookUrl: string;
   setWebhookUrl: (url: string) => void;
+  formUrl: string;
   staffSession: StaffSession | null;
 }
 
@@ -50,6 +51,19 @@ export function TeamProvider({ children, staffSession = null }: { children: Reac
     }
   }, [staffSession?.webhookUrl]);
 
+  // formUrl — read from session (Airtable teams table), cached in localStorage
+  const [formUrl, setFormUrlState] = useState<string>(() => {
+    if (staffSession?.formUrl) return staffSession.formUrl;
+    return localStorage.getItem("abc-buddy-form-url") || "";
+  });
+
+  useEffect(() => {
+    if (staffSession?.formUrl) {
+      setFormUrlState(staffSession.formUrl);
+      localStorage.setItem("abc-buddy-form-url", staffSession.formUrl);
+    }
+  }, [staffSession?.formUrl]);
+
   useEffect(() => {
     localStorage.setItem("abc-buddy-team-id", teamId);
   }, [teamId]);
@@ -65,7 +79,7 @@ export function TeamProvider({ children, staffSession = null }: { children: Reac
   }, []);
 
   return (
-    <TeamContext.Provider value={{ teamId, setTeamId, webhookUrl, setWebhookUrl, staffSession }}>
+    <TeamContext.Provider value={{ teamId, setTeamId, webhookUrl, setWebhookUrl, formUrl, staffSession }}>
       {children}
     </TeamContext.Provider>
   );

@@ -758,9 +758,10 @@ const airtableLoginRouter = router({
 
       const teamId = staff["TeamID"] ?? staff["Team ID"] ?? staff["teamid"] ?? "";
 
-      // Look up Organization name and webhook URL from teams table
+      // Look up Organization name, webhook URL, and form URL from teams table
       let orgName = "";
       let webhookUrl = "";
+      let formUrl = "";
       if (teamId) {
         try {
           const teamUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE}/${TEAMS_TABLE}?filterByFormula={TeamID}='${teamId.replace(/'/g, "\\'")}'&maxRecords=1`;
@@ -770,6 +771,7 @@ const airtableLoginRouter = router({
             if (teamData.records?.length > 0) {
               orgName = teamData.records[0].fields["Organization"] ?? teamData.records[0].fields["organisation"] ?? "";
               webhookUrl = teamData.records[0].fields["Webhook"] ?? teamData.records[0].fields["webhook"] ?? teamData.records[0].fields["WebhookURL"] ?? "";
+              formUrl = teamData.records[0].fields["Form"] ?? teamData.records[0].fields["form"] ?? teamData.records[0].fields["FormURL"] ?? "";
             }
           }
         } catch { /* ignore, orgName stays empty */ }
@@ -784,6 +786,7 @@ const airtableLoginRouter = router({
         email: input.email,
         orgName,
         webhookUrl,
+        formUrl,
       };
     }),
 });

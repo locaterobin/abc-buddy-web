@@ -14,6 +14,7 @@ export interface StaffSession {
   email: string;
   orgName?: string;
   webhookUrl?: string;
+  formUrl?: string;
 }
 
 const SESSION_KEY = "abc-buddy-staff-session";
@@ -54,6 +55,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
         email: data.email,
         orgName: data.orgName,
         webhookUrl: data.webhookUrl,
+        formUrl: data.formUrl,
       };
       setStaffSession(session);
       onLogin(session);
