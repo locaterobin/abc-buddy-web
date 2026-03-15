@@ -405,24 +405,7 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
             });
           }
 
-          if (input.webhookUrl) {
-            fetch(input.webhookUrl, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                dogId: input.dogId,
-                teamIdentifier: input.teamIdentifier,
-                recordedAt: new Date(input.recordedAt).toISOString(),
-                latitude: input.latitude,
-                longitude: input.longitude,
-                areaName: input.areaName,
-                description: input.description,
-                notes: input.notes,
-                imageUrl,
-                source: input.source,
-              }),
-            }).catch((e) => console.error("Webhook failed:", e));
-          }
+          // Webhook is fired client-side for redundancy; no server-side call needed here.
         } catch (e) {
           console.error("[saveRecord background] Error:", e);
         }
@@ -775,8 +758,9 @@ const airtableLoginRouter = router({
 
       const teamId = staff["TeamID"] ?? staff["Team ID"] ?? staff["teamid"] ?? "";
 
-      // Look up Organization name from teams table
+      // Look up Organization name and webhook URL from teams table
       let orgName = "";
+      let webhookUrl = "";
       if (teamId) {
         try {
           const teamUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE}/${TEAMS_TABLE}?filterByFormula={TeamID}='${teamId.replace(/'/g, "\\'")}'&maxRecords=1`;
@@ -785,6 +769,7 @@ const airtableLoginRouter = router({
             const teamData = await teamRes.json() as { records: Array<{ fields: Record<string, string> }> };
             if (teamData.records?.length > 0) {
               orgName = teamData.records[0].fields["Organization"] ?? teamData.records[0].fields["organisation"] ?? "";
+              webhookUrl = teamData.records[0].fields["Webhook"] ?? teamData.records[0].fields["webhook"] ?? teamData.records[0].fields["WebhookURL"] ?? "";
             }
           }
         } catch { /* ignore, orgName stays empty */ }
@@ -798,6 +783,7 @@ const airtableLoginRouter = router({
         teamId,
         email: input.email,
         orgName,
+        webhookUrl,
       };
     }),
 });

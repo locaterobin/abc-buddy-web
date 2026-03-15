@@ -343,6 +343,25 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
   async function handleSaveEdit() {
     const lat = editLatitude !== "" ? parseFloat(editLatitude) : null;
     const lng = editLongitude !== "" ? parseFloat(editLongitude) : null;
+    // Fire update webhook immediately (client-side, before server call)
+    if (webhookUrl) {
+      fetch(webhookUrl.replace(/\/$/, "") + "/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          event: "update",
+          dogId: editDogId || rec.dogId,
+          teamIdentifier: teamId,
+          areaName: editAreaName || null,
+          latitude: lat,
+          longitude: lng,
+          notes: editNotes || null,
+          description: editDescription || null,
+          updatedByStaffId: staffSession?.staffId ?? null,
+          updatedByStaffName: staffSession?.name ?? null,
+        }),
+      }).catch((e) => console.warn("Update webhook failed:", e));
+    }
     try {
       await updateMutation.mutateAsync({
         id: rec.id,

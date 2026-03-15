@@ -271,6 +271,27 @@ export default function AddRecord() {
     const savedStaffName = staffSession?.name ?? undefined;
     const queueId = generateQueueId();
 
+    // Fire add webhook immediately (client-side, for redundancy)
+    if (savedWebhookUrl) {
+      fetch(savedWebhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          event: "add",
+          dogId: savedDogId,
+          teamIdentifier: savedTeamId,
+          recordedAt: new Date(savedRecordedAt).toISOString(),
+          latitude: savedLat ?? null,
+          longitude: savedLng ?? null,
+          areaName: savedAreaName || null,
+          notes: savedNotes || null,
+          source: savedSource,
+          addedByStaffId: savedStaffId ?? null,
+          addedByStaffName: savedStaffName ?? null,
+        }),
+      }).catch((e) => console.warn("Add webhook failed:", e));
+    }
+
     // Reset form immediately
     resetForm();
     setTimeout(() => utils.dogs.getRecords.invalidate(), 6000);

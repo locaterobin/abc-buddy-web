@@ -37,8 +37,18 @@ export function TeamProvider({ children, staffSession = null }: { children: Reac
   }, [staffSession?.teamId]);
 
   const [webhookUrl, setWebhookUrlState] = useState<string>(() => {
+    // Prefer Airtable-sourced webhook from session, then localStorage fallback
+    if (staffSession?.webhookUrl) return staffSession.webhookUrl;
     return localStorage.getItem("abc-buddy-webhook-url") || ENV_DEFAULT_WEBHOOK_URL;
   });
+
+  // When staffSession changes (login), update webhookUrl from Airtable
+  useEffect(() => {
+    if (staffSession?.webhookUrl) {
+      setWebhookUrlState(staffSession.webhookUrl);
+      localStorage.setItem("abc-buddy-webhook-url", staffSession.webhookUrl);
+    }
+  }, [staffSession?.webhookUrl]);
 
   useEffect(() => {
     localStorage.setItem("abc-buddy-team-id", teamId);
