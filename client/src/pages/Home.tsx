@@ -93,7 +93,7 @@ export default function Home({ onLogout }: { onLogout?: () => void }) {
       </main>
 
       {/* Bottom Navigation — 4 tabs */}
-      <nav className="flex-shrink-0 bg-card border-t border-border">
+      <nav className="flex-shrink-0 bg-card border-t border-border" style={{paddingBottom: 'env(safe-area-inset-bottom, 0px)'}}>
         <div className="flex">
           <TabButton
             active={activeTab === "add"}
@@ -115,7 +115,6 @@ export default function Home({ onLogout }: { onLogout?: () => void }) {
             label="Releases"
           />
         </div>
-        <div className="h-[env(safe-area-inset-bottom)]" />
       </nav>
 
       {/* Drawer scrim + panel */}

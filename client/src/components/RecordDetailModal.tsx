@@ -506,6 +506,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
         onSuccess: () => {
           toast.success("Record deleted");
           utils.dogs.getRecords.invalidate();
+          utils.dogs.getRecordsPaginated.invalidate();
           if (webhookUrl) {
             const deleteUrl = webhookUrl.replace(/\/$/, "") + "/delete";
             fetch(deleteUrl, {
