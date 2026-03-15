@@ -331,9 +331,6 @@ export default function RecordsPage() {
         </CardContent>
       </Card>
 
-      {/* DOCX Template Upload */}
-      <DocxTemplateSection />
-
       {/* Detail Modal */}
       {selectedRecord && (
         <RecordDetailModal

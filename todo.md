@@ -227,3 +227,6 @@
 ## Bug Fixes
 - [x] Fix isSaving hardcoded false in AddRecord — button never disables, causes duplicate submissions
 - [x] Fix Lookup cached records not showing instantly on first render
+
+## Settings Page
+- [x] Move DOCX template upload from Records tab to Settings page
