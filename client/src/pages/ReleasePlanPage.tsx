@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { getCachedReleasePlans, setCachedReleasePlans } from "@/hooks/useRecordCache";
 import { trpc } from "@/lib/trpc";
 import { useTeam } from "@/contexts/TeamContext";
 import { Button } from "@/components/ui/button";
@@ -141,13 +142,33 @@ export default function ReleasePlanPage() {
   // Local order state for optimistic drag reorder
   const [localOrder, setLocalOrder] = useState<string[] | null>(null);
 
+  // Offline cache
+  const [cachedPlans, setCachedPlansLocal] = useState<any[]>([]);
+  const cacheLoadedRef = useRef(false);
+  useEffect(() => {
+    if (!teamIdentifier || cacheLoadedRef.current) return;
+    cacheLoadedRef.current = true;
+    getCachedReleasePlans(teamIdentifier).then((p) => setCachedPlansLocal(p));
+  }, [teamIdentifier]);
+
   const utils = trpc.useUtils();
 
   // Plans list
-  const { data: plans = [], isLoading: plansLoading } = trpc.releasePlans.getPlans.useQuery(
+  const { data: freshPlans, isLoading: plansLoading } = trpc.releasePlans.getPlans.useQuery(
     { teamIdentifier },
     { enabled: !!teamIdentifier }
   );
+
+  // Persist fresh plans to cache whenever they arrive
+  useEffect(() => {
+    if (teamIdentifier && freshPlans && freshPlans.length > 0) {
+      setCachedReleasePlans(teamIdentifier, freshPlans);
+      setCachedPlansLocal(freshPlans);
+    }
+  }, [teamIdentifier, JSON.stringify(freshPlans)]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Use fresh data if available, otherwise fall back to cache
+  const plans: any[] = freshPlans ?? cachedPlans;
 
   // Plan dogs (when a plan is selected)
   const { data: planDogs = [], isLoading: dogsLoading } = trpc.releasePlans.getPlanDogs.useQuery(

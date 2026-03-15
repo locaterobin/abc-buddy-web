@@ -238,3 +238,7 @@
 ## Unblock Save Button
 - [x] Remove analysisLoading from Save button disabled — AI description runs in background, does not block save
 - [x] Remove any annotation blocking — save requires only photo + GPS lat/long
+
+## Release Plans Offline Cache
+- [x] Add IndexedDB cache helpers for release plans and their dogs
+- [x] Update ReleasePlanPage to read from cache when offline

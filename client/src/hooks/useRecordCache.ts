@@ -5,9 +5,10 @@
  */
 
 const DB_NAME = "abc-buddy-cache";
-const DB_VERSION = 2; // bumped to add dates store
+const DB_VERSION = 3; // bumped to add release plans store
 const RECORDS_STORE = "records";
 const DATES_STORE = "recordDates";
+const PLANS_STORE = "releasePlans";
 const MAX_CACHED = 100;
 
 function openDB(): Promise<IDBDatabase> {
@@ -19,8 +20,11 @@ function openDB(): Promise<IDBDatabase> {
         db.createObjectStore(RECORDS_STORE, { keyPath: "_cacheKey" });
       }
       if (!db.objectStoreNames.contains(DATES_STORE)) {
-        // key: teamId, value: { teamId, dates: string[], cachedAt: number }
         db.createObjectStore(DATES_STORE, { keyPath: "teamId" });
+      }
+      if (!db.objectStoreNames.contains(PLANS_STORE)) {
+        // key: teamId, value: { teamId, plans: ReleasePlan[], cachedAt: number }
+        db.createObjectStore(PLANS_STORE, { keyPath: "teamId" });
       }
     };
     req.onsuccess = () => resolve(req.result);
@@ -121,5 +125,37 @@ export async function setCachedRecordDates(teamId: string, dates: string[]): Pro
     });
   } catch (e) {
     console.warn("IndexedDB dates write failed:", e);
+  }
+}
+
+// ── Release Plans ─────────────────────────────────────────────────────────────
+
+export async function getCachedReleasePlans(teamId: string): Promise<any[]> {
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(PLANS_STORE, "readonly");
+      const store = tx.objectStore(PLANS_STORE);
+      const req = store.get(teamId);
+      req.onsuccess = () => resolve(req.result?.plans ?? []);
+      req.onerror = () => reject(req.error);
+    });
+  } catch {
+    return [];
+  }
+}
+
+export async function setCachedReleasePlans(teamId: string, plans: any[]): Promise<void> {
+  try {
+    const db = await openDB();
+    const tx = db.transaction(PLANS_STORE, "readwrite");
+    const store = tx.objectStore(PLANS_STORE);
+    store.put({ teamId, plans, cachedAt: Date.now() });
+    await new Promise<void>((resolve, reject) => {
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  } catch (e) {
+    console.warn("IndexedDB release plans write failed:", e);
   }
 }
