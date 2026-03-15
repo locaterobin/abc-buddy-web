@@ -17,6 +17,8 @@ export default function Home({ onLogout }: { onLogout?: () => void }) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
   const [pendingCount, setPendingCount] = useState(0);
+  const { staffSession } = useTeam();
+  const isManager = staffSession?.role?.toLowerCase() === "manager";
 
   // Refresh pending count every 5 seconds and on focus
   const refreshPendingCount = useCallback(async () => {
@@ -140,23 +142,27 @@ export default function Home({ onLogout }: { onLogout?: () => void }) {
 
             {/* Drawer items */}
             <div className="flex-1 py-2">
-              <DrawerItem
-                icon={<ClipboardList size={18} />}
-                label="Records"
-                active={activeTab === "records"}
-                onClick={() => {
-                  setDrawerOpen(false);
-                  setActiveTab("records");
-                }}
-              />
-              <DrawerItem
-                icon={<Settings size={18} />}
-                label="Settings"
-                onClick={() => {
-                  setDrawerOpen(false);
-                  setSettingsOpen(true);
-                }}
-              />
+              {isManager && (
+                <DrawerItem
+                  icon={<ClipboardList size={18} />}
+                  label="Records"
+                  active={activeTab === "records"}
+                  onClick={() => {
+                    setDrawerOpen(false);
+                    setActiveTab("records");
+                  }}
+                />
+              )}
+              {isManager && (
+                <DrawerItem
+                  icon={<Settings size={18} />}
+                  label="Settings"
+                  onClick={() => {
+                    setDrawerOpen(false);
+                    setSettingsOpen(true);
+                  }}
+                />
+              )}
             </div>
 
             {/* Drawer footer */}
