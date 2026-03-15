@@ -220,8 +220,8 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
 
       type Line = { text: string; bold: boolean };
       const lines: Line[] = [];
-      lines.push({ text: `${input.dogId}  ${dayName}`, bold: true });
-      lines.push({ text: `${dateStr}, ${timeStr}`, bold: false });
+      lines.push({ text: `${input.dogId}`, bold: true });
+      lines.push({ text: `${dayName}, ${dateStr}, ${timeStr}`, bold: false });
       if (input.areaName) lines.push({ text: input.areaName, bold: false });
       if (input.latitude != null && input.longitude != null) {
         lines.push({ text: `${input.latitude.toFixed(5)}, ${input.longitude.toFixed(5)}`, bold: false });
@@ -325,16 +325,21 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
             originalImageUrl = url;
           }
 
-          // Duplicate guard: reject if dogId already exists for this team
-          const existing = await getRecordByDogId(input.dogId, input.teamIdentifier);
+          // Resolve dogId — auto-increment suffix if there's a collision (race condition between concurrent saves)
+          let resolvedDogId = input.dogId;
+          const existing = await getRecordByDogId(resolvedDogId, input.teamIdentifier);
           if (existing) {
-            console.warn(`[saveRecord] Duplicate dogId rejected: ${input.dogId} for team ${input.teamIdentifier}`);
-            return;
+            // Extract date prefix and current numeric suffix, then find next available
+            const parts = resolvedDogId.split("-");
+            const datePrefix = parts[0];
+            const newSuffix = await getNextDogIdSuffix(input.teamIdentifier, datePrefix);
+            resolvedDogId = `${datePrefix}-${newSuffix}`;
+            console.warn(`[saveRecord] Collision on ${input.dogId}, reassigned to ${resolvedDogId}`);
           }
 
           const savedRecord = await insertDogRecord({
             teamIdentifier: input.teamIdentifier,
-            dogId: input.dogId,
+            dogId: resolvedDogId,
             imageUrl,
             originalImageUrl: originalImageUrl ?? null,
             description: input.description ?? null,
@@ -367,8 +372,8 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
                 const timeStr = date.toLocaleTimeString("en-US", { timeZone: IST, hour: "2-digit", minute: "2-digit", hour12: true });
                 type Line = { text: string; bold: boolean };
                 const lines: Line[] = [];
-                lines.push({ text: `${input.dogId}  ${dayName}`, bold: true });
-                lines.push({ text: `${dateStr}, ${timeStr}`, bold: false });
+                lines.push({ text: `${input.dogId}`, bold: true });
+                lines.push({ text: `${dayName}, ${dateStr}, ${timeStr}`, bold: false });
                 if (input.areaName) lines.push({ text: input.areaName, bold: false });
                 if (input.latitude != null && input.longitude != null) lines.push({ text: `${input.latitude.toFixed(5)}, ${input.longitude.toFixed(5)}`, bold: false });
                 if (input.notes) {
@@ -406,7 +411,19 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
             });
           }
 
-          // Webhook is fired client-side for redundancy; no server-side call needed here.
+          // Fire image-ready webhook server-side once we have the real S3 URL
+          if (input.webhookUrl) {
+            fetch(`${input.webhookUrl}/image-ready`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                event: "image_ready",
+                dogId: resolvedDogId,
+                teamIdentifier: input.teamIdentifier,
+                imageUrl,
+              }),
+            }).catch((e) => console.warn("[saveRecord] image-ready webhook failed:", e));
+          }
         } catch (e) {
           console.error("[saveRecord background] Error:", e);
         }
