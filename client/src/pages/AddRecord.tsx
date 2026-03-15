@@ -85,7 +85,6 @@ export default function AddRecord() {
     { enabled: !!dogId && dogId.length > 4 }
   );
   const analyzeMutation = trpc.dogs.analyzeImage.useMutation();
-  const annotateMutation = trpc.dogs.annotateRecord.useMutation();
   const saveMutation = trpc.dogs.saveRecord.useMutation();
   const geocodeMutation = trpc.dogs.geocodeLatLng.useMutation();
   const utils = trpc.useUtils();
@@ -296,29 +295,10 @@ export default function AddRecord() {
       const toastId = toast.loading(`Saving ${savedDogId}…`, { duration: Infinity });
 
       try {
-        let finalImageBase64 = savedImageBase64;
-        if (savedSource === "camera") {
-          try {
-            const annotated = await annotateMutation.mutateAsync({
-              imageBase64: savedImageBase64,
-              dogId: savedDogId,
-              recordedAt: new Date(savedRecordedAt).toISOString(),
-              areaName: savedAreaName || undefined,
-              latitude: savedLat ?? undefined,
-              longitude: savedLng ?? undefined,
-              notes: savedNotes || undefined,
-            });
-            finalImageBase64 = annotated.annotatedBase64;
-          } catch (err) {
-            console.warn("Annotation failed, saving original:", err);
-          }
-        }
-
         await saveMutation.mutateAsync({
           teamIdentifier: savedTeamId,
           dogId: savedDogId,
-          imageBase64: finalImageBase64,
-          originalImageBase64: savedImageBase64 !== finalImageBase64 ? savedImageBase64 : undefined,
+          imageBase64: savedImageBase64,
           description: savedDescription || undefined,
           notes: savedNotes || undefined,
           latitude: savedLat ?? undefined,
@@ -583,7 +563,7 @@ export default function AddRecord() {
             {isSaving ? (
               <>
                 <Loader2 size={16} className="mr-2 animate-spin" />
-                {annotateMutation.isPending ? "Annotating…" : "Saving…"}
+                {"Saving…"}
               </>
             ) : (
               <>

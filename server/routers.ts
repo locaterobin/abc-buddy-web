@@ -28,6 +28,7 @@ import {
   archiveReleasePlan,
   getTeamDocxTemplateUrl,
   saveTeamDocxTemplateUrl,
+  updateDogRecordAnnotation,
 } from "./db";
 import { storagePut } from "./storage";
 import { createOpenAI } from "@ai-sdk/openai";
@@ -320,7 +321,7 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
             originalImageUrl = url;
           }
 
-          await insertDogRecord({
+          const savedRecord = await insertDogRecord({
             teamIdentifier: input.teamIdentifier,
             dogId: input.dogId,
             imageUrl,
@@ -333,6 +334,63 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
             source: input.source,
             recordedAt: new Date(input.recordedAt),
           });
+
+          // Server-side annotation: stamp the image and update DB in background
+          if (input.source === "camera" && !input.description) {
+            Promise.resolve().then(async () => {
+              try {
+                const sharp = (await import("sharp")).default;
+                const rawBuf = Buffer.from(imageUrl.includes("base64,") ? imageUrl.replace(/^data:image\/\w+;base64,/, "") : imgBuffer.toString("base64"), "base64");
+                const image = sharp(imgBuffer).autoOrient();
+                const meta = await image.clone().metadata();
+                const W = meta.width || 800;
+                const H = meta.height || 600;
+                const date = new Date(input.recordedAt);
+                const IST = "Asia/Kolkata";
+                const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+                const dayName = days[new Date(date.toLocaleString("en-US", { timeZone: IST })).getDay()];
+                const dateStr = date.toLocaleDateString("en-GB", { timeZone: IST, day: "2-digit", month: "short", year: "numeric" });
+                const timeStr = date.toLocaleTimeString("en-US", { timeZone: IST, hour: "2-digit", minute: "2-digit", hour12: true });
+                type Line = { text: string; bold: boolean };
+                const lines: Line[] = [];
+                lines.push({ text: `${input.dogId}  ${dayName}`, bold: true });
+                lines.push({ text: `${dateStr}, ${timeStr}`, bold: false });
+                if (input.areaName) lines.push({ text: input.areaName, bold: false });
+                if (input.latitude != null && input.longitude != null) lines.push({ text: `${input.latitude.toFixed(5)}, ${input.longitude.toFixed(5)}`, bold: false });
+                if (input.notes) {
+                  const words = input.notes.split(" ");
+                  let current = "";
+                  for (const word of words) {
+                    if ((current + " " + word).trim().length > 50) { lines.push({ text: current.trim(), bold: false }); current = word; }
+                    else { current = current ? current + " " + word : word; }
+                  }
+                  if (current.trim()) lines.push({ text: current.trim(), bold: false });
+                }
+                const idFontSize = Math.max(18, Math.round(W * 0.038));
+                const lineFontSize = Math.max(14, Math.round(W * 0.030));
+                const lineHeight = Math.round(lineFontSize * 1.6);
+                const padding = Math.max(10, Math.round(W * 0.025));
+                const overlayHeight = padding * 2 + idFontSize + (lines.length - 1) * lineHeight + Math.round(lineHeight * 0.3);
+                const escXml = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+                let svgLines = "";
+                let y = padding + idFontSize;
+                for (let i = 0; i < lines.length; i++) {
+                  const line = lines[i];
+                  const size = i === 0 ? idFontSize : lineFontSize;
+                  const weight = line.bold ? "bold" : "normal";
+                  svgLines += `<text x="${padding}" y="${y}" font-family="Liberation Sans, Arial, sans-serif" font-size="${size}" font-weight="${weight}" fill="white">${escXml(line.text)}</text>\n`;
+                  y += i === 0 ? idFontSize + Math.round(lineHeight * 0.4) : lineHeight;
+                }
+                const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${overlayHeight}"><rect width="${W}" height="${overlayHeight}" fill="rgba(0,0,0,0.65)"/>${svgLines}</svg>`;
+                const annotatedBuffer = await image.composite([{ input: Buffer.from(svg), top: H - overlayHeight, left: 0 }]).jpeg({ quality: 92 }).toBuffer();
+                const annotatedKey = `dogs/${input.teamIdentifier}/${input.dogId}-annotated-${nanoid(8)}.jpg`;
+                const { url: annotatedUrl } = await storagePut(annotatedKey, annotatedBuffer, "image/jpeg");
+                await updateDogRecordAnnotation(savedRecord.id, annotatedUrl, imageUrl, null);
+              } catch (e) {
+                console.error("[saveRecord server-annotation] Error:", e);
+              }
+            });
+          }
 
           if (input.webhookUrl) {
             fetch(input.webhookUrl, {

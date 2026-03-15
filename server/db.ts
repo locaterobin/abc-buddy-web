@@ -136,6 +136,20 @@ export async function insertDogRecord(record: InsertDogRecord): Promise<DogRecor
   return newRecord;
 }
 
+export async function updateDogRecordAnnotation(
+  id: number,
+  imageUrl: string,
+  originalImageUrl: string | null,
+  description: string | null
+): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db
+    .update(dogRecords)
+    .set({ imageUrl, originalImageUrl, description })
+    .where(eq(dogRecords.id, id));
+}
+
 export async function getRecordsPaginated(
   teamIdentifier: string,
   opts: {

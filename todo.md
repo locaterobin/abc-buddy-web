@@ -230,3 +230,7 @@
 
 ## Settings Page
 - [x] Move DOCX template upload from Records tab to Settings page
+
+## Instant Save (No AI Wait)
+- [x] Remove client-side annotation wait from AddRecord — save immediately without waiting for AI
+- [x] Trigger server-side annotation async after record is saved to DB
