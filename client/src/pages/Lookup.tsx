@@ -773,7 +773,7 @@ export default function Lookup() {
             <Card>
               <CardContent className="py-8 text-center">
                 <Search size={32} className="text-muted-foreground mx-auto mb-3 opacity-50" />
-                <p className="font-medium text-foreground">No records in this period</p>
+                <p className="font-medium text-foreground">No unreleased dogs in this period</p>
                 <p className="text-sm text-muted-foreground mt-1">Try selecting a different date range</p>
               </CardContent>
             </Card>
