@@ -405,6 +405,19 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
                 const annotatedKey = `dogs/${input.teamIdentifier}/${input.dogId}-annotated-${nanoid(8)}.jpg`;
                 const { url: annotatedUrl } = await storagePut(annotatedKey, annotatedBuffer, "image/jpeg");
                 await updateDogRecordAnnotation(savedRecord.id, annotatedUrl, imageUrl, null);
+                // Fire image-annotated webhook now that we have the stamped image URL
+                if (input.webhookUrl) {
+                  fetch(`${input.webhookUrl}/image-annotated`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      event: "image_annotated",
+                      dogId: resolvedDogId,
+                      teamIdentifier: input.teamIdentifier,
+                      annotatedImageUrl: annotatedUrl,
+                    }),
+                  }).catch((e) => console.warn("[saveRecord] image-annotated webhook failed:", e));
+                }
               } catch (e) {
                 console.error("[saveRecord server-annotation] Error:", e);
               }

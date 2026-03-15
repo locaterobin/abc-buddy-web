@@ -511,7 +511,13 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
             fetch(deleteUrl, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ dogId: record.dogId }),
+              body: JSON.stringify({
+                event: "delete",
+                dogId: record.dogId,
+                teamIdentifier: teamId,
+                deletedByStaffId: staffSession?.staffId ?? null,
+                deletedByStaffName: staffSession?.name ?? null,
+              }),
             }).catch((e) => console.error("Delete webhook failed:", e));
           }
           onDelete?.();
@@ -616,6 +622,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
       // Fire webhook
       const releaseUrl = webhookUrl!.replace(/\/$/, "") + "/release";
       const payload = {
+        event: "release",
         dogId: record.dogId,
         teamIdentifier: teamId,
         releasedAt,
@@ -626,6 +633,8 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
         releaseLongitude: longitude,
         releaseAreaName: areaName || null,
         distanceFromCapture: distanceRounded,
+        releasedByStaffId: staffSession?.staffId ?? null,
+        releasedByStaffName: staffSession?.name ?? null,
       };
 
       fetch(releaseUrl, {
