@@ -77,8 +77,8 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
       <div className="w-full max-w-sm space-y-6">
         {/* Logo / Title */}
         <div className="text-center space-y-1">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary text-primary-foreground text-2xl font-bold mb-2">
-            AB
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-white mb-2 overflow-hidden">
+            <img src="https://d2xsxph8kpxj0f.cloudfront.net/310419663032736616/hPjpqQFScRPNzVz7QPH5a8/abc-buddy-icon-v2_b484f5a1.png" alt="ABC Buddy" className="w-full h-full object-contain" />
           </div>
           <h1 className="text-2xl font-bold text-foreground">ABC Buddy</h1>
           <p className="text-sm text-muted-foreground">Sign in to continue</p>

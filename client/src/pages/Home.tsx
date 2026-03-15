@@ -62,7 +62,7 @@ export default function Home({ onLogout }: { onLogout?: () => void }) {
       <header className="flex-shrink-0 bg-card border-b border-border px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg overflow-hidden bg-white flex items-center justify-center">
-            <img src="https://d2xsxph8kpxj0f.cloudfront.net/310419663032736616/hPjpqQFScRPNzVz7QPH5a8/abc-buddy-icon_77930a30.png" alt="ABC Buddy" className="w-full h-full object-contain" />
+            <img src="https://d2xsxph8kpxj0f.cloudfront.net/310419663032736616/hPjpqQFScRPNzVz7QPH5a8/abc-buddy-icon-v2_b484f5a1.png" alt="ABC Buddy" className="w-full h-full object-contain" />
           </div>
           <div className="flex flex-col">
             <h1 className="text-lg font-semibold text-foreground leading-tight">ABC Buddy</h1>
