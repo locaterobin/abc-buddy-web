@@ -262,3 +262,10 @@
 
 ## Settings Cleanup
 - [x] Remove webhook URL field from Settings page
+
+## Airtable Login
+- [ ] Add tRPC login procedure — check email/password against Airtable staff table, return user + team details
+- [ ] Build login screen UI (email + password fields)
+- [ ] Store session in localStorage (name, staffId, role, teamId, teamDetails) — no expiry until logout
+- [ ] Gate entire app behind login; redirect to login if no session
+- [ ] Add logout option in Settings/hamburger menu
