@@ -558,7 +558,7 @@ export default function AddRecord() {
             className="w-full"
             size="lg"
             onClick={handleSave}
-            disabled={isSaving || !dogId || dogIdCheck.data?.exists}
+            disabled={isSaving || !dogId || dogIdCheck.data?.exists || (imageSource === "camera" && (latitude === null || longitude === null))}
           >
             {isSaving ? (
               <>
