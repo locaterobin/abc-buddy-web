@@ -293,6 +293,8 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
         source: z.enum(["camera", "upload"]).default("upload"),
         recordedAt: z.number(), // unix timestamp ms
         webhookUrl: z.string().optional(),
+        addedByStaffId: z.string().optional(),
+        addedByStaffName: z.string().optional(),
       })
     )
     .mutation(async ({ input }) => {
@@ -342,6 +344,8 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
             areaName: input.areaName ?? null,
             source: input.source,
             recordedAt: new Date(input.recordedAt),
+            addedByStaffId: input.addedByStaffId ?? null,
+            addedByStaffName: input.addedByStaffName ?? null,
           });
 
           // Server-side annotation: stamp the image and update DB in background
@@ -476,11 +480,13 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
         latitude: z.number().nullable().optional(),
         longitude: z.number().nullable().optional(),
         recordedAt: z.string().optional(), // ISO string
+        updatedByStaffId: z.string().nullable().optional(),
+        updatedByStaffName: z.string().nullable().optional(),
       })
     )
     .mutation(async ({ input }) => {
       const { id, teamIdentifier, recordedAt, ...rest } = input;
-      const data: Parameters<typeof updateDogRecord>[2] = { ...rest };
+      const data: Parameters<typeof updateDogRecord>[2] = { ...rest, updatedAt: new Date() };
       if (recordedAt) data.recordedAt = new Date(recordedAt);
       const updated = await updateDogRecord(id, teamIdentifier, data);
       return { success: updated };
@@ -497,6 +503,8 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
         releaseAreaName: z.string().nullable(),
         releaseDistanceMetres: z.number().int().nullable(),
         photo3Base64: z.string().optional(), // optional release photo
+        releasedByStaffId: z.string().nullable().optional(),
+        releasedByStaffName: z.string().nullable().optional(),
       })
     )
     .mutation(async ({ input }) => {
@@ -518,6 +526,8 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
         releaseAreaName: input.releaseAreaName,
         releaseDistanceMetres: input.releaseDistanceMetres,
         releasePhotoUrl,
+        releasedByStaffId: input.releasedByStaffId ?? null,
+        releasedByStaffName: input.releasedByStaffName ?? null,
       });
       // Update plan timestamps (first/last release) — no auto-archive
       if (saved) {
@@ -672,6 +682,8 @@ const releasePlansRouter = router({
       planId: z.number(),
       dogId: z.string(),
       photo2Base64: z.string().optional(), // data:image/jpeg;base64,...
+      addedByStaffId: z.string().nullable().optional(),
+      addedByStaffName: z.string().nullable().optional(),
     }))
     .mutation(async ({ input }) => {
       let photo2Url: string | undefined;
@@ -685,7 +697,7 @@ const releasePlansRouter = router({
         const { url } = await storagePut(fileKey, imgBuffer, "image/jpeg");
         photo2Url = url;
       }
-      return addDogToReleasePlan(input.planId, input.dogId, photo2Url);
+      return addDogToReleasePlan(input.planId, input.dogId, photo2Url, input.addedByStaffId ?? null, input.addedByStaffName ?? null);
     }),
   removeDog: publicProcedure
     .input(z.object({ planId: z.number(), dogId: z.string() }))

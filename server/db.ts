@@ -147,6 +147,9 @@ export async function updateDogRecord(
     latitude?: number | null;
     longitude?: number | null;
     recordedAt?: Date;
+    updatedByStaffId?: string | null;
+    updatedByStaffName?: string | null;
+    updatedAt?: Date;
   }
 ): Promise<boolean> {
   const db = await getDb();
@@ -294,6 +297,8 @@ export async function saveReleaseData(
     releaseAreaName: string | null;
     releaseDistanceMetres: number | null;
     releasePhotoUrl?: string | null;
+    releasedByStaffId?: string | null;
+    releasedByStaffName?: string | null;
   }
 ): Promise<boolean> {
   const db = await getDb();
@@ -308,6 +313,8 @@ export async function saveReleaseData(
       releaseAreaName: data.releaseAreaName,
       releaseDistanceMetres: data.releaseDistanceMetres,
       ...(data.releasePhotoUrl !== undefined ? { releasePhotoUrl: data.releasePhotoUrl } : {}),
+      ...(data.releasedByStaffId !== undefined ? { releasedByStaffId: data.releasedByStaffId } : {}),
+      ...(data.releasedByStaffName !== undefined ? { releasedByStaffName: data.releasedByStaffName } : {}),
     })
     .where(and(eq(dogRecords.id, id), eq(dogRecords.teamIdentifier, teamIdentifier)));
 
@@ -484,6 +491,15 @@ export async function getReleasePlanDogs(planId: number) {
       releaseDistanceMetres: dogRecords.releaseDistanceMetres,
       notes: dogRecords.notes,
       createdAt: dogRecords.createdAt,
+      addedByStaffId: dogRecords.addedByStaffId,
+      addedByStaffName: dogRecords.addedByStaffName,
+      updatedByStaffId: dogRecords.updatedByStaffId,
+      updatedByStaffName: dogRecords.updatedByStaffName,
+      updatedAt: dogRecords.updatedAt,
+      releasedByStaffId: dogRecords.releasedByStaffId,
+      releasedByStaffName: dogRecords.releasedByStaffName,
+      planAddedByStaffId: releasePlanDogs.addedByStaffId,
+      planAddedByStaffName: releasePlanDogs.addedByStaffName,
     })
     .from(releasePlanDogs)
     .innerJoin(dogRecords, eq(releasePlanDogs.dogId, dogRecords.dogId))
@@ -518,6 +534,13 @@ export async function getFullRecordByDogId(dogId: string) {
       releaseDistanceMetres: dogRecords.releaseDistanceMetres,
       notes: dogRecords.notes,
       createdAt: dogRecords.createdAt,
+      addedByStaffId: dogRecords.addedByStaffId,
+      addedByStaffName: dogRecords.addedByStaffName,
+      updatedByStaffId: dogRecords.updatedByStaffId,
+      updatedByStaffName: dogRecords.updatedByStaffName,
+      updatedAt: dogRecords.updatedAt,
+      releasedByStaffId: dogRecords.releasedByStaffId,
+      releasedByStaffName: dogRecords.releasedByStaffName,
     })
     .from(dogRecords)
     .leftJoin(releasePlanDogs, eq(releasePlanDogs.dogId, dogRecords.dogId))
@@ -526,7 +549,7 @@ export async function getFullRecordByDogId(dogId: string) {
   return rows[0] ?? null;
 }
 
-export async function addDogToReleasePlan(planId: number, dogId: string, photo2Url?: string): Promise<boolean> {
+export async function addDogToReleasePlan(planId: number, dogId: string, photo2Url?: string, staffId?: string | null, staffName?: string | null): Promise<boolean> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   const existing = await db
@@ -557,7 +580,7 @@ export async function addDogToReleasePlan(planId: number, dogId: string, photo2U
     .from(releasePlanDogs)
     .where(eq(releasePlanDogs.planId, planId));
   const maxSort = allRows.length > 0 ? Math.max(...allRows.map((r) => r.s)) : -1;
-  await db.insert(releasePlanDogs).values({ planId, dogId, photo2Url, sortOrder: maxSort + 1 });
+  await db.insert(releasePlanDogs).values({ planId, dogId, photo2Url, sortOrder: maxSort + 1, addedByStaffId: staffId ?? null, addedByStaffName: staffName ?? null });
   return true;
 }
 

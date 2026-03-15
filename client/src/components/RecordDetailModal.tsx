@@ -294,7 +294,7 @@ function LightboxViewer({
 }
 
 export default function RecordDetailModal({ record, onClose, onDelete }: RecordDetailModalProps) {
-  const { teamId, webhookUrl } = useTeam();
+  const { teamId, webhookUrl, staffSession } = useTeam();
   const utils = trpc.useUtils();
   const deleteMutation = trpc.dogs.deleteRecord.useMutation();
   const geocodeMutation = trpc.dogs.geocodeLatLng.useMutation();
@@ -354,6 +354,8 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
         latitude: lat,
         longitude: lng,
         recordedAt: editRecordedAt ? new Date(editRecordedAt).toISOString() : undefined,
+        updatedByStaffId: staffSession?.staffId ?? null,
+        updatedByStaffName: staffSession?.name ?? null,
       });
       toast.success("Record updated");
       setEditMode(false);
@@ -450,7 +452,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
     });
     // Try to sync immediately
     addDogToPlan.mutate(
-      { planId: pendingPlanId, dogId: record.dogId, photo2Base64: photo2Base64 ?? undefined },
+      { planId: pendingPlanId, dogId: record.dogId, photo2Base64: photo2Base64 ?? undefined, addedByStaffId: staffSession?.staffId ?? null, addedByStaffName: staffSession?.name ?? null },
       {
         onSuccess: async (added) => {
           await removePlanPhotoFromQueue(queueId);
@@ -587,6 +589,8 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
         releaseAreaName: areaName || null,
         releaseDistanceMetres: distanceRounded,
         photo3Base64: photo3Base64 ?? undefined,
+        releasedByStaffId: staffSession?.staffId ?? null,
+        releasedByStaffName: staffSession?.name ?? null,
       });
       await removePlanPhotoFromQueue(queueId);
 
@@ -1133,6 +1137,31 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
               </>
             )}
           </Button>
+
+          {/* Staff Audit Trail */}
+          {(rec.addedByStaffName || rec.updatedByStaffName || rec.releasedByStaffName) && (
+            <div className="border border-border/50 rounded-xl p-3 bg-muted/20 space-y-1.5">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Activity</p>
+              {rec.addedByStaffName && (
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Added by</span>
+                  <span className="font-medium text-foreground">{rec.addedByStaffName}{rec.addedByStaffId ? ` (${rec.addedByStaffId})` : ""}</span>
+                </div>
+              )}
+              {rec.updatedByStaffName && (
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Last edited by</span>
+                  <span className="font-medium text-foreground">{rec.updatedByStaffName}{rec.updatedByStaffId ? ` (${rec.updatedByStaffId})` : ""}</span>
+                </div>
+              )}
+              {rec.releasedByStaffName && (
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Released by</span>
+                  <span className="font-medium text-foreground">{rec.releasedByStaffName}{rec.releasedByStaffId ? ` (${rec.releasedByStaffId})` : ""}</span>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Delete Button */}
           <Button

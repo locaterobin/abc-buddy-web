@@ -51,7 +51,7 @@ function fileToBase64(file: File): Promise<string> {
 type ImageSource = "upload" | "camera";
 
 export default function AddRecord() {
-  const { teamId, webhookUrl } = useTeam();
+  const { teamId, webhookUrl, staffSession } = useTeam();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
@@ -267,6 +267,8 @@ export default function AddRecord() {
     const savedRecordedAt = new Date(recordedAt).getTime();
     const savedWebhookUrl = webhookUrl;
     const savedTeamId = teamId;
+    const savedStaffId = staffSession?.staffId ?? undefined;
+    const savedStaffName = staffSession?.name ?? undefined;
     const queueId = generateQueueId();
 
     // Reset form immediately
@@ -307,6 +309,8 @@ export default function AddRecord() {
           source: savedSource,
           recordedAt: savedRecordedAt,
           webhookUrl: savedWebhookUrl || undefined,
+          addedByStaffId: savedStaffId,
+          addedByStaffName: savedStaffName,
         });
 
         // Success — remove from queue

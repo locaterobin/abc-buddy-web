@@ -29,6 +29,13 @@ export const dogRecords = mysqlTable("dog_records", {
   source: mysqlEnum("source", ["camera", "upload", "api"]).default("upload").notNull(),
   recordedAt: timestamp("recordedAt").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
+  // Staff who added the record
+  addedByStaffId: varchar("addedByStaffId", { length: 64 }),
+  addedByStaffName: varchar("addedByStaffName", { length: 128 }),
+  // Staff who last updated the record
+  updatedByStaffId: varchar("updatedByStaffId", { length: 64 }),
+  updatedByStaffName: varchar("updatedByStaffName", { length: 128 }),
+  updatedAt: timestamp("updatedAt"),
   // Release data
   releasedAt: timestamp("releasedAt"),
   releaseLatitude: double("releaseLatitude"),
@@ -36,6 +43,9 @@ export const dogRecords = mysqlTable("dog_records", {
   releaseAreaName: varchar("releaseAreaName", { length: 255 }),
   releaseDistanceMetres: int("releaseDistanceMetres"),
   releasePhotoUrl: text("releasePhotoUrl"), // optional 3rd photo taken at release
+  // Staff who marked as released
+  releasedByStaffId: varchar("releasedByStaffId", { length: 64 }),
+  releasedByStaffName: varchar("releasedByStaffName", { length: 128 }),
 });
 
 export type DogRecord = typeof dogRecords.$inferSelect;
@@ -63,6 +73,9 @@ export const releasePlanDogs = mysqlTable("release_plan_dogs", {
   photo2Url: text("photo2Url"), // optional second photo added when adding to plan
   sortOrder: int("sortOrder").notNull().default(0), // for drag-to-reorder
   addedAt: timestamp("addedAt").defaultNow().notNull(),
+  // Staff who added to plan
+  addedByStaffId: varchar("addedByStaffId", { length: 64 }),
+  addedByStaffName: varchar("addedByStaffName", { length: 128 }),
 });
 
 export type ReleasePlanDog = typeof releasePlanDogs.$inferSelect;

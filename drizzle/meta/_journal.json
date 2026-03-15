@@ -78,6 +78,13 @@
       "when": 1773370175426,
       "tag": "0010_cold_vapor",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "5",
+      "when": 1773571198875,
+      "tag": "0011_fancy_khan",
+      "breakpoints": true
     }
   ]
 }
