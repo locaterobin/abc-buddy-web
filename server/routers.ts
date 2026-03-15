@@ -738,13 +738,13 @@ const airtableLoginRouter = router({
         throw new Error("Invalid email or password");
       }
 
-      const teamId = staff["Team ID"] ?? staff["TeamID"] ?? staff["teamid"] ?? "";
+      const teamId = staff["TeamID"] ?? staff["Team ID"] ?? staff["teamid"] ?? "";
 
       // Look up Organization name from teams table
       let orgName = "";
       if (teamId) {
         try {
-          const teamUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE}/${TEAMS_TABLE}?filterByFormula={Team ID}='${teamId.replace(/'/g, "\\'")}'&maxRecords=1`;
+          const teamUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE}/${TEAMS_TABLE}?filterByFormula={TeamID}='${teamId.replace(/'/g, "\\'")}'&maxRecords=1`;
           const teamRes = await fetch(teamUrl, { headers: { Authorization: `Bearer ${apiKey}` } });
           if (teamRes.ok) {
             const teamData = await teamRes.json() as { records: Array<{ fields: Record<string, string> }> };
@@ -758,7 +758,7 @@ const airtableLoginRouter = router({
       // Return user session data
       return {
         name: staff["Name"] ?? staff["Full Name"] ?? "",
-        staffId: staff["Staff ID"] ?? staff["StaffID"] ?? staff["staffid"] ?? "",
+        staffId: staff["StaffID"] ?? staff["Staff ID"] ?? staff["staffid"] ?? "",
         role: staff["Role"] ?? staff["role"] ?? "",
         teamId,
         email: input.email,
