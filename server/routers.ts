@@ -30,6 +30,7 @@ import {
   saveTeamDocxTemplateUrl,
   updateDogRecordAnnotation,
   getRecordByDogId,
+  updateDogRecord,
 } from "./db";
 import { storagePut } from "./storage";
 import { createOpenAI } from "@ai-sdk/openai";
@@ -461,6 +462,28 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
     .mutation(async ({ input }) => {
       const deleted = await deleteRecordById(input.id, input.teamIdentifier);
       return { success: deleted };
+    }),
+
+  updateRecord: publicProcedure
+    .input(
+      z.object({
+        id: z.number(),
+        teamIdentifier: z.string(),
+        dogId: z.string().optional(),
+        description: z.string().nullable().optional(),
+        notes: z.string().nullable().optional(),
+        areaName: z.string().nullable().optional(),
+        latitude: z.number().nullable().optional(),
+        longitude: z.number().nullable().optional(),
+        recordedAt: z.string().optional(), // ISO string
+      })
+    )
+    .mutation(async ({ input }) => {
+      const { id, teamIdentifier, recordedAt, ...rest } = input;
+      const data: Parameters<typeof updateDogRecord>[2] = { ...rest };
+      if (recordedAt) data.recordedAt = new Date(recordedAt);
+      const updated = await updateDogRecord(id, teamIdentifier, data);
+      return { success: updated };
     }),
 
   saveRelease: publicProcedure

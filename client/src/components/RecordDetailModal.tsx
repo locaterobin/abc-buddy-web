@@ -4,6 +4,8 @@ import { resizeImage } from "@/lib/resizeImage";
 import { enqueuePlanPhoto, removePlanPhotoFromQueue, getPendingPlanPhotos, updatePlanPhotoStatus } from "@/hooks/useOfflineQueue";
 import { useTeam } from "@/contexts/TeamContext";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
   X,
@@ -22,6 +24,8 @@ import {
   CalendarPlus,
   Camera,
   Upload,
+  Pencil,
+  Save,
 } from "lucide-react";
 
 interface RecordDetailModalProps {
@@ -307,6 +311,59 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
   const photo2InputRef = useRef<HTMLInputElement>(null);
   const [photo3Base64, setPhoto3Base64] = useState<string | null>(null);
   const photo3InputRef = useRef<HTMLInputElement>(null);
+
+  // Edit mode
+  const [editMode, setEditMode] = useState(false);
+  const [editDogId, setEditDogId] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editNotes, setEditNotes] = useState("");
+  const [editAreaName, setEditAreaName] = useState("");
+  const [editLatitude, setEditLatitude] = useState("");
+  const [editLongitude, setEditLongitude] = useState("");
+  const [editRecordedAt, setEditRecordedAt] = useState("");
+  const updateMutation = trpc.dogs.updateRecord.useMutation();
+
+  function toLocalDatetimeValue(date: Date | string): string {
+    const d = new Date(date);
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    return d.toISOString().slice(0, 16);
+  }
+
+  function enterEditMode() {
+    setEditDogId(rec.dogId ?? "");
+    setEditDescription(rec.description ?? "");
+    setEditNotes(rec.notes ?? "");
+    setEditAreaName(rec.areaName ?? "");
+    setEditLatitude(rec.latitude != null ? String(rec.latitude) : "");
+    setEditLongitude(rec.longitude != null ? String(rec.longitude) : "");
+    setEditRecordedAt(rec.recordedAt ? toLocalDatetimeValue(rec.recordedAt) : "");
+    setEditMode(true);
+  }
+
+  async function handleSaveEdit() {
+    const lat = editLatitude !== "" ? parseFloat(editLatitude) : null;
+    const lng = editLongitude !== "" ? parseFloat(editLongitude) : null;
+    try {
+      await updateMutation.mutateAsync({
+        id: rec.id,
+        teamIdentifier: teamId,
+        dogId: editDogId || undefined,
+        description: editDescription || null,
+        notes: editNotes || null,
+        areaName: editAreaName || null,
+        latitude: lat,
+        longitude: lng,
+        recordedAt: editRecordedAt ? new Date(editRecordedAt).toISOString() : undefined,
+      });
+      toast.success("Record updated");
+      setEditMode(false);
+      utils.releasePlans.getFullRecord.invalidate({ dogId: rec.dogId });
+      utils.dogs.getRecords.invalidate();
+      utils.dogs.getRecordsPaginated.invalidate();
+    } catch (err: any) {
+      toast.error("Update failed: " + (err?.message || "Unknown error"));
+    }
+  }
 
   // Always fetch the full record (with photo2Url from release_plan_dogs) as the source of truth
   const { data: freshRecord } = trpc.releasePlans.getFullRecord.useQuery(
@@ -639,65 +696,115 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
         })()}
 
         <div className="p-4 space-y-3">
-          <h2 className="font-mono font-bold text-xl text-foreground">{rec.dogId}</h2>
-
-          {/* Capture date */}
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Clock size={16} className="flex-shrink-0" />
-            <span>{formatDate(rec.recordedAt)}</span>
+          {/* Header row: Dog ID + Edit button */}
+          <div className="flex items-center justify-between">
+            <h2 className="font-mono font-bold text-xl text-foreground">{rec.dogId}</h2>
+            {!editMode && (
+              <button
+                onClick={enterEditMode}
+                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-md hover:bg-muted"
+              >
+                <Pencil size={13} />
+                Edit
+              </button>
+            )}
           </div>
 
-          {/* Capture location */}
-          {(rec.areaName || gpsLink) && (
-            <div className="flex items-start gap-2 text-sm">
-              <MapPin size={16} className="flex-shrink-0 text-muted-foreground mt-0.5" />
+          {editMode ? (
+            /* ── EDIT MODE ── */
+            <div className="space-y-3 border border-primary/20 rounded-xl p-3 bg-primary/5">
               <div>
-                {rec.areaName && gpsLink ? (
-                  <a
-                    href={gpsLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary hover:underline inline-flex items-center gap-1"
-                  >
-                    {rec.areaName} · {rec.latitude?.toFixed(5)}, {rec.longitude?.toFixed(5)}
-                    <ExternalLink size={12} />
-                  </a>
-                ) : rec.areaName ? (
-                  <span className="text-foreground">{rec.areaName}</span>
-                ) : gpsLink ? (
-                  <a
-                    href={gpsLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary hover:underline inline-flex items-center gap-1"
-                  >
-                    {rec.latitude?.toFixed(5)}, {rec.longitude?.toFixed(5)}
-                    <ExternalLink size={12} />
-                  </a>
-                ) : null}
+                <label className="text-xs font-medium text-muted-foreground block mb-1">Dog ID</label>
+                <Input value={editDogId} onChange={(e) => setEditDogId(e.target.value)} className="font-mono text-sm h-8" />
               </div>
-            </div>
-          )}
-
-          {/* Notes */}
-          {rec.notes && (
-            <div className="flex items-start gap-2 text-sm">
-              <StickyNote size={16} className="flex-shrink-0 text-muted-foreground mt-0.5" />
-              <p className="text-foreground">{rec.notes}</p>
-            </div>
-          )}
-
-          {/* AI Description */}
-          {rec.description && (
-            <div className="bg-accent/50 rounded-lg p-3 border border-primary/10">
-              <div className="flex items-start gap-2">
-                <Sparkles size={16} className="text-primary flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-xs font-medium text-primary mb-1">AI Description</p>
-                  <p className="text-sm text-foreground leading-relaxed">{rec.description}</p>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground block mb-1">Date &amp; Time</label>
+                <Input type="datetime-local" value={editRecordedAt} onChange={(e) => setEditRecordedAt(e.target.value)} className="text-sm h-8" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground block mb-1">Area / Location</label>
+                <Input value={editAreaName} onChange={(e) => setEditAreaName(e.target.value)} placeholder="Area name" className="text-sm h-8" />
+              </div>
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <label className="text-xs font-medium text-muted-foreground block mb-1">Latitude</label>
+                  <Input value={editLatitude} onChange={(e) => setEditLatitude(e.target.value)} placeholder="0.00000" className="font-mono text-sm h-8" />
+                </div>
+                <div className="flex-1">
+                  <label className="text-xs font-medium text-muted-foreground block mb-1">Longitude</label>
+                  <Input value={editLongitude} onChange={(e) => setEditLongitude(e.target.value)} placeholder="0.00000" className="font-mono text-sm h-8" />
                 </div>
               </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground block mb-1">Notes</label>
+                <Textarea value={editNotes} onChange={(e) => setEditNotes(e.target.value)} rows={2} className="text-sm resize-none" placeholder="Notes…" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground block mb-1">AI Description</label>
+                <Textarea value={editDescription} onChange={(e) => setEditDescription(e.target.value)} rows={3} className="text-sm resize-none" placeholder="Description…" />
+              </div>
+              <div className="flex gap-2 pt-1">
+                <Button variant="outline" size="sm" className="flex-1" onClick={() => setEditMode(false)} disabled={updateMutation.isPending}>
+                  Cancel
+                </Button>
+                <Button size="sm" className="flex-1" onClick={handleSaveEdit} disabled={updateMutation.isPending}>
+                  {updateMutation.isPending ? <Loader2 size={14} className="mr-1.5 animate-spin" /> : <Save size={14} className="mr-1.5" />}
+                  Save Changes
+                </Button>
+              </div>
             </div>
+          ) : (
+            /* ── VIEW MODE ── */
+            <>
+              {/* Capture date */}
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Clock size={16} className="flex-shrink-0" />
+                <span>{formatDate(rec.recordedAt)}</span>
+              </div>
+
+              {/* Capture location */}
+              {(rec.areaName || gpsLink) && (
+                <div className="flex items-start gap-2 text-sm">
+                  <MapPin size={16} className="flex-shrink-0 text-muted-foreground mt-0.5" />
+                  <div>
+                    {rec.areaName && gpsLink ? (
+                      <a href={gpsLink} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-1">
+                        {rec.areaName} · {rec.latitude?.toFixed(5)}, {rec.longitude?.toFixed(5)}
+                        <ExternalLink size={12} />
+                      </a>
+                    ) : rec.areaName ? (
+                      <span className="text-foreground">{rec.areaName}</span>
+                    ) : gpsLink ? (
+                      <a href={gpsLink} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-1">
+                        {rec.latitude?.toFixed(5)}, {rec.longitude?.toFixed(5)}
+                        <ExternalLink size={12} />
+                      </a>
+                    ) : null}
+                  </div>
+                </div>
+              )}
+
+              {/* Notes */}
+              {rec.notes && (
+                <div className="flex items-start gap-2 text-sm">
+                  <StickyNote size={16} className="flex-shrink-0 text-muted-foreground mt-0.5" />
+                  <p className="text-foreground">{rec.notes}</p>
+                </div>
+              )}
+
+              {/* AI Description */}
+              {rec.description && (
+                <div className="bg-accent/50 rounded-lg p-3 border border-primary/10">
+                  <div className="flex items-start gap-2">
+                    <Sparkles size={16} className="text-primary flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-xs font-medium text-primary mb-1">AI Description</p>
+                      <p className="text-sm text-foreground leading-relaxed">{rec.description}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
           )}
 
           {/* Release info (if already released) */}
