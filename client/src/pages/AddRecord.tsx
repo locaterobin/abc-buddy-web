@@ -85,6 +85,7 @@ export default function AddRecord() {
     { enabled: !!dogId && dogId.length > 4 }
   );
   const analyzeMutation = trpc.dogs.analyzeImage.useMutation();
+  const annotateMutation = trpc.dogs.annotateRecord.useMutation();
   const saveMutation = trpc.dogs.saveRecord.useMutation();
   const geocodeMutation = trpc.dogs.geocodeLatLng.useMutation();
   const utils = trpc.useUtils();
@@ -317,11 +318,30 @@ export default function AddRecord() {
       // Show a dismissible pending toast
       const toastId = toast.loading(`Saving ${savedDogId}…`, { duration: Infinity });
 
+      // Annotate camera photos before saving
+      let finalImageBase64 = savedImageBase64;
+      if (savedSource === "camera") {
+        try {
+          const annotated = await annotateMutation.mutateAsync({
+            imageBase64: savedImageBase64,
+            dogId: savedDogId,
+            recordedAt: new Date(savedRecordedAt).toISOString(),
+            areaName: savedAreaName || undefined,
+            latitude: savedLat ?? undefined,
+            longitude: savedLng ?? undefined,
+            notes: savedNotes || undefined,
+          });
+          finalImageBase64 = annotated.annotatedBase64;
+        } catch (e) {
+          console.warn("Annotation failed, saving without annotation:", e);
+        }
+      }
+
       try {
         await saveMutation.mutateAsync({
           teamIdentifier: savedTeamId,
           dogId: savedDogId,
-          imageBase64: savedImageBase64,
+          imageBase64: finalImageBase64,
           description: savedDescription || undefined,
           notes: savedNotes || undefined,
           latitude: savedLat ?? undefined,
