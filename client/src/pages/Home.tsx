@@ -61,8 +61,8 @@ export default function Home({ onLogout }: { onLogout?: () => void }) {
       {/* Header */}
       <header className="flex-shrink-0 bg-card border-b border-border px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-sm">AB</span>
+          <div className="w-8 h-8 rounded-lg overflow-hidden bg-white flex items-center justify-center">
+            <img src="https://d2xsxph8kpxj0f.cloudfront.net/310419663032736616/hPjpqQFScRPNzVz7QPH5a8/abc-buddy-icon_77930a30.png" alt="ABC Buddy" className="w-full h-full object-contain" />
           </div>
           <div className="flex flex-col">
             <h1 className="text-lg font-semibold text-foreground leading-tight">ABC Buddy</h1>
@@ -181,6 +181,7 @@ export default function Home({ onLogout }: { onLogout?: () => void }) {
                 </button>
               )}
               <p className="text-[10px] text-muted-foreground font-mono">ABC Buddy v1.0.0</p>
+              <p className="text-[9px] text-muted-foreground/60 font-sans tracking-widest uppercase">by Peepal Farm</p>
             </div>
           </div>
         </div>

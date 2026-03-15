@@ -309,11 +309,14 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
       // Fire-and-forget background task
       Promise.resolve().then(async () => {
         try {
+          console.log(`[saveRecord] BG start dogId=${input.dogId} webhookUrl=${input.webhookUrl}`);
           const imgBuffer = Buffer.from(
             input.imageBase64.replace(/^data:image\/\w+;base64,/, ""),
             "base64"
           );
+          console.log(`[saveRecord] uploading image to S3 key=${fileKey}`);
           const { url: imageUrl } = await storagePut(fileKey, imgBuffer, "image/jpeg");
+          console.log(`[saveRecord] S3 upload done imageUrl=${imageUrl}`);
 
           let originalImageUrl: string | undefined;
           if (input.originalImageBase64 && origKey) {
@@ -337,6 +340,7 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
             console.warn(`[saveRecord] Collision on ${input.dogId}, reassigned to ${resolvedDogId}`);
           }
 
+          console.log(`[saveRecord] inserting DB record resolvedDogId=${resolvedDogId}`);
           const savedRecord = await insertDogRecord({
             teamIdentifier: input.teamIdentifier,
             dogId: resolvedDogId,
@@ -424,6 +428,7 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
             });
           }
 
+          console.log(`[saveRecord] DB insert done id=${savedRecord.id}, firing image-ready webhook`);
           // Fire image-ready webhook server-side once we have the real S3 URL
           if (input.webhookUrl) {
             fetch(`${input.webhookUrl}/image-ready`, {
@@ -439,6 +444,7 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
           }
         } catch (e) {
           console.error("[saveRecord background] Error:", e);
+          console.error("[saveRecord background] Stack:", (e as any)?.stack);
         }
       });
 
