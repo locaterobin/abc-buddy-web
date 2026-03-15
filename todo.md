@@ -274,3 +274,14 @@
 - [x] Show org/team name from session in header top-right (replace hardcoded @peepalfarm)
 - [x] Add Logout button to drawer in Home.tsx
 - [x] Wire onLogout prop from App.tsx into Home.tsx to clear session and return to login
+
+## Header Badge
+- [x] Show "staffName @ orgName" in top-right header badge from session
+
+## Airtable Org Field Removal
+- [x] Remove Org field from login procedure (routers.ts) and StaffSession type
+- [x] Update header badge to show staffName @ teamId
+
+## Header Org Name from Teams Table
+- [x] Fetch Organization field from abc-teams table during login using staff's teamId
+- [x] Store orgName in StaffSession and display as staffName @ orgName in header

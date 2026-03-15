@@ -260,13 +260,13 @@ function DrawerItem({
 
 function OrgBadge() {
   const { staffSession } = useTeam();
-  const label = staffSession?.name
-    ? `@${staffSession.name.toLowerCase().replace(/\s+/g, "")}`
+  const label = staffSession
+    ? `${staffSession.name} @ ${staffSession.orgName || staffSession.teamId}`
     : "@peepalfarm";
   return (
-    <div className="flex items-center gap-1.5 bg-muted rounded-full px-3 py-1">
-      <div className="w-2 h-2 rounded-full bg-primary" />
-      <span className="text-xs font-mono font-medium text-muted-foreground">{label}</span>
+    <div className="flex items-center gap-1.5 bg-muted rounded-full px-3 py-1 max-w-[180px]">
+      <div className="w-2 h-2 flex-shrink-0 rounded-full bg-primary" />
+      <span className="text-xs font-mono font-medium text-muted-foreground truncate">{label}</span>
     </div>
   );
 }

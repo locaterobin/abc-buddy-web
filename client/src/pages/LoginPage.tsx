@@ -12,6 +12,7 @@ export interface StaffSession {
   role: string;
   teamId: string;
   email: string;
+  orgName?: string;
 }
 
 const SESSION_KEY = "abc-buddy-staff-session";
@@ -50,6 +51,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
         role: data.role,
         teamId: data.teamId,
         email: data.email,
+        orgName: data.orgName,
       };
       setStaffSession(session);
       onLogin(session);

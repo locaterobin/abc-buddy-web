@@ -714,6 +714,7 @@ const settingsRouter = router({
 // ─── Airtable Login Router ───
 const AIRTABLE_BASE = "appoMiBAQmtIDb1D2";
 const STAFF_TABLE = "tbltkS9ncZmJbGaeh";
+const TEAMS_TABLE = "tblG6klpIc4Eu948N";
 
 const airtableLoginRouter = router({
   login: publicProcedure
@@ -737,13 +738,31 @@ const airtableLoginRouter = router({
         throw new Error("Invalid email or password");
       }
 
+      const teamId = staff["Team ID"] ?? staff["TeamID"] ?? staff["teamid"] ?? "";
+
+      // Look up Organization name from teams table
+      let orgName = "";
+      if (teamId) {
+        try {
+          const teamUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE}/${TEAMS_TABLE}?filterByFormula={Team ID}='${teamId.replace(/'/g, "\\'")}'&maxRecords=1`;
+          const teamRes = await fetch(teamUrl, { headers: { Authorization: `Bearer ${apiKey}` } });
+          if (teamRes.ok) {
+            const teamData = await teamRes.json() as { records: Array<{ fields: Record<string, string> }> };
+            if (teamData.records?.length > 0) {
+              orgName = teamData.records[0].fields["Organization"] ?? teamData.records[0].fields["organisation"] ?? "";
+            }
+          }
+        } catch { /* ignore, orgName stays empty */ }
+      }
+
       // Return user session data
       return {
         name: staff["Name"] ?? staff["Full Name"] ?? "",
         staffId: staff["Staff ID"] ?? staff["StaffID"] ?? staff["staffid"] ?? "",
         role: staff["Role"] ?? staff["role"] ?? "",
-        teamId: staff["Team ID"] ?? staff["TeamID"] ?? staff["teamid"] ?? "",
+        teamId,
         email: input.email,
+        orgName,
       };
     }),
 });
