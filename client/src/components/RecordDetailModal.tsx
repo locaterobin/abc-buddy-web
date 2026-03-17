@@ -1139,8 +1139,8 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
             </div>
           )}
 
-          {/* Released Button — only shown when dog is in a release plan or already released */}
-          {(isInAnyPlan || released) && (
+          {/* Released Button — only shown when dog is in a release plan and NOT yet released */}
+          {(isInAnyPlan && !released) && (
             <Button
               variant="outline"
               className={
