@@ -1,0 +1,150 @@
+{
+  "query": "SELECT dogId, source, latitude, longitude, areaName FROM dog_records WHERE source = 'upload' AND latitude IS NOT NULL ORDER BY id DESC LIMIT 20;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4YKkGxc6t8uKQwU.5f0d0a62126a --database hPjpqQFScRPNzVz7QPH5a8 --execute SELECT dogId, source, latitude, longitude, areaName FROM dog_records WHERE source = 'upload' AND latitude IS NOT NULL ORDER BY id DESC LIMIT 20;",
+  "rows": [
+    {
+      "dogId": "20260313-016",
+      "source": "upload",
+      "latitude": "32.097074",
+      "longitude": "76.268699",
+      "areaName": "NH503, Old Kangra, Kangra"
+    },
+    {
+      "dogId": "20260313-015",
+      "source": "upload",
+      "latitude": "32.09706",
+      "longitude": "76.268705",
+      "areaName": "NH503, Old Kangra, Kangra"
+    },
+    {
+      "dogId": "20260310-013",
+      "source": "upload",
+      "latitude": "32.186101",
+      "longitude": "76.383981",
+      "areaName": "Kranti Park, Yol"
+    },
+    {
+      "dogId": "20260310-012",
+      "source": "upload",
+      "latitude": "32.185728",
+      "longitude": "76.386001",
+      "areaName": "Kranti Park, Yol"
+    },
+    {
+      "dogId": "20260310-011",
+      "source": "upload",
+      "latitude": "32.178819",
+      "longitude": "76.381054",
+      "areaName": "Dharamshala Palampur Road, Yol Bazaar, Yol"
+    },
+    {
+      "dogId": "20260310-010",
+      "source": "upload",
+      "latitude": "32.176615",
+      "longitude": "76.387348",
+      "areaName": "Yol Cantonment, Narwana Khas"
+    },
+    {
+      "dogId": "20260310-009",
+      "source": "upload",
+      "latitude": "32.176618",
+      "longitude": "76.387329",
+      "areaName": "Yol Cantonment, Narwana Khas"
+    },
+    {
+      "dogId": "20260310-008",
+      "source": "upload",
+      "latitude": "32.175637",
+      "longitude": "76.387004",
+      "areaName": "Yol Cantonment, Narwana Khas"
+    },
+    {
+      "dogId": "20260310-007",
+      "source": "upload",
+      "latitude": "32.177088",
+      "longitude": "76.387826",
+      "areaName": "Yol Cantonment, Narwana Khas"
+    },
+    {
+      "dogId": "20260310-006",
+      "source": "upload",
+      "latitude": "32.179963",
+      "longitude": "76.388708",
+      "areaName": "Narwana Road, Narwana Khas"
+    },
+    {
+      "dogId": "20260310-005",
+      "source": "upload",
+      "latitude": "32.178249",
+      "longitude": "76.383396",
+      "areaName": "Dharamshala Palampur Road, Yol Bazaar, Yol"
+    },
+    {
+      "dogId": "20260310-004",
+      "source": "upload",
+      "latitude": "32.178249",
+      "longitude": "76.383396",
+      "areaName": "Dharamshala Palampur Road, Yol Bazaar, Yol"
+    },
+    {
+      "dogId": "20260310-003",
+      "source": "upload",
+      "latitude": "32.178015",
+      "longitude": "76.386826",
+      "areaName": "Yol Cantonment, Narwana Khas"
+    },
+    {
+      "dogId": "20260310-002",
+      "source": "upload",
+      "latitude": "32.17801",
+      "longitude": "76.386825",
+      "areaName": "Yol Cantonment, Narwana Khas"
+    },
+    {
+      "dogId": "20260310-001",
+      "source": "upload",
+      "latitude": "32.177967",
+      "longitude": "76.386834",
+      "areaName": "Yol Cantonment, Narwana Khas"
+    },
+    {
+      "dogId": "20260309-009",
+      "source": "upload",
+      "latitude": "32.174946",
+      "longitude": "76.20727",
+      "areaName": "Rait"
+    },
+    {
+      "dogId": "20260309-008",
+      "source": "upload",
+      "latitude": "32.221363",
+      "longitude": "76.190374",
+      "areaName": "Shahpur Salli Road, Rirh Kamar"
+    },
+    {
+      "dogId": "20260309-007",
+      "source": "upload",
+      "latitude": "32.234166",
+      "longitude": "76.191898",
+      "areaName": "Shahpur Salli Road, Rirh Kamar"
+    },
+    {
+      "dogId": "20260309-006",
+      "source": "upload",
+      "latitude": "32.236997",
+      "longitude": "76.194785",
+      "areaName": "Shahpur Salli Road, Rirh Kamar"
+    },
+    {
+      "dogId": "20260309-005",
+      "source": "upload",
+      "latitude": "32.236992",
+      "longitude": "76.194782",
+      "areaName": "Shahpur Salli Road, Rirh Kamar"
+    }
+  ],
+  "messages": [],
+  "stdout": "dogId\tsource\tlatitude\tlongitude\tareaName\n20260313-016\tupload\t32.097074\t76.268699\tNH503, Old Kangra, Kangra\n20260313-015\tupload\t32.09706\t76.268705\tNH503, Old Kangra, Kangra\n20260310-013\tupload\t32.186101\t76.383981\tKranti Park, Yol\n20260310-012\tupload\t32.185728\t76.386001\tKranti Park, Yol\n20260310-011\tupload\t32.178819\t76.381054\tDharamshala Palampur Road, Yol Bazaar, Yol\n20260310-010\tupload\t32.176615\t76.387348\tYol Cantonment, Narwana Khas\n20260310-009\tupload\t32.176618\t76.387329\tYol Cantonment, Narwana Khas\n20260310-008\tupload\t32.175637\t76.387004\tYol Cantonment, Narwana Khas\n20260310-007\tupload\t32.177088\t76.387826\tYol Cantonment, Narwana Khas\n20260310-006\tupload\t32.179963\t76.388708\tNarwana Road, Narwana Khas\n20260310-005\tupload\t32.178249\t76.383396\tDharamshala Palampur Road, Yol Bazaar, Yol\n20260310-004\tupload\t32.178249\t76.383396\tDharamshala Palampur Road, Yol Bazaar, Yol\n20260310-003\tupload\t32.178015\t76.386826\tYol Cantonment, Narwana Khas\n20260310-002\tupload\t32.17801\t76.386825\tYol Cantonment, Narwana Khas\n20260310-001\tupload\t32.177967\t76.386834\tYol Cantonment, Narwana Khas\n20260309-009\tupload\t32.174946\t76.20727\tRait\n20260309-008\tupload\t32.221363\t76.190374\tShahpur Salli Road, Rirh Kamar\n20260309-007\tupload\t32.234166\t76.191898\tShahpur Salli Road, Rirh Kamar\n20260309-006\tupload\t32.236997\t76.194785\tShahpur Salli Road, Rirh Kamar\n20260309-005\tupload\t32.236992\t76.194782\tShahpur Salli Road, Rirh Kamar\n",
+  "stderr": "",
+  "execution_time_ms": 1539
+}

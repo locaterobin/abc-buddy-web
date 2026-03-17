@@ -1,0 +1,59 @@
+{
+  "query": "SELECT dogId, source, latitude, longitude, areaName FROM dog_records WHERE dogId BETWEEN '20260317-004' AND '20260317-010' ORDER BY dogId;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4YKkGxc6t8uKQwU.5f0d0a62126a --database hPjpqQFScRPNzVz7QPH5a8 --execute SELECT dogId, source, latitude, longitude, areaName FROM dog_records WHERE dogId BETWEEN '20260317-004' AND '20260317-010' ORDER BY dogId;",
+  "rows": [
+    {
+      "dogId": "20260317-004",
+      "source": "camera",
+      "latitude": "32.1879126",
+      "longitude": "76.237052",
+      "areaName": "Chalama, Bakloh"
+    },
+    {
+      "dogId": "20260317-005",
+      "source": "camera",
+      "latitude": "32.1878884",
+      "longitude": "76.2370565",
+      "areaName": "Chalama, Bakloh"
+    },
+    {
+      "dogId": "20260317-006",
+      "source": "camera",
+      "latitude": "32.1879137",
+      "longitude": "76.2370518",
+      "areaName": "Chalama, Bakloh"
+    },
+    {
+      "dogId": "20260317-007",
+      "source": "camera",
+      "latitude": "32.1878876",
+      "longitude": "76.2370568",
+      "areaName": "Chalama, Bakloh"
+    },
+    {
+      "dogId": "20260317-008",
+      "source": "camera",
+      "latitude": "32.1878921",
+      "longitude": "76.2370564",
+      "areaName": "Chalama, Bakloh"
+    },
+    {
+      "dogId": "20260317-009",
+      "source": "camera",
+      "latitude": "32.1878268",
+      "longitude": "76.237011",
+      "areaName": "Chalama, Bakloh"
+    },
+    {
+      "dogId": "20260317-010",
+      "source": "camera",
+      "latitude": "32.1878954",
+      "longitude": "76.2370557",
+      "areaName": "Chalama, Bakloh"
+    }
+  ],
+  "messages": [],
+  "stdout": "dogId\tsource\tlatitude\tlongitude\tareaName\n20260317-004\tcamera\t32.1879126\t76.237052\tChalama, Bakloh\n20260317-005\tcamera\t32.1878884\t76.2370565\tChalama, Bakloh\n20260317-006\tcamera\t32.1879137\t76.2370518\tChalama, Bakloh\n20260317-007\tcamera\t32.1878876\t76.2370568\tChalama, Bakloh\n20260317-008\tcamera\t32.1878921\t76.2370564\tChalama, Bakloh\n20260317-009\tcamera\t32.1878268\t76.237011\tChalama, Bakloh\n20260317-010\tcamera\t32.1878954\t76.2370557\tChalama, Bakloh\n",
+  "stderr": "",
+  "execution_time_ms": 1630
+}

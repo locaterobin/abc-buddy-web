@@ -442,6 +442,75 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
               }),
             }).catch((e) => console.warn("[saveRecord] image-ready webhook failed:", e));
           }
+
+          // Backfill description and/or areaName if they were missing when saved
+          let backfilledDescription: string | null = null;
+          let backfilledAreaName: string | null = null;
+
+          if (!input.description) {
+            try {
+              console.log(`[saveRecord backfill] Generating AI description for ${resolvedDogId}`);
+              const aiResult = await generateText({
+                model: openai.chat("gpt-4o"),
+                messages: [{
+                  role: "user",
+                  content: [
+                    { type: "image", image: imageUrl },
+                    { type: "text", text: "Describe this dog briefly for an animal welfare record. Only include what is clearly visible. Cover: color(s), any distinguishing features (markings, scars, injuries), build (small/medium/large, thin/normal/stocky), and breed only if clearly not mixed. Omit anything uncertain. Never mention absent features (no collar, no markings, etc.). Plain text only, 1-2 sentences max." },
+                  ],
+                }],
+              });
+              backfilledDescription = aiResult.text.trim() || null;
+              console.log(`[saveRecord backfill] Description generated: ${backfilledDescription?.slice(0, 60)}`);
+            } catch (e) {
+              console.warn("[saveRecord backfill] AI description failed:", e);
+            }
+          }
+
+          if (!input.areaName && input.latitude != null && input.longitude != null) {
+            try {
+              console.log(`[saveRecord backfill] Reverse geocoding for ${resolvedDogId}`);
+              const geoRes = await fetch(
+                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${input.latitude}&lon=${input.longitude}&zoom=16&addressdetails=1`,
+                { headers: { "User-Agent": "ABCBuddy/1.0" } }
+              );
+              if (geoRes.ok) {
+                const geoData = await geoRes.json();
+                const addr = geoData.address || {};
+                const parts = [addr.road, addr.neighbourhood || addr.suburb, addr.city || addr.town || addr.village].filter(Boolean);
+                backfilledAreaName = parts.join(", ") || geoData.display_name || null;
+                console.log(`[saveRecord backfill] Area name: ${backfilledAreaName}`);
+              }
+            } catch (e) {
+              console.warn("[saveRecord backfill] Geocoding failed:", e);
+            }
+          }
+
+          if (backfilledDescription || backfilledAreaName) {
+            try {
+              await updateDogRecord(savedRecord.id, input.teamIdentifier, {
+                ...(backfilledDescription ? { description: backfilledDescription } : {}),
+                ...(backfilledAreaName ? { areaName: backfilledAreaName } : {}),
+              });
+              console.log(`[saveRecord backfill] DB updated for ${resolvedDogId}`);
+              if (input.webhookUrl) {
+                fetch(`${input.webhookUrl}/update`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    event: "update",
+                    dogId: resolvedDogId,
+                    teamIdentifier: input.teamIdentifier,
+                    ...(backfilledDescription ? { description: backfilledDescription } : {}),
+                    ...(backfilledAreaName ? { areaName: backfilledAreaName } : {}),
+                    source: "backfill",
+                  }),
+                }).catch((e) => console.warn("[saveRecord backfill] update webhook failed:", e));
+              }
+            } catch (e) {
+              console.warn("[saveRecord backfill] DB update failed:", e);
+            }
+          }
         } catch (e) {
           console.error("[saveRecord background] Error:", e);
           console.error("[saveRecord background] Stack:", (e as any)?.stack);

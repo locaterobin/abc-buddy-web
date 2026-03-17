@@ -1,0 +1,15 @@
+{
+  "query": "SELECT COUNT(*) as total, MIN(id) as min_id, MAX(id) as max_id FROM dog_records;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4YKkGxc6t8uKQwU.5f0d0a62126a --database hPjpqQFScRPNzVz7QPH5a8 --execute SELECT COUNT(*) as total, MIN(id) as min_id, MAX(id) as max_id FROM dog_records;",
+  "rows": [
+    {
+      "total": "54",
+      "min_id": "240001",
+      "max_id": "1200001"
+    }
+  ],
+  "messages": [],
+  "stdout": "total\tmin_id\tmax_id\n54\t240001\t1200001\n",
+  "stderr": "",
+  "execution_time_ms": 1537
+}
