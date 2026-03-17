@@ -1139,34 +1139,36 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
             </div>
           )}
 
-          {/* Released Button */}
-          <Button
-            variant="outline"
-            className={
-              released
-                ? "w-full border-green-500/40 text-green-700 bg-green-50 hover:bg-green-100 dark:text-green-400 dark:bg-green-950/30 dark:hover:bg-green-900/40"
-                : "w-full border-green-600/40 text-green-700 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-950/30"
-            }
-            onClick={handleRelease}
-            disabled={releasing || released}
-          >
-            {releasing ? (
-              <>
-                <Loader2 size={16} className="mr-2 animate-spin" />
-                Getting location…
-              </>
-            ) : released ? (
-              <>
-                <CheckCircle2 size={16} className="mr-2" />
-                Released
-              </>
-            ) : (
-              <>
-                <CheckCircle2 size={16} className="mr-2" />
-                Mark as Released
-              </>
-            )}
-          </Button>
+          {/* Released Button — only shown when dog is in a release plan or already released */}
+          {(isInAnyPlan || released) && (
+            <Button
+              variant="outline"
+              className={
+                released
+                  ? "w-full border-green-500/40 text-green-700 bg-green-50 hover:bg-green-100 dark:text-green-400 dark:bg-green-950/30 dark:hover:bg-green-900/40"
+                  : "w-full border-green-600/40 text-green-700 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-950/30"
+              }
+              onClick={handleRelease}
+              disabled={releasing || released}
+            >
+              {releasing ? (
+                <>
+                  <Loader2 size={16} className="mr-2 animate-spin" />
+                  Getting location…
+                </>
+              ) : released ? (
+                <>
+                  <CheckCircle2 size={16} className="mr-2" />
+                  Released
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 size={16} className="mr-2" />
+                  Mark as Released
+                </>
+              )}
+            </Button>
+          )}
 
           {/* Staff Audit Trail */}
           {(rec.addedByStaffName || rec.updatedByStaffName || rec.releasedByStaffName) && (
