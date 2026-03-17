@@ -74,36 +74,26 @@ function SortableDogCard({
 
   return (
     <div ref={setNodeRef} style={style}>
-      <Card className="border border-border/60 hover:border-primary/40 hover:bg-muted/30 transition-colors">
-        <CardContent className="p-3 flex items-center gap-2">
-          {/* Drag handle */}
-          <button
-            {...attributes}
-            {...listeners}
-            className="p-1 text-muted-foreground/40 hover:text-muted-foreground cursor-grab active:cursor-grabbing touch-none flex-shrink-0"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <GripVertical size={16} />
-          </button>
+      <Card className="border border-border/60 hover:border-primary/40 transition-colors overflow-hidden">
+        {/* Full-width image — clickable */}
+        <div className="cursor-pointer" onClick={onOpen}>
+          {dog.imageUrl ? (
+            <img
+              src={dog.imageUrl}
+              alt={dog.dogId}
+              className="w-full aspect-[4/3] object-cover"
+            />
+          ) : (
+            <div className="w-full aspect-[4/3] bg-muted flex items-center justify-center">
+              <Dog size={40} className="text-muted-foreground opacity-40" />
+            </div>
+          )}
+        </div>
 
-          {/* Photo thumbnail — clickable */}
+        <CardContent className="p-3">
+          {/* Info row — clickable */}
           <div className="cursor-pointer" onClick={onOpen}>
-            {dog.imageUrl ? (
-              <img
-                src={dog.imageUrl}
-                alt={dog.dogId}
-                className="w-[56px] h-[56px] rounded-lg object-cover flex-shrink-0"
-              />
-            ) : (
-              <div className="w-[56px] h-[56px] rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
-                <Dog size={22} className="text-muted-foreground" />
-              </div>
-            )}
-          </div>
-
-          {/* Info — clickable */}
-          <div className="flex-1 min-w-0 cursor-pointer" onClick={onOpen}>
-            <div className="flex items-center gap-1.5 flex-wrap">
+            <div className="flex items-center gap-1.5 flex-wrap mb-1">
               <p className="font-mono font-bold text-sm text-foreground">{dog.dogId}</p>
               {dog.releasedAt && (
                 <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 border border-green-300/50 dark:border-green-700/50">
@@ -112,22 +102,32 @@ function SortableDogCard({
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
               <Clock size={11} />
               <span>{dog.recordedAt ? new Date(dog.recordedAt).toLocaleString() : ""}</span>
             </div>
             {dog.areaName && (
-              <p className="text-xs text-muted-foreground truncate">{dog.areaName}</p>
+              <p className="text-xs text-muted-foreground truncate mt-0.5">{dog.areaName}</p>
             )}
           </div>
 
-          {/* Remove button */}
-          <button
-            onClick={(e) => { e.stopPropagation(); onRemove(); }}
-            className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors flex-shrink-0"
-          >
-            <Trash2 size={15} />
-          </button>
+          {/* Bottom row: drag handle + remove */}
+          <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/40">
+            <button
+              {...attributes}
+              {...listeners}
+              className="p-1 text-muted-foreground/40 hover:text-muted-foreground cursor-grab active:cursor-grabbing touch-none"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <GripVertical size={16} />
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); onRemove(); }}
+              className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+            >
+              <Trash2 size={15} />
+            </button>
+          </div>
         </CardContent>
       </Card>
     </div>
