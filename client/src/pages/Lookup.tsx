@@ -710,51 +710,47 @@ export default function Lookup() {
             return (
               <Card
                 key={rec.id || idx}
-                className="cursor-pointer hover:shadow-md transition-shadow"
+                className="cursor-pointer hover:shadow-md transition-shadow overflow-hidden"
                 onClick={() => setSelectedRecord(rec)}
               >
+                {rec.imageUrl && (
+                  <img
+                    src={rec.imageUrl}
+                    alt={rec.dogId}
+                    className="w-full aspect-[4/3] object-cover"
+                  />
+                )}
                 <CardContent className="p-3">
-                  <div className="flex gap-3">
-                    {rec.imageUrl && (
-                      <img
-                        src={rec.imageUrl}
-                        alt={rec.dogId}
-                        className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
-                      />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-mono font-bold text-sm text-foreground">
-                          {rec.dogId}
-                        </span>
-                        <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${conf.className}`}>
-                          {conf.label}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
-                        <Clock size={12} />
-                        <span>
-                          {new Date(rec.recordedAt).toLocaleDateString("en-GB", {
-                            timeZone: "Asia/Kolkata",
-                            day: "2-digit",
-                            month: "short",
-                            year: "numeric",
-                          })}
-                        </span>
-                      </div>
-                      {rec.areaName && (
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <MapPin size={12} />
-                          <span>{rec.areaName}</span>
-                        </div>
-                      )}
-                      {match.reason && (
-                        <p className="text-xs text-muted-foreground mt-1 italic">
-                          {match.reason}
-                        </p>
-                      )}
-                    </div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-mono font-bold text-sm text-foreground">
+                      {rec.dogId}
+                    </span>
+                    <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${conf.className}`}>
+                      {conf.label}
+                    </Badge>
                   </div>
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                    <Clock size={12} />
+                    <span>
+                      {new Date(rec.recordedAt).toLocaleDateString("en-GB", {
+                        timeZone: "Asia/Kolkata",
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </span>
+                  </div>
+                  {rec.areaName && (
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <MapPin size={12} />
+                      <span>{rec.areaName}</span>
+                    </div>
+                  )}
+                  {match.reason && (
+                    <p className="text-xs text-muted-foreground mt-1 italic">
+                      {match.reason}
+                    </p>
+                  )}
                 </CardContent>
               </Card>
             );
@@ -785,54 +781,50 @@ export default function Lookup() {
               {defaultRecords.map((rec: any) => (
                 <Card
                   key={rec.id}
-                  className="cursor-pointer hover:shadow-md transition-shadow"
+                  className="cursor-pointer hover:shadow-md transition-shadow overflow-hidden"
                   onClick={() => setSelectedRecord(rec)}
                 >
+                  {rec.imageUrl && (
+                    <img
+                      src={rec.imageUrl}
+                      alt={rec.dogId}
+                      className="w-full aspect-[4/3] object-cover"
+                    />
+                  )}
                   <CardContent className="p-3">
-                    <div className="flex gap-3">
-                      {rec.imageUrl && (
-                        <img
-                          src={rec.imageUrl}
-                          alt={rec.dogId}
-                          className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
-                        />
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <span className="font-mono font-bold text-sm text-foreground">
+                        {rec.dogId}
+                      </span>
+                      {rec.releasedAt && (
+                        <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 border border-green-300/50">
+                          <CheckCircle2 size={9} />
+                          Released
+                        </span>
                       )}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <span className="font-mono font-bold text-sm text-foreground">
-                            {rec.dogId}
-                          </span>
-                          {rec.releasedAt && (
-                            <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 border border-green-300/50">
-                              <CheckCircle2 size={9} />
-                              Released
-                            </span>
-                          )}
-                          {rec.inReleasePlan && !rec.releasedAt && (
-                            <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400 border border-yellow-300/50">
-                              Checked
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
-                          <Clock size={12} />
-                          <span>
-                            {new Date(rec.recordedAt).toLocaleDateString("en-GB", {
-                              timeZone: "Asia/Kolkata",
-                              day: "2-digit",
-                              month: "short",
-                              year: "numeric",
-                            })}
-                          </span>
-                        </div>
-                        {rec.areaName && (
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <MapPin size={12} />
-                            <span>{rec.areaName}</span>
-                          </div>
-                        )}
-                      </div>
+                      {rec.inReleasePlan && !rec.releasedAt && (
+                        <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400 border border-yellow-300/50">
+                          Checked
+                        </span>
+                      )}
                     </div>
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                      <Clock size={12} />
+                      <span>
+                        {new Date(rec.recordedAt).toLocaleDateString("en-GB", {
+                          timeZone: "Asia/Kolkata",
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </span>
+                    </div>
+                    {rec.areaName && (
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <MapPin size={12} />
+                        <span>{rec.areaName}</span>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               ))}
