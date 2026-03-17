@@ -1023,16 +1023,17 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
             </div>
           )}
 
-          {/* Add to Release Plan Button */}
-          <Button
-            variant="outline"
-            className="w-full border-primary/30 text-primary hover:bg-primary/10"
-            disabled={released || isInAnyPlan}
-            onClick={() => { setShowPlanPicker((v) => !v); setPendingPlanId(null); setPhoto2Base64(null); }}
-          >
-            <CalendarPlus size={16} className="mr-2" />
-            {isInAnyPlan ? "Already in Release Plan" : "Add to Release Plan"}
-          </Button>
+          {/* Add to Release Plan Button — hidden when already in a plan */}
+          {!isInAnyPlan && !released && (
+            <Button
+              variant="outline"
+              className="w-full border-primary/30 text-primary hover:bg-primary/10"
+              onClick={() => { setShowPlanPicker((v) => !v); setPendingPlanId(null); setPhoto2Base64(null); }}
+            >
+              <CalendarPlus size={16} className="mr-2" />
+              Add to Release Plan
+            </Button>
+          )}
 
           {/* Plan Picker */}
           {showPlanPicker && (
@@ -1192,20 +1193,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
             </div>
           )}
 
-          {/* Delete Button */}
-          <Button
-            variant="outline"
-            className="w-full text-destructive border-destructive/30 hover:bg-destructive/10"
-            onClick={handleDelete}
-            disabled={deleteMutation.isPending}
-          >
-            {deleteMutation.isPending ? (
-              <Loader2 size={16} className="mr-2 animate-spin" />
-            ) : (
-              <Trash2 size={16} className="mr-2" />
-            )}
-            Delete Record
-          </Button>
+
         </div>
       </div>
     </div>
