@@ -4,7 +4,7 @@ import { trpc } from "@/lib/trpc";
 import { useTeam } from "@/contexts/TeamContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, Map, Trash2, Plus, CalendarDays, Clock, CheckCircle2, Dog, GripVertical, Archive } from "lucide-react";
+import { ArrowLeft, Map, Trash2, Plus, CalendarDays, Clock, CheckCircle2, Dog, GripVertical, Archive, LayoutGrid, List } from "lucide-react";
 import { toast } from "sonner";
 import RecordDetailModal from "@/components/RecordDetailModal";
 import {
@@ -56,10 +56,12 @@ function SortableDogCard({
   dog,
   onOpen,
   onRemove,
+  compact = false,
 }: {
   dog: any;
   onOpen: () => void;
   onRemove: () => void;
+  compact?: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: dog.dogId,
@@ -72,6 +74,73 @@ function SortableDogCard({
     zIndex: isDragging ? 50 : undefined,
   };
 
+  if (compact) {
+    // ── List view: horizontal compact card ──────────────────────────────────
+    return (
+      <div ref={setNodeRef} style={style}>
+        <Card className="border border-border/60 hover:border-primary/40 transition-colors overflow-hidden">
+          <CardContent className="p-0">
+            <div className="flex items-stretch gap-0">
+              {/* Drag handle — left edge */}
+              <button
+                {...attributes}
+                {...listeners}
+                className="px-2 flex items-center text-muted-foreground/40 hover:text-muted-foreground cursor-grab active:cursor-grabbing touch-none flex-shrink-0"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <GripVertical size={16} />
+              </button>
+
+              {/* Square thumbnail */}
+              <div className="cursor-pointer flex-shrink-0" onClick={onOpen}>
+                {dog.imageUrl ? (
+                  <img
+                    src={dog.imageUrl}
+                    alt={dog.dogId}
+                    className="w-16 h-16 object-cover"
+                  />
+                ) : (
+                  <div className="w-16 h-16 bg-muted flex items-center justify-center">
+                    <Dog size={22} className="text-muted-foreground opacity-40" />
+                  </div>
+                )}
+              </div>
+
+              {/* Details */}
+              <div className="flex-1 min-w-0 py-2 px-3 cursor-pointer" onClick={onOpen}>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <p className="font-mono font-bold text-sm text-foreground">{dog.dogId}</p>
+                  {dog.releasedAt && (
+                    <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 border border-green-300/50 dark:border-green-700/50">
+                      <CheckCircle2 size={9} />
+                      Released
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                  <Clock size={10} />
+                  <span>{dog.recordedAt ? new Date(dog.recordedAt).toLocaleString() : ""}</span>
+                </div>
+                {dog.areaName && (
+                  <p className="text-xs text-muted-foreground truncate mt-0.5">{dog.areaName}</p>
+                )}
+              </div>
+
+              {/* Remove button — right edge */}
+              <button
+                onClick={(e) => { e.stopPropagation(); onRemove(); }}
+                className="px-3 flex items-center hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors flex-shrink-0"
+              >
+                <Trash2 size={15} />
+              </button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // ── Thumb view: full-width image card (default) ──────────────────────────
   return (
     <div ref={setNodeRef} style={style}>
       <Card className="border border-border/60 hover:border-primary/40 transition-colors overflow-hidden">
@@ -141,6 +210,7 @@ export default function ReleasePlanPage() {
   const [dogIdFilter, setDogIdFilter] = useState("");
   // Local order state for optimistic drag reorder
   const [localOrder, setLocalOrder] = useState<string[] | null>(null);
+  const [viewMode, setViewMode] = useState<"thumb" | "list">("thumb");
 
   // Offline cache
   const [cachedPlans, setCachedPlansLocal] = useState<any[]>([]);
@@ -318,6 +388,31 @@ export default function ReleasePlanPage() {
               </h2>
               <p className="text-xs text-muted-foreground">{formatPlanDate(selectedPlan.planDate)}</p>
             </div>
+            {/* View toggle */}
+            <div className="flex items-center rounded-lg border border-border overflow-hidden flex-shrink-0">
+              <button
+                onClick={() => setViewMode("thumb")}
+                className={`p-1.5 transition-colors ${
+                  viewMode === "thumb"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted"
+                }`}
+                title="Thumbnail view"
+              >
+                <LayoutGrid size={15} />
+              </button>
+              <button
+                onClick={() => setViewMode("list")}
+                className={`p-1.5 transition-colors ${
+                  viewMode === "list"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted"
+                }`}
+                title="List view"
+              >
+                <List size={15} />
+              </button>
+            </div>
             <Button
               variant="ghost"
               size="sm"
@@ -364,6 +459,7 @@ export default function ReleasePlanPage() {
                     <SortableDogCard
                       key={dog.dogId}
                       dog={dog}
+                      compact={viewMode === "list"}
                       onOpen={() => setSelectedRecord(dog)}
                       onRemove={() => removeDog.mutate({ planId: selectedPlanId, dogId: dog.dogId })}
                     />
