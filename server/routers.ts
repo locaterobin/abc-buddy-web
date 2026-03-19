@@ -569,6 +569,7 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
         latitude: z.number().nullable().optional(),
         longitude: z.number().nullable().optional(),
         recordedAt: z.string().optional(), // ISO string
+        gender: z.enum(["Unknown", "Male", "Female"]).optional(),
         updatedByStaffId: z.string().nullable().optional(),
         updatedByStaffName: z.string().nullable().optional(),
       })

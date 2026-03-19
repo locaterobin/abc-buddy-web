@@ -1,0 +1,1 @@
+ALTER TABLE `dog_records` ADD `gender` enum('Unknown','Male','Female') DEFAULT 'Unknown';

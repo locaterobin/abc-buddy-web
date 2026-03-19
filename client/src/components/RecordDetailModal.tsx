@@ -321,6 +321,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
   const [editLatitude, setEditLatitude] = useState("");
   const [editLongitude, setEditLongitude] = useState("");
   const [editRecordedAt, setEditRecordedAt] = useState("");
+  const [editGender, setEditGender] = useState<"Unknown" | "Male" | "Female">("Unknown");
   const updateMutation = trpc.dogs.updateRecord.useMutation();
 
   function toLocalDatetimeValue(date: Date | string): string {
@@ -337,6 +338,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
     setEditLatitude(rec.latitude != null ? String(rec.latitude) : "");
     setEditLongitude(rec.longitude != null ? String(rec.longitude) : "");
     setEditRecordedAt(rec.recordedAt ? toLocalDatetimeValue(rec.recordedAt) : "");
+    setEditGender((rec.gender as "Unknown" | "Male" | "Female") ?? "Unknown");
     setEditMode(true);
   }
 
@@ -357,6 +359,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
           longitude: lng,
           notes: editNotes || null,
           description: editDescription || null,
+          gender: editGender,
           updatedByStaffId: staffSession?.staffId ?? null,
           updatedByStaffName: staffSession?.name ?? null,
         }),
@@ -373,6 +376,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
         latitude: lat,
         longitude: lng,
         recordedAt: editRecordedAt ? new Date(editRecordedAt).toISOString() : undefined,
+        gender: editGender,
         updatedByStaffId: staffSession?.staffId ?? null,
         updatedByStaffName: staffSession?.name ?? null,
       });
@@ -773,7 +777,19 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
                 <Textarea value={editNotes} onChange={(e) => setEditNotes(e.target.value)} rows={2} className="text-sm resize-none" placeholder="Notes…" />
               </div>
               <div>
-                <label className="text-xs font-medium text-muted-foreground block mb-1">AI Description</label>
+                <label className="text-xs text-muted-foreground mb-1 block">Gender</label>
+                <select
+                  value={editGender}
+                  onChange={(e) => setEditGender(e.target.value as "Unknown" | "Male" | "Female")}
+                  className="w-full h-8 rounded-md border border-input bg-background px-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  <option value="Unknown">Unknown</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Description</label>
                 <Textarea value={editDescription} onChange={(e) => setEditDescription(e.target.value)} rows={3} className="text-sm resize-none" placeholder="Description…" />
               </div>
               <div className="flex gap-2 pt-1">

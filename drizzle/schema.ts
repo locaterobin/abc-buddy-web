@@ -27,6 +27,7 @@ export const dogRecords = mysqlTable("dog_records", {
   longitude: double("longitude"),
   areaName: varchar("areaName", { length: 255 }),
   source: mysqlEnum("source", ["camera", "upload", "api"]).default("upload").notNull(),
+  gender: mysqlEnum("gender", ["Unknown", "Male", "Female"]).default("Unknown"),
   recordedAt: timestamp("recordedAt").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   // Staff who added the record
