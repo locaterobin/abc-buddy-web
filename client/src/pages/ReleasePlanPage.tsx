@@ -205,6 +205,8 @@ function SortableDogCard({
 
 export default function ReleasePlanPage() {
   const { teamId: teamIdentifier } = useTeam();
+  const staffSession = JSON.parse(localStorage.getItem("abc-buddy-staff") || "null");
+  const isManager = staffSession?.role?.toLowerCase() === "manager";
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
   const [selectedRecord, setSelectedRecord] = useState<any>(null);
   const [dogIdFilter, setDogIdFilter] = useState("");
@@ -494,15 +496,17 @@ export default function ReleasePlanPage() {
       {/* Header */}
       <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-border">
         <h2 className="font-bold text-foreground text-base">Release Plans</h2>
-        <Button
-          size="sm"
-          onClick={handleCreatePlan}
-          disabled={createPlan.isPending}
-          className="gap-1.5"
-        >
-          <Plus size={15} />
-          New Plan
-        </Button>
+        {isManager && (
+          <Button
+            size="sm"
+            onClick={handleCreatePlan}
+            disabled={createPlan.isPending}
+            className="gap-1.5"
+          >
+            <Plus size={15} />
+            New Plan
+          </Button>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 pt-3 pb-4 space-y-2">
