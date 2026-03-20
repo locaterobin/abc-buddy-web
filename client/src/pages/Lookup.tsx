@@ -776,7 +776,7 @@ export default function Lookup() {
           ) : (
             <>
               <p className="text-sm font-medium text-muted-foreground">
-                {defaultRecords.length} record{defaultRecords.length !== 1 ? "s" : ""} in this period
+                {defaultRecords.length} unreleased dog{defaultRecords.length !== 1 ? "s" : ""}
               </p>
               {defaultRecords.map((rec: any) => (
                 <Card
