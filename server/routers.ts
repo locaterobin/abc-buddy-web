@@ -536,6 +536,8 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
         search: z.string().optional(),
         dateFrom: z.string().optional(),
         dateTo: z.string().optional(),
+        releasedDateFrom: z.string().optional(),
+        releasedDateTo: z.string().optional(),
         status: z.enum(["all", "active", "released"]).default("all"),
       })
     )
@@ -546,6 +548,8 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
         search: input.search,
         dateFrom: input.dateFrom,
         dateTo: input.dateTo,
+        releasedDateFrom: input.releasedDateFrom,
+        releasedDateTo: input.releasedDateTo,
         status: input.status,
       });
     }),

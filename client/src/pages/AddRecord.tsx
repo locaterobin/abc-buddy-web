@@ -392,9 +392,9 @@ export default function AddRecord() {
                 <Camera className="text-primary" size={28} />
               </div>
               <div className="text-center">
-                <p className="font-semibold text-foreground">Add a dog photo</p>
+                <p className="font-semibold text-foreground">Add a Dog</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Take a photo or upload from gallery
+                  Take a photo if catching. Upload a photo if the dog is brought to the hospital.
                 </p>
               </div>
               <div className="flex gap-3">

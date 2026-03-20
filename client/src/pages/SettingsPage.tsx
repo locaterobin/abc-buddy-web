@@ -36,6 +36,7 @@ export default function RecordsPage() {
   const [filterDate, setFilterDate] = useState(() => {
     try { return localStorage.getItem("records_filterDate") ?? ""; } catch { return ""; }
   });
+  const [filterReleasedDate, setFilterReleasedDate] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [page, setPage] = useState(1);
   const [allRecords, setAllRecords] = useState<any[]>([]);
@@ -72,7 +73,7 @@ export default function RecordsPage() {
   useEffect(() => {
     setPage(1);
     setAllRecords([]);
-  }, [filterDate, statusFilter]);
+  }, [filterDate, filterReleasedDate, statusFilter]);
 
   const query = trpc.dogs.getRecordsPaginated.useQuery(
     {
@@ -82,6 +83,8 @@ export default function RecordsPage() {
       search: search || undefined,
       dateFrom: filterDate || undefined,
       dateTo: filterDate || undefined,
+      releasedDateFrom: filterReleasedDate || undefined,
+      releasedDateTo: filterReleasedDate || undefined,
       status: statusFilter,
     },
     { enabled: !!teamId }
@@ -93,7 +96,7 @@ export default function RecordsPage() {
     if (page === 1) {
       setAllRecords(query.data.records);
       // Update cache with fresh first-page data (only when no filters active)
-      if (!search && !filterDate && statusFilter === "all" && teamId) {
+      if (!search && !filterDate && !filterReleasedDate && statusFilter === "all" && teamId) {
         setCachedRecords(teamId, query.data.records);
       }
     } else {
@@ -103,7 +106,7 @@ export default function RecordsPage() {
         return [...prev, ...newOnes];
       });
     }
-  }, [query.data, page, search, filterDate, statusFilter, teamId]);
+  }, [query.data, page, search, filterDate, filterReleasedDate, statusFilter, teamId]);
 
   const handleExportJson = () => {
     if (allRecords.length === 0) {
@@ -175,7 +178,7 @@ export default function RecordsPage() {
           </div>
 
           {/* Search + Date filters */}
-          <div className="flex gap-2 mb-3">
+          <div className="flex gap-2 mb-2">
             <div className="relative flex-1">
               <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -193,17 +196,36 @@ export default function RecordsPage() {
                 </button>
               )}
             </div>
-            <div className="relative">
-              <Calendar size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+          </div>
+          <div className="flex gap-2 mb-3">
+            <div className="relative flex-1">
+              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground pointer-events-none font-medium">Catch</span>
               <input
                 type="date"
                 value={filterDate}
                 onChange={(e) => setFilterDate(e.target.value)}
-                className="pl-8 pr-2 h-8 text-sm rounded-md border border-input bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                className="pl-12 pr-6 h-8 w-full text-sm rounded-md border border-input bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
               />
               {filterDate && (
                 <button
                   onClick={() => setFilterDate("")}
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <X size={13} />
+                </button>
+              )}
+            </div>
+            <div className="relative flex-1">
+              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground pointer-events-none font-medium">Release</span>
+              <input
+                type="date"
+                value={filterReleasedDate}
+                onChange={(e) => setFilterReleasedDate(e.target.value)}
+                className="pl-14 pr-6 h-8 w-full text-sm rounded-md border border-input bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+              />
+              {filterReleasedDate && (
+                <button
+                  onClick={() => setFilterReleasedDate("")}
                   className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 >
                   <X size={13} />
