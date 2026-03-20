@@ -99,20 +99,20 @@ export default function Home({ onLogout }: { onLogout?: () => void }) {
             active={activeTab === "add"}
             onClick={() => setActiveTab("add")}
             icon={<PlusCircle size={20} />}
-            label="Catching"
+            label="Catch"
           />
           <TabButton
             active={activeTab === "lookup"}
             onClick={() => setActiveTab("lookup")}
             icon={<Search size={20} />}
-            label="Lookup"
+            label="Tag"
             badge={pendingCount > 0 ? pendingCount : undefined}
           />
           <TabButton
             active={activeTab === "releases"}
             onClick={() => setActiveTab("releases")}
             icon={<CalendarCheck size={20} />}
-            label="Releases"
+            label="Release"
           />
         </div>
       </nav>
