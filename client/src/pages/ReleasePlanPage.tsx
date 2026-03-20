@@ -538,18 +538,20 @@ export default function ReleasePlanPage() {
                   </div>
                   <p className="text-xs text-muted-foreground">{formatPlanDate(plan.planDate)}{(plan as any).totalDogs > 0 ? ` · ${(plan as any).totalDogs} dogs` : ''}</p>
                 </div>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (confirm(`Archive plan ${plan.planDate}-${plan.orderIndex}? It will be hidden from this list.`)) {
-                      archivePlan.mutate({ planId: plan.id, teamIdentifier });
-                    }
-                  }}
-                  className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
-                  title="Archive plan"
-                >
-                  <Archive size={16} />
-                </button>
+                {isManager && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (confirm(`Archive plan ${plan.planDate}-${plan.orderIndex}? It will be hidden from this list.`)) {
+                        archivePlan.mutate({ planId: plan.id, teamIdentifier });
+                      }
+                    }}
+                    className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+                    title="Archive plan"
+                  >
+                    <Archive size={16} />
+                  </button>
+                )}
                 <ArrowLeft size={16} className="text-muted-foreground rotate-180" />
               </CardContent>
             </Card>
