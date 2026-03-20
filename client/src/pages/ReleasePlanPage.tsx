@@ -57,11 +57,13 @@ function SortableDogCard({
   onOpen,
   onRemove,
   compact = false,
+  isManager = false,
 }: {
   dog: any;
   onOpen: () => void;
   onRemove: () => void;
   compact?: boolean;
+  isManager?: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: dog.dogId,
@@ -129,7 +131,7 @@ function SortableDogCard({
               {/* Remove button — right edge */}
               <button
                 onClick={(e) => { e.stopPropagation(); onRemove(); }}
-                className="px-3 flex items-center hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors flex-shrink-0"
+                className={`px-3 flex items-center hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors flex-shrink-0 ${!isManager ? 'hidden' : ''}`}
               >
                 <Trash2 size={15} />
               </button>
@@ -192,7 +194,7 @@ function SortableDogCard({
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); onRemove(); }}
-              className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+              className={`p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors ${!isManager ? 'hidden' : ''}`}
             >
               <Trash2 size={15} />
             </button>
@@ -463,6 +465,7 @@ export default function ReleasePlanPage() {
                       dog={dog}
                       compact={viewMode === "list"}
                       onOpen={() => setSelectedRecord(dog)}
+                      isManager={isManager}
                       onRemove={() => removeDog.mutate({ planId: selectedPlanId, dogId: dog.dogId })}
                     />
                   ))}
