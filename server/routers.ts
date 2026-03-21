@@ -33,6 +33,7 @@ import {
   updateDogRecordAnnotation,
   getRecordByDogId,
   updateDogRecord,
+  updateCheckedPhotoUrl,
 } from "./db";
 import { storagePut } from "./storage";
 import { createOpenAI } from "@ai-sdk/openai";
@@ -825,6 +826,22 @@ const releasePlansRouter = router({
     .input(z.object({ dogId: z.string() }))
     .query(async ({ input }) => {
       return getFullRecordByDogId(input.dogId);
+    }),
+  updateCheckedPhoto: publicProcedure
+    .input(z.object({
+      dogId: z.string(),
+      photo2Base64: z.string(), // base64 data URL
+    }))
+    .mutation(async ({ input }) => {
+      const imgBuffer = Buffer.from(
+        input.photo2Base64.replace(/^data:image\/\w+;base64,/, ""),
+        "base64"
+      );
+      const ext = input.photo2Base64.startsWith("data:image/png") ? "png" : "jpg";
+      const key = `checked-photos/${input.dogId}-${Date.now()}.${ext}`;
+      const { url } = await storagePut(key, imgBuffer, `image/${ext}`);
+      await updateCheckedPhotoUrl(input.dogId, url);
+      return { url };
     }),
   reorderDogs: publicProcedure
     .input(z.object({ planId: z.number(), orderedDogIds: z.array(z.string()) }))

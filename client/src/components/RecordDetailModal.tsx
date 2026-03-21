@@ -440,6 +440,21 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
     onError: () => toast.error("Failed to move dog"),
   });
 
+  // Replace checked photo
+  const [replaceCheckedBase64, setReplaceCheckedBase64] = useState<string | null>(null);
+  const [replacingChecked, setReplacingChecked] = useState(false);
+  const replaceCheckedInputRef = useRef<HTMLInputElement>(null);
+  const updateCheckedPhotoMutation = trpc.releasePlans.updateCheckedPhoto.useMutation({
+    onSuccess: () => {
+      toast.success("Checked photo updated");
+      utils.releasePlans.getFullRecord.invalidate({ dogId: record.dogId });
+      utils.dogs.getRecords.invalidate();
+      setReplaceCheckedBase64(null);
+      setReplacingChecked(false);
+    },
+    onError: () => { toast.error("Failed to update photo"); setReplacingChecked(false); },
+  });
+
   const removeDogFromPlan = trpc.releasePlans.removeDog.useMutation({
     onSuccess: () => {
       toast.success("Removed from release plan");
@@ -758,6 +773,49 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
                   alt={rec.dogId}
                   onClose={() => setLightboxIndex(null)}
                 />
+              )}
+              {/* Replace Checked photo button — visible to all staff when a checked photo exists */}
+              {rec.photo2Url && !released && (
+                <div className="px-3 py-2 flex items-center justify-end gap-2 bg-black/5">
+                  {replaceCheckedBase64 ? (
+                    <>
+                      <span className="text-xs text-muted-foreground">New checked photo selected</span>
+                      <button
+                        onClick={() => setReplaceCheckedBase64(null)}
+                        className="text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded"
+                      >Cancel</button>
+                      <button
+                        disabled={replacingChecked}
+                        onClick={async () => {
+                          setReplacingChecked(true);
+                          updateCheckedPhotoMutation.mutate({ dogId: record.dogId, photo2Base64: replaceCheckedBase64 });
+                        }}
+                        className="text-xs bg-primary text-primary-foreground px-3 py-1 rounded-md font-medium disabled:opacity-50"
+                      >{replacingChecked ? "Saving…" : "Save"}</button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => replaceCheckedInputRef.current?.click()}
+                      className="text-xs flex items-center gap-1 text-muted-foreground hover:text-foreground px-2 py-1 rounded hover:bg-black/10 transition-colors"
+                    >
+                      <Camera size={12} />
+                      Replace checked photo
+                    </button>
+                  )}
+                  <input
+                    ref={replaceCheckedInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const resized = await resizeImage(file, 1200);
+                      setReplaceCheckedBase64(resized);
+                      e.target.value = "";
+                    }}
+                  />
+                </div>
               )}
             </>
           );

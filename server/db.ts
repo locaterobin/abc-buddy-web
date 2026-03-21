@@ -559,6 +559,12 @@ export async function getFullRecordByDogId(dogId: string) {
   return rows[0] ?? null;
 }
 
+export async function updateCheckedPhotoUrl(dogId: string, photo2Url: string): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(dogRecords).set({ photo2Url }).where(eq(dogRecords.dogId, dogId));
+}
+
 export async function addDogToReleasePlan(planId: number, dogId: string, photo2Url?: string, staffId?: string | null, staffName?: string | null): Promise<boolean> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
