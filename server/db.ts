@@ -232,23 +232,23 @@ export async function getRecordsPaginated(
     .orderBy(desc(dogRecords.createdAt))
     .limit(pageSize)
     .offset((page - 1) * pageSize);
-  // Fetch which dogIds are in any release plan and their photo2Url
+  // Fetch which dogIds are in any release plan
   const dogIds = rawRecords.map((r) => r.dogId);
-  let planDogMap = new Map<string, string | null>(); // dogId -> photo2Url
+  let inPlanSet = new Set<string>();
   if (dogIds.length > 0) {
     const planRows = await db
-      .select({ dogId: releasePlanDogs.dogId, photo2Url: releasePlanDogs.photo2Url })
+      .select({ dogId: releasePlanDogs.dogId })
       .from(releasePlanDogs)
-      .where(sql`${releasePlanDogs.dogId} IN (${sql.join(dogIds.map((id) => sql`${id}`), sql`, `)})`);
-    // Use the most recent plan entry per dog (last one wins)
+      .where(sql`${releasePlanDogs.dogId} IN (${sql.join(dogIds.map((id) => sql`${id}`), sql`, `)})`)
     for (const row of planRows) {
-      planDogMap.set(row.dogId, row.photo2Url ?? null);
+      inPlanSet.add(row.dogId);
     }
   }
+  // photo2Url now lives on dog_records itself
   const records = rawRecords.map((r) => ({
     ...r,
-    inReleasePlan: planDogMap.has(r.dogId),
-    photo2Url: planDogMap.get(r.dogId) ?? null,
+    inReleasePlan: inPlanSet.has(r.dogId),
+    // photo2Url is already on r from dog_records select
   }));
   return { records, total, hasMore: page * pageSize < total };
 }
@@ -480,7 +480,6 @@ export async function getReleasePlanDogs(planId: number) {
       // release_plan_dogs fields
       planDogId: releasePlanDogs.id,
       planId: releasePlanDogs.planId,
-      photo2Url: releasePlanDogs.photo2Url,
       addedAt: releasePlanDogs.addedAt,
       sortOrder: releasePlanDogs.sortOrder,
       // full dog_records fields
@@ -488,6 +487,7 @@ export async function getReleasePlanDogs(planId: number) {
       dogId: dogRecords.dogId,
       teamIdentifier: dogRecords.teamIdentifier,
       imageUrl: dogRecords.imageUrl,
+      photo2Url: dogRecords.photo2Url, // now lives on dog_records
       description: dogRecords.description,
       areaName: dogRecords.areaName,
       latitude: dogRecords.latitude,
@@ -525,12 +525,12 @@ export async function getFullRecordByDogId(dogId: string) {
     .select({
       planDogId: releasePlanDogs.id,
       planId: releasePlanDogs.planId,
-      photo2Url: releasePlanDogs.photo2Url,
       addedAt: releasePlanDogs.addedAt,
       id: dogRecords.id,
       dogId: dogRecords.dogId,
       teamIdentifier: dogRecords.teamIdentifier,
       imageUrl: dogRecords.imageUrl,
+      photo2Url: dogRecords.photo2Url, // now lives on dog_records
       description: dogRecords.description,
       areaName: dogRecords.areaName,
       latitude: dogRecords.latitude,
@@ -568,29 +568,30 @@ export async function addDogToReleasePlan(planId: number, dogId: string, photo2U
     .where(and(eq(releasePlanDogs.planId, planId), eq(releasePlanDogs.dogId, dogId)))
     .limit(1);
   if (existing.length > 0) {
-    // Update photo2Url if provided even if already in plan
+    // Update photo2Url on dog_records if a new one is provided
     if (photo2Url) {
       await db
-        .update(releasePlanDogs)
+        .update(dogRecords)
         .set({ photo2Url })
-        .where(and(eq(releasePlanDogs.planId, planId), eq(releasePlanDogs.dogId, dogId)));
+        .where(eq(dogRecords.dogId, dogId));
     }
     return false;
   }
   // Assign sortOrder as max + 1 for this plan
-  const maxRow = await db
-    .select({ maxSort: releasePlanDogs.sortOrder })
-    .from(releasePlanDogs)
-    .where(eq(releasePlanDogs.planId, planId))
-    .orderBy(releasePlanDogs.sortOrder)
-    .limit(1);
-  // Get actual max
   const allRows = await db
     .select({ s: releasePlanDogs.sortOrder })
     .from(releasePlanDogs)
     .where(eq(releasePlanDogs.planId, planId));
   const maxSort = allRows.length > 0 ? Math.max(...allRows.map((r) => r.s)) : -1;
-  await db.insert(releasePlanDogs).values({ planId, dogId, photo2Url, sortOrder: maxSort + 1, addedByStaffId: staffId ?? null, addedByStaffName: staffName ?? null });
+  // Insert plan-dog row (no photo2Url here anymore)
+  await db.insert(releasePlanDogs).values({ planId, dogId, sortOrder: maxSort + 1, addedByStaffId: staffId ?? null, addedByStaffName: staffName ?? null });
+  // Save photo2Url on the dog record itself so it persists across plan changes
+  if (photo2Url) {
+    await db
+      .update(dogRecords)
+      .set({ photo2Url })
+      .where(eq(dogRecords.dogId, dogId));
+  }
   return true;
 }
 

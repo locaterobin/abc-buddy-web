@@ -1,0 +1,9 @@
+{
+  "query": "UPDATE dog_records dr\nJOIN (\n  SELECT dogId, photo2Url\n  FROM release_plan_dogs\n  WHERE photo2Url IS NOT NULL\n  ORDER BY addedAt DESC\n) AS latest ON latest.dogId = dr.dogId\nSET dr.photo2Url = latest.photo2Url\nWHERE dr.photo2Url IS NULL;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4YKkGxc6t8uKQwU.5f0d0a62126a --database hPjpqQFScRPNzVz7QPH5a8 --execute UPDATE dog_records dr\nJOIN (\n  SELECT dogId, photo2Url\n  FROM release_plan_dogs\n  WHERE photo2Url IS NOT NULL\n  ORDER BY addedAt DESC\n) AS latest ON latest.dogId = dr.dogId\nSET dr.photo2Url = latest.photo2Url\nWHERE dr.photo2Url IS NULL;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1662
+}

@@ -43,6 +43,7 @@ export const dogRecords = mysqlTable("dog_records", {
   releaseLongitude: double("releaseLongitude"),
   releaseAreaName: varchar("releaseAreaName", { length: 255 }),
   releaseDistanceMetres: int("releaseDistanceMetres"),
+  photo2Url: text("photo2Url"), // optional checked photo (persists across plan changes)
   releasePhotoUrl: text("releasePhotoUrl"), // optional 3rd photo taken at release
   // Staff who marked as released
   releasedByStaffId: varchar("releasedByStaffId", { length: 64 }),
