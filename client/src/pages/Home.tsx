@@ -19,6 +19,13 @@ export default function Home({ onLogout }: { onLogout?: () => void }) {
   const [pendingCount, setPendingCount] = useState(0);
   const { staffSession } = useTeam();
   const isManager = staffSession?.role?.toLowerCase() === "manager";
+  const [buildVersion, setBuildVersion] = useState<string>("...");
+  useEffect(() => {
+    fetch("/api/version", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => setBuildVersion(d.version ?? "?"))
+      .catch(() => setBuildVersion("?"));
+  }, []);
 
   // Refresh pending count every 5 seconds and on focus
   const refreshPendingCount = useCallback(async () => {
@@ -66,7 +73,7 @@ export default function Home({ onLogout }: { onLogout?: () => void }) {
           </div>
           <div className="flex flex-col">
             <h1 className="text-lg font-semibold text-foreground leading-tight">ABC Buddy</h1>
-            <span className="text-[10px] font-mono text-muted-foreground leading-tight">v1.0.0</span>
+            <span className="text-[10px] font-mono text-muted-foreground leading-tight">build {buildVersion}</span>
           </div>
         </div>
 
@@ -179,7 +186,7 @@ export default function Home({ onLogout }: { onLogout?: () => void }) {
                   Sign Out
                 </button>
               )}
-              <p className="text-[10px] text-muted-foreground font-mono">ABC Buddy v1.0.0</p>
+              <p className="text-[10px] text-muted-foreground font-mono">ABC Buddy build {buildVersion}</p>
               <p className="text-[9px] text-muted-foreground/60 font-sans tracking-widest uppercase">by Peepal Farm</p>
             </div>
           </div>
