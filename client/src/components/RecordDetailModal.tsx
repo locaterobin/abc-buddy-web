@@ -411,7 +411,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
     { enabled: !!record.dogId && !released }
   );
   const isInAnyPlan = dogPlanIds.length > 0;
-  const isManager = staffSession?.role === "manager";
+  const isManager = staffSession?.role?.toLowerCase() === "manager";
 
   // Current plan details (for display + move feature)
   const { data: dogPlanDetails = [] } = trpc.releasePlans.getDogPlanDetails.useQuery(
