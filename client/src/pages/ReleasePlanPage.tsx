@@ -207,7 +207,7 @@ function SortableDogCard({
 
 export default function ReleasePlanPage() {
   const { teamId: teamIdentifier } = useTeam();
-  const staffSession = JSON.parse(localStorage.getItem("abc-buddy-staff") || "null");
+  const staffSession = JSON.parse(localStorage.getItem("abc-buddy-staff-session") || "null");
   const isManager = staffSession?.role?.toLowerCase() === "manager";
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
   const [selectedRecord, setSelectedRecord] = useState<any>(null);
