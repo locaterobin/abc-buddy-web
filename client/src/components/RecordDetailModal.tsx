@@ -422,6 +422,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
 
   // Move-to-plan state (manager only)
   const [showMovePicker, setShowMovePicker] = useState(false);
+  const [pendingMovePlan, setPendingMovePlan] = useState<{ id: number; planDate: string; orderIndex: number } | null>(null);
   const { data: allActivePlans = [] } = trpc.releasePlans.getPlans.useQuery(
     { teamIdentifier: teamId },
     { enabled: showMovePicker }
@@ -1101,23 +1102,11 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
                   .map((plan) => (
                     <button
                       key={plan.id}
-                      onClick={() =>
-                        moveDogMutation.mutate({
-                          dogId: record.dogId,
-                          targetPlanId: plan.id,
-                          movedByStaffId: staffSession?.staffId ?? null,
-                          movedByStaffName: staffSession?.name ?? null,
-                        })
-                      }
-                      disabled={moveDogMutation.isPending}
+                      onClick={() => setPendingMovePlan({ id: plan.id, planDate: plan.planDate, orderIndex: plan.orderIndex })}
                       className="w-full flex items-center justify-between px-4 py-3 text-sm border-b border-border/50 last:border-b-0 hover:bg-muted transition-colors text-foreground"
                     >
                       <span className="font-mono font-medium">{plan.planDate}-{plan.orderIndex}</span>
-                      {moveDogMutation.isPending ? (
-                        <Loader2 size={14} className="animate-spin text-muted-foreground" />
-                      ) : (
-                        <ArrowRightLeft size={14} className="text-muted-foreground" />
-                      )}
+                      <ArrowRightLeft size={14} className="text-muted-foreground" />
                     </button>
                   ))
               )}
@@ -1127,6 +1116,54 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
               >
                 Cancel
               </button>
+            </div>
+          )}
+
+          {/* Move confirmation dialog */}
+          {pendingMovePlan && (
+            <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+              <div className="absolute inset-0 bg-black/60" onClick={() => setPendingMovePlan(null)} />
+              <div className="relative bg-card rounded-2xl shadow-2xl w-full max-w-xs p-6 flex flex-col items-center gap-4 animate-in zoom-in-95 duration-200">
+                <ArrowRightLeft size={40} className="text-primary" strokeWidth={1.5} />
+                <div className="text-center space-y-1">
+                  <p className="font-semibold text-foreground">Move to plan</p>
+                  <p className="font-mono text-2xl font-bold text-primary">{pendingMovePlan.planDate}-{pendingMovePlan.orderIndex}</p>
+                  {currentPlan && (
+                    <p className="text-sm text-muted-foreground">
+                      Moving from <span className="font-mono font-medium">{currentPlan.planDate}-{currentPlan.orderIndex}</span>
+                    </p>
+                  )}
+                </div>
+                <div className="flex gap-3 w-full">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => setPendingMovePlan(null)}
+                    disabled={moveDogMutation.isPending}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    className="flex-1"
+                    onClick={() => {
+                      moveDogMutation.mutate({
+                        dogId: record.dogId,
+                        targetPlanId: pendingMovePlan.id,
+                        movedByStaffId: staffSession?.staffId ?? null,
+                        movedByStaffName: staffSession?.name ?? null,
+                      });
+                      setPendingMovePlan(null);
+                    }}
+                    disabled={moveDogMutation.isPending}
+                  >
+                    {moveDogMutation.isPending ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : (
+                      "Confirm Move"
+                    )}
+                  </Button>
+                </div>
+              </div>
             </div>
           )}
 
