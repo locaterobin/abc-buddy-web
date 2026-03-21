@@ -62,6 +62,12 @@ async function startServer() {
   registerIngestRoute(app);
   // PDF generation
   registerPdfRoute(app);
+  // Version endpoint — returns current build hash for update detection
+  const BUILD_ID = process.env.BUILD_ID || process.env.npm_package_version || Date.now().toString();
+  app.get("/api/version", (_req, res) => {
+    res.json({ version: BUILD_ID });
+  });
+
   // tRPC API
   app.use(
     "/api/trpc",
