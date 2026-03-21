@@ -624,6 +624,44 @@ export async function getDogReleasePlans(dogId: string): Promise<number[]> {
   return rows.map((r) => r.planId);
 }
 
+/** Returns the plan(s) a dog is currently in, with plan label info */
+export async function getDogPlanDetails(dogId: string): Promise<{ planId: number; planDate: string; orderIndex: number; teamIdentifier: string }[]> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const rows = await db
+    .select({
+      planId: releasePlanDogs.planId,
+      planDate: releasePlans.planDate,
+      orderIndex: releasePlans.orderIndex,
+      teamIdentifier: releasePlans.teamIdentifier,
+    })
+    .from(releasePlanDogs)
+    .innerJoin(releasePlans, eq(releasePlanDogs.planId, releasePlans.id))
+    .where(eq(releasePlanDogs.dogId, dogId));
+  return rows;
+}
+
+/** Move a dog from its current plan(s) to a different plan */
+export async function moveDogToPlan(
+  dogId: string,
+  targetPlanId: number,
+  staffId: string | null,
+  staffName: string | null
+): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  // Remove from all current plans
+  await db.delete(releasePlanDogs).where(eq(releasePlanDogs.dogId, dogId));
+  // Add to target plan
+  await db.insert(releasePlanDogs).values({
+    planId: targetPlanId,
+    dogId,
+    sortOrder: 0,
+    addedByStaffId: staffId,
+    addedByStaffName: staffName,
+  });
+}
+
 export async function getTeamDocxTemplateUrl(teamIdentifier: string): Promise<string | null> {
   const db = await getDb();
   if (!db) return null;

@@ -26,6 +26,8 @@ import {
   Upload,
   Pencil,
   Save,
+  ArrowRightLeft,
+  ClipboardList,
 } from "lucide-react";
 
 interface RecordDetailModalProps {
@@ -409,6 +411,34 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
     { enabled: !!record.dogId && !released }
   );
   const isInAnyPlan = dogPlanIds.length > 0;
+  const isManager = staffSession?.role === "manager";
+
+  // Current plan details (for display + move feature)
+  const { data: dogPlanDetails = [] } = trpc.releasePlans.getDogPlanDetails.useQuery(
+    { dogId: record.dogId },
+    { enabled: !!record.dogId && !released }
+  );
+  const currentPlan = dogPlanDetails[0] ?? null;
+
+  // Move-to-plan state (manager only)
+  const [showMovePicker, setShowMovePicker] = useState(false);
+  const { data: allActivePlans = [] } = trpc.releasePlans.getPlans.useQuery(
+    { teamIdentifier: teamId },
+    { enabled: showMovePicker }
+  );
+  const moveDogMutation = trpc.releasePlans.moveDog.useMutation({
+    onSuccess: () => {
+      toast.success("Moved to new plan");
+      utils.releasePlans.getDogPlans.invalidate({ dogId: record.dogId });
+      utils.releasePlans.getDogPlanDetails.invalidate({ dogId: record.dogId });
+      utils.releasePlans.getPlanDogs.invalidate();
+      utils.releasePlans.getFullRecord.invalidate({ dogId: record.dogId });
+      utils.dogs.getRecords.invalidate();
+      setShowMovePicker(false);
+    },
+    onError: () => toast.error("Failed to move dog"),
+  });
+
   const removeDogFromPlan = trpc.releasePlans.removeDog.useMutation({
     onSuccess: () => {
       toast.success("Removed from release plan");
@@ -1036,6 +1066,67 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
                   </Button>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Current plan info + Move button (manager only) */}
+          {isInAnyPlan && !released && currentPlan && (
+            <div className="flex items-center justify-between rounded-xl border border-border/60 bg-muted/20 px-3 py-2.5">
+              <div className="flex items-center gap-2 text-sm">
+                <ClipboardList size={15} className="text-muted-foreground flex-shrink-0" />
+                <span className="text-muted-foreground">In plan</span>
+                <span className="font-mono font-semibold text-foreground">{currentPlan.planDate}-{currentPlan.orderIndex}</span>
+              </div>
+              {isManager && (
+                <button
+                  onClick={() => setShowMovePicker((v) => !v)}
+                  className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors px-2 py-1 rounded-md hover:bg-primary/10"
+                >
+                  <ArrowRightLeft size={13} />
+                  Move
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Move-to-plan picker (manager only) */}
+          {showMovePicker && isManager && (
+            <div className="border border-border rounded-xl overflow-hidden bg-muted/30">
+              <p className="text-xs font-medium text-muted-foreground px-4 pt-3 pb-1">Move to another plan:</p>
+              {allActivePlans.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-4">No other active plans available.</p>
+              ) : (
+                allActivePlans
+                  .filter((p) => p.id !== currentPlan?.planId)
+                  .map((plan) => (
+                    <button
+                      key={plan.id}
+                      onClick={() =>
+                        moveDogMutation.mutate({
+                          dogId: record.dogId,
+                          targetPlanId: plan.id,
+                          movedByStaffId: staffSession?.staffId ?? null,
+                          movedByStaffName: staffSession?.name ?? null,
+                        })
+                      }
+                      disabled={moveDogMutation.isPending}
+                      className="w-full flex items-center justify-between px-4 py-3 text-sm border-b border-border/50 last:border-b-0 hover:bg-muted transition-colors text-foreground"
+                    >
+                      <span className="font-mono font-medium">{plan.planDate}-{plan.orderIndex}</span>
+                      {moveDogMutation.isPending ? (
+                        <Loader2 size={14} className="animate-spin text-muted-foreground" />
+                      ) : (
+                        <ArrowRightLeft size={14} className="text-muted-foreground" />
+                      )}
+                    </button>
+                  ))
+              )}
+              <button
+                onClick={() => setShowMovePicker(false)}
+                className="w-full text-xs text-muted-foreground py-2 hover:bg-muted transition-colors"
+              >
+                Cancel
+              </button>
             </div>
           )}
 

@@ -20,6 +20,8 @@ import {
   getReleasePlanDogs,
   addDogToReleasePlan,
   removeDogFromReleasePlan,
+  getDogPlanDetails,
+  moveDogToPlan,
   getDogReleasePlans,
   getFullRecordByDogId,
   reorderPlanDogs,
@@ -802,6 +804,22 @@ const releasePlansRouter = router({
     .input(z.object({ dogId: z.string() }))
     .query(async ({ input }) => {
       return getDogReleasePlans(input.dogId);
+    }),
+  getDogPlanDetails: publicProcedure
+    .input(z.object({ dogId: z.string() }))
+    .query(async ({ input }) => {
+      return getDogPlanDetails(input.dogId);
+    }),
+  moveDog: publicProcedure
+    .input(z.object({
+      dogId: z.string(),
+      targetPlanId: z.number(),
+      movedByStaffId: z.string().nullable().optional(),
+      movedByStaffName: z.string().nullable().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      await moveDogToPlan(input.dogId, input.targetPlanId, input.movedByStaffId ?? null, input.movedByStaffName ?? null);
+      return { success: true };
     }),
   getFullRecord: publicProcedure
     .input(z.object({ dogId: z.string() }))
