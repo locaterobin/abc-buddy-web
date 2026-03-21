@@ -535,8 +535,11 @@ export default function ReleasePlanPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="font-mono font-bold text-foreground text-sm">{plan.planDate}-{plan.orderIndex}</p>
+                    {(plan as any).totalDogs > 0 && (plan as any).releasedDogs === (plan as any).totalDogs && (
+                       <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-green-500/20 text-green-600 border border-green-500/30">Completed</span>
+                    )}
                     {(plan as any).totalDogs > 1 && (plan as any).releasedDogs > 0 && (plan as any).releasedDogs < (plan as any).totalDogs && (
-                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-yellow-500/20 text-yellow-600 border border-yellow-500/30">In Progress</span>
+                       <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-yellow-500/20 text-yellow-600 border border-yellow-500/30">In Progress</span>
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground">{formatPlanDate(plan.planDate)}{(plan as any).totalDogs > 0 ? ` · ${(plan as any).totalDogs} dogs` : ''}</p>

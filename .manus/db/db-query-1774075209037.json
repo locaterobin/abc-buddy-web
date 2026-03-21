@@ -1,0 +1,154 @@
+{
+  "query": "SELECT id, teamIdentifier, planDate, orderIndex, archivedAt, createdAt FROM release_plans ORDER BY createdAt DESC LIMIT 50;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4YKkGxc6t8uKQwU.5f0d0a62126a --database hPjpqQFScRPNzVz7QPH5a8 --execute SELECT id, teamIdentifier, planDate, orderIndex, archivedAt, createdAt FROM release_plans ORDER BY createdAt DESC LIMIT 50;",
+  "rows": [
+    {
+      "id": "390003",
+      "teamIdentifier": "bold-otter",
+      "planDate": "260321",
+      "orderIndex": "3",
+      "archivedAt": "NULL",
+      "createdAt": "2026-03-21 06:14:37"
+    },
+    {
+      "id": "390002",
+      "teamIdentifier": "bold-otter",
+      "planDate": "260321",
+      "orderIndex": "2",
+      "archivedAt": "2026-03-21 04:53:59",
+      "createdAt": "2026-03-21 04:53:46"
+    },
+    {
+      "id": "390001",
+      "teamIdentifier": "bold-otter",
+      "planDate": "260321",
+      "orderIndex": "1",
+      "archivedAt": "NULL",
+      "createdAt": "2026-03-21 04:27:55"
+    },
+    {
+      "id": "330002",
+      "teamIdentifier": "bold-otter",
+      "planDate": "260320",
+      "orderIndex": "3",
+      "archivedAt": "2026-03-20 12:26:05",
+      "createdAt": "2026-03-20 12:24:59"
+    },
+    {
+      "id": "330001",
+      "teamIdentifier": "bold-otter",
+      "planDate": "260320",
+      "orderIndex": "2",
+      "archivedAt": "NULL",
+      "createdAt": "2026-03-20 10:03:13"
+    },
+    {
+      "id": "300001",
+      "teamIdentifier": "bold-otter",
+      "planDate": "260320",
+      "orderIndex": "1",
+      "archivedAt": "2026-03-20 07:07:48",
+      "createdAt": "2026-03-20 07:05:13"
+    },
+    {
+      "id": "270001",
+      "teamIdentifier": "bold-otter",
+      "planDate": "260319",
+      "orderIndex": "7",
+      "archivedAt": "2026-03-20 04:56:54",
+      "createdAt": "2026-03-19 12:35:43"
+    },
+    {
+      "id": "240006",
+      "teamIdentifier": "bold-otter",
+      "planDate": "260319",
+      "orderIndex": "6",
+      "archivedAt": "2026-03-19 09:28:00",
+      "createdAt": "2026-03-19 05:48:49"
+    },
+    {
+      "id": "240005",
+      "teamIdentifier": "bold-otter",
+      "planDate": "260319",
+      "orderIndex": "5",
+      "archivedAt": "2026-03-19 09:25:38",
+      "createdAt": "2026-03-19 05:26:43"
+    },
+    {
+      "id": "240004",
+      "teamIdentifier": "bold-otter",
+      "planDate": "260319",
+      "orderIndex": "4",
+      "archivedAt": "2026-03-19 05:26:06",
+      "createdAt": "2026-03-19 05:23:17"
+    },
+    {
+      "id": "240003",
+      "teamIdentifier": "bold-otter",
+      "planDate": "260319",
+      "orderIndex": "3",
+      "archivedAt": "2026-03-19 09:24:54",
+      "createdAt": "2026-03-19 05:20:50"
+    },
+    {
+      "id": "240002",
+      "teamIdentifier": "bold-otter",
+      "planDate": "260319",
+      "orderIndex": "2",
+      "archivedAt": "2026-03-19 05:09:01",
+      "createdAt": "2026-03-19 05:06:15"
+    },
+    {
+      "id": "240001",
+      "teamIdentifier": "bold-otter",
+      "planDate": "260319",
+      "orderIndex": "1",
+      "archivedAt": "2026-03-19 05:08:57",
+      "createdAt": "2026-03-19 04:17:54"
+    },
+    {
+      "id": "210002",
+      "teamIdentifier": "bold-otter",
+      "planDate": "260317",
+      "orderIndex": "2",
+      "archivedAt": "NULL",
+      "createdAt": "2026-03-17 04:36:49"
+    },
+    {
+      "id": "210001",
+      "teamIdentifier": "bold-otter",
+      "planDate": "260317",
+      "orderIndex": "1",
+      "archivedAt": "2026-03-17 04:30:12",
+      "createdAt": "2026-03-17 04:30:02"
+    },
+    {
+      "id": "180001",
+      "teamIdentifier": "bold-otter",
+      "planDate": "260315",
+      "orderIndex": "1",
+      "archivedAt": "NULL",
+      "createdAt": "2026-03-15 13:32:13"
+    },
+    {
+      "id": "60001",
+      "teamIdentifier": "bold-otter",
+      "planDate": "260312",
+      "orderIndex": "2",
+      "archivedAt": "2026-03-12 12:42:56",
+      "createdAt": "2026-03-12 12:42:46"
+    },
+    {
+      "id": "3",
+      "teamIdentifier": "bold-otter",
+      "planDate": "260312",
+      "orderIndex": "1",
+      "archivedAt": "2026-03-17 04:23:02",
+      "createdAt": "2026-03-11 18:50:48"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tteamIdentifier\tplanDate\torderIndex\tarchivedAt\tcreatedAt\n390003\tbold-otter\t260321\t3\tNULL\t2026-03-21 06:14:37\n390002\tbold-otter\t260321\t2\t2026-03-21 04:53:59\t2026-03-21 04:53:46\n390001\tbold-otter\t260321\t1\tNULL\t2026-03-21 04:27:55\n330002\tbold-otter\t260320\t3\t2026-03-20 12:26:05\t2026-03-20 12:24:59\n330001\tbold-otter\t260320\t2\tNULL\t2026-03-20 10:03:13\n300001\tbold-otter\t260320\t1\t2026-03-20 07:07:48\t2026-03-20 07:05:13\n270001\tbold-otter\t260319\t7\t2026-03-20 04:56:54\t2026-03-19 12:35:43\n240006\tbold-otter\t260319\t6\t2026-03-19 09:28:00\t2026-03-19 05:48:49\n240005\tbold-otter\t260319\t5\t2026-03-19 09:25:38\t2026-03-19 05:26:43\n240004\tbold-otter\t260319\t4\t2026-03-19 05:26:06\t2026-03-19 05:23:17\n240003\tbold-otter\t260319\t3\t2026-03-19 09:24:54\t2026-03-19 05:20:50\n240002\tbold-otter\t260319\t2\t2026-03-19 05:09:01\t2026-03-19 05:06:15\n240001\tbold-otter\t260319\t1\t2026-03-19 05:08:57\t2026-03-19 04:17:54\n210002\tbold-otter\t260317\t2\tNULL\t2026-03-17 04:36:49\n210001\tbold-otter\t260317\t1\t2026-03-17 04:30:12\t2026-03-17 04:30:02\n180001\tbold-otter\t260315\t1\tNULL\t2026-03-15 13:32:13\n60001\tbold-otter\t260312\t2\t2026-03-12 12:42:56\t2026-03-12 12:42:46\n3\tbold-otter\t260312\t1\t2026-03-17 04:23:02\t2026-03-11 18:50:48\n",
+  "stderr": "",
+  "execution_time_ms": 1521
+}
