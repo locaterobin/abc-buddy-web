@@ -411,7 +411,7 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
                 const annotatedBuffer = await image.composite([{ input: Buffer.from(svg), top: H - overlayHeight, left: 0 }]).jpeg({ quality: 92 }).toBuffer();
                 const annotatedKey = `dogs/${input.teamIdentifier}/${input.dogId}-annotated-${nanoid(8)}.jpg`;
                 const { url: annotatedUrl } = await storagePut(annotatedKey, annotatedBuffer, "image/jpeg");
-                await updateDogRecordAnnotation(savedRecord.id, annotatedUrl, imageUrl, null);
+                await updateDogRecordAnnotation(savedRecord.id, annotatedUrl, imageUrl, savedRecord.description ?? null);
                 // Fire image-annotated webhook now that we have the stamped image URL
                 if (input.webhookUrl) {
                   fetch(`${input.webhookUrl}/image-annotated`, {
