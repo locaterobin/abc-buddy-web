@@ -393,9 +393,7 @@ export default function AddRecord() {
               </div>
               <div className="text-center">
                 <p className="font-semibold text-foreground">Add a Dog</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Take a photo if catching.<br />Upload a photo if the dog is brought to the hospital.
-                </p>
+
               </div>
               <div className="flex gap-3">
                 <Button
