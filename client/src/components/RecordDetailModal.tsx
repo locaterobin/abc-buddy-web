@@ -1074,20 +1074,6 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
                   ) : (
                     <div className="flex gap-2">
                       <Button
-                        variant="default"
-                        size="sm"
-                        className="flex-1"
-                        onClick={() => {
-                          if (photo3InputRef.current) {
-                            photo3InputRef.current.setAttribute("capture", "environment");
-                            photo3InputRef.current.click();
-                          }
-                        }}
-                      >
-                        <Camera size={16} className="mr-1.5" />
-                        Camera
-                      </Button>
-                      <Button
                         variant="outline"
                         size="sm"
                         className="flex-1 bg-card"
@@ -1100,6 +1086,20 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
                       >
                         <Upload size={16} className="mr-1.5" />
                         Upload
+                      </Button>
+                      <Button
+                        variant="default"
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => {
+                          if (photo3InputRef.current) {
+                            photo3InputRef.current.setAttribute("capture", "environment");
+                            photo3InputRef.current.click();
+                          }
+                        }}
+                      >
+                        <Camera size={16} className="mr-1.5" />
+                        Camera
                       </Button>
                     </div>
                   )}
@@ -1279,20 +1279,6 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
                   ) : (
                     <div className="flex gap-2">
                       <Button
-                        variant="default"
-                        size="sm"
-                        className="flex-1"
-                        onClick={() => {
-                          if (photo2InputRef.current) {
-                            photo2InputRef.current.setAttribute("capture", "environment");
-                            photo2InputRef.current.click();
-                          }
-                        }}
-                      >
-                        <Camera size={16} className="mr-1.5" />
-                        Camera
-                      </Button>
-                      <Button
                         variant="outline"
                         size="sm"
                         className="flex-1 bg-card"
@@ -1305,6 +1291,20 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
                       >
                         <Upload size={16} className="mr-1.5" />
                         Upload
+                      </Button>
+                      <Button
+                        variant="default"
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => {
+                          if (photo2InputRef.current) {
+                            photo2InputRef.current.setAttribute("capture", "environment");
+                            photo2InputRef.current.click();
+                          }
+                        }}
+                      >
+                        <Camera size={16} className="mr-1.5" />
+                        Camera
                       </Button>
                     </div>
                   )}
