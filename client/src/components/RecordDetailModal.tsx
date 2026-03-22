@@ -823,17 +823,28 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
         })()}
 
         <div className="p-4 space-y-3">
-          {/* Header row: Dog ID + Edit button */}
+          {/* Header row: Dog ID + Edit + Delete buttons */}
           <div className="flex items-center justify-between">
             <h2 className="font-mono font-bold text-xl text-foreground">{rec.dogId}</h2>
             {!editMode && (
-              <button
-                onClick={enterEditMode}
-                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-md hover:bg-muted"
-              >
-                <Pencil size={13} />
-                Edit
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={enterEditMode}
+                  className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-md hover:bg-muted"
+                >
+                  <Pencil size={13} />
+                  Edit
+                </button>
+                {isManager && (
+                  <button
+                    onClick={handleDelete}
+                    className="flex items-center gap-1 text-xs text-destructive hover:text-destructive/80 transition-colors px-2 py-1 rounded-md hover:bg-destructive/10"
+                  >
+                    <Trash2 size={13} />
+                    Delete
+                  </button>
+                )}
+              </div>
             )}
           </div>
 
