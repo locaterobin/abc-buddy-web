@@ -64,7 +64,7 @@ export default function Home({ onLogout }: { onLogout?: () => void }) {
   }, [drawerOpen]);
 
   return (
-    <div className="flex flex-col h-[100dvh] bg-background">
+    <div className="flex flex-col bg-background" style={{ height: 'var(--app-height, 100dvh)' }}>
       {/* Header */}
       <header className="flex-shrink-0 bg-card border-b border-border px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">

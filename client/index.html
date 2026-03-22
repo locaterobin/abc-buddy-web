@@ -17,6 +17,21 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+    <script>
+      // Lock app height to initial viewport to prevent layout reflow when
+      // browser chrome appears/disappears on mobile (pull-to-refresh, scroll).
+      // We capture once and never update — this keeps the bottom nav stable.
+      (function() {
+        function setAppHeight() {
+          document.documentElement.style.setProperty('--app-height', window.innerHeight + 'px');
+        }
+        setAppHeight();
+        // Re-lock only on genuine orientation changes, not on scroll/chrome toggle
+        window.addEventListener('orientationchange', function() {
+          setTimeout(setAppHeight, 300);
+        });
+      })();
+    </script>
   </head>
 
   <body>
