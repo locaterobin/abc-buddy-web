@@ -19,13 +19,7 @@ export default function Home({ onLogout }: { onLogout?: () => void }) {
   const [pendingCount, setPendingCount] = useState(0);
   const { staffSession } = useTeam();
   const isManager = staffSession?.role?.toLowerCase() === "manager";
-  const [buildVersion, setBuildVersion] = useState<string>("...");
-  useEffect(() => {
-    fetch("/api/version", { cache: "no-store" })
-      .then((r) => r.json())
-      .then((d) => setBuildVersion(d.version ?? "?"))
-      .catch(() => setBuildVersion("?"));
-  }, []);
+  const buildVersion = __BUILD_ID__;
 
   // Refresh pending count every 5 seconds and on focus
   const refreshPendingCount = useCallback(async () => {
