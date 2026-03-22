@@ -282,6 +282,7 @@ export default function AddRecord() {
           dogId: savedDogId,
           teamIdentifier: savedTeamId,
           recordedAt: new Date(savedRecordedAt).toISOString(),
+          description: savedDescription || null,
           latitude: savedLat ?? null,
           longitude: savedLng ?? null,
           areaName: savedAreaName || null,
