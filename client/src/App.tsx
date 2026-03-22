@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { toast } from "sonner";
@@ -6,11 +6,32 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { TeamProvider } from "./contexts/TeamContext";
 import Home from "./pages/Home";
-import LoginPage, { getStaffSession, type StaffSession } from "./pages/LoginPage";
+import LoginPage, { getStaffSession, setStaffSession, type StaffSession } from "./pages/LoginPage";
 import { useUpdateCheck } from "./hooks/useUpdateCheck";
+import { trpc } from "./lib/trpc";
 
-function App() {
+function AppInner() {
   const [session, setSession] = useState<StaffSession | null>(() => getStaffSession());
+  const refreshMutation = trpc.airtable.refreshSession.useMutation();
+
+  // On load: if session exists but webhookUrl is missing, silently re-fetch team data
+  useEffect(() => {
+    if (session && !session.webhookUrl && session.teamId) {
+      refreshMutation.mutate(
+        { teamId: session.teamId },
+        {
+          onSuccess: (data) => {
+            if (data.webhookUrl) {
+              const updated: StaffSession = { ...session, webhookUrl: data.webhookUrl, formUrl: data.formUrl || session.formUrl, orgName: data.orgName || session.orgName };
+              setStaffSession(updated);
+              setSession(updated);
+            }
+          },
+        }
+      );
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleLogin = (s: StaffSession) => setSession(s);
 
@@ -26,14 +47,20 @@ function App() {
   });
 
   return (
+    <TeamProvider staffSession={session}>
+      <TooltipProvider>
+        <Toaster position="top-center" />
+        {session ? <Home onLogout={() => setSession(null)} /> : <LoginPage onLogin={handleLogin} />}
+      </TooltipProvider>
+    </TeamProvider>
+  );
+}
+
+function App() {
+  return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light">
-        <TeamProvider staffSession={session}>
-          <TooltipProvider>
-            <Toaster position="top-center" />
-            {session ? <Home onLogout={() => setSession(null)} /> : <LoginPage onLogin={handleLogin} />}
-          </TooltipProvider>
-        </TeamProvider>
+        <AppInner />
       </ThemeProvider>
     </ErrorBoundary>
   );

@@ -943,6 +943,29 @@ const airtableLoginRouter = router({
         formUrl,
       };
     }),
+  // Refresh team data (webhookUrl, formUrl, orgName) using stored teamId — no password needed
+  refreshSession: publicProcedure
+    .input(z.object({ teamId: z.string() }))
+    .mutation(async ({ input }) => {
+      const apiKey = process.env.AIRTABLE_API_TOKEN;
+      if (!apiKey) throw new Error("Airtable API token not configured");
+      let webhookUrl = "";
+      let formUrl = "";
+      let orgName = "";
+      try {
+        const teamUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE}/${TEAMS_TABLE}?filterByFormula={TeamID}='${input.teamId.replace(/'/g, "\\'")}' &maxRecords=1`;
+        const teamRes = await fetch(teamUrl, { headers: { Authorization: `Bearer ${apiKey}` } });
+        if (teamRes.ok) {
+          const teamData = await teamRes.json() as { records: Array<{ fields: Record<string, string> }> };
+          if (teamData.records?.length > 0) {
+            orgName = teamData.records[0].fields["Organization"] ?? teamData.records[0].fields["organisation"] ?? "";
+            webhookUrl = teamData.records[0].fields["Webhook"] ?? teamData.records[0].fields["webhook"] ?? teamData.records[0].fields["WebhookURL"] ?? "";
+            formUrl = teamData.records[0].fields["Form"] ?? teamData.records[0].fields["form"] ?? teamData.records[0].fields["FormURL"] ?? "";
+          }
+        }
+      } catch { /* ignore */ }
+      return { webhookUrl, formUrl, orgName };
+    }),
 });
 
 export const appRouter = router({
