@@ -301,6 +301,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
   const deleteMutation = trpc.dogs.deleteRecord.useMutation();
   const geocodeMutation = trpc.dogs.geocodeLatLng.useMutation();
   const saveReleaseMutation = trpc.dogs.saveRelease.useMutation();
+  const webhookMutation = trpc.webhook.fire.useMutation();
 
   const [releasing, setReleasing] = useState(false);
   const [released, setReleased] = useState(() => !!record.releasedAt);
@@ -349,10 +350,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
     const lng = editLongitude !== "" ? parseFloat(editLongitude) : null;
     // Fire update webhook immediately (client-side, before server call)
     if (webhookUrl) {
-      fetch(webhookUrl.replace(/\/$/, "") + "/update", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const updatePayload = {
           event: "update",
           dogId: editDogId || rec.dogId,
           teamIdentifier: teamId,
@@ -364,8 +362,13 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
           gender: editGender,
           updatedByStaffId: staffSession?.staffId ?? null,
           updatedByStaffName: staffSession?.name ?? null,
-        }),
+        };
+      fetch(webhookUrl.replace(/\/$/, "") + "/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatePayload),
       }).catch((e) => console.warn("Update webhook failed:", e));
+      webhookMutation.mutate({ url: webhookUrl.replace(/\/$/, "") + "/update", payload: updatePayload });
     }
     try {
       await updateMutation.mutateAsync({
@@ -559,17 +562,19 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
           utils.dogs.getRecordsPaginated.invalidate();
           if (webhookUrl) {
             const deleteUrl = webhookUrl.replace(/\/$/, "") + "/delete";
-            fetch(deleteUrl, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
+            const deletePayload = {
                 event: "delete",
                 dogId: record.dogId,
                 teamIdentifier: teamId,
                 deletedByStaffId: staffSession?.staffId ?? null,
                 deletedByStaffName: staffSession?.name ?? null,
-              }),
+              };
+            fetch(deleteUrl, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(deletePayload),
             }).catch((e) => console.error("Delete webhook failed:", e));
+            webhookMutation.mutate({ url: deleteUrl, payload: deletePayload });
           }
           onDelete?.();
           onClose();
@@ -694,6 +699,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       }).catch((e) => console.warn("Release webhook failed:", e));
+      webhookMutation.mutate({ url: releaseUrl, payload });
 
       utils.dogs.getRecords.invalidate();
       setReleased(true);
