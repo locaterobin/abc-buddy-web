@@ -951,6 +951,27 @@ export const appRouter = router({
   releasePlans: releasePlansRouter,
   settings: settingsRouter,
   airtable: airtableLoginRouter,
+  webhook: router({
+    // Proxy a webhook call through the server to avoid CORS/mixed-content issues on mobile PWA
+    fire: publicProcedure
+      .input(z.object({
+        url: z.string().url(),
+        payload: z.record(z.string(), z.unknown()),
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          const res = await fetch(input.url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(input.payload),
+          });
+          return { ok: res.ok, status: res.status };
+        } catch (e: any) {
+          console.warn("[webhook.fire] failed:", e?.message);
+          return { ok: false, status: 0 };
+        }
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

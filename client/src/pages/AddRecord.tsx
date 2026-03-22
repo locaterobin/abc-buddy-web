@@ -88,6 +88,7 @@ export default function AddRecord() {
   const annotateMutation = trpc.dogs.annotateRecord.useMutation();
   const saveMutation = trpc.dogs.saveRecord.useMutation();
   const geocodeMutation = trpc.dogs.geocodeLatLng.useMutation();
+  const webhookMutation = trpc.webhook.fire.useMutation();
   const utils = trpc.useUtils();
 
   // Auto-set dog ID when suffix loads
@@ -272,12 +273,11 @@ export default function AddRecord() {
     const savedStaffName = staffSession?.name ?? undefined;
     const queueId = generateQueueId();
 
-    // Fire add webhook immediately (client-side, for redundancy)
+    // Fire add webhook immediately via server proxy (avoids CORS/mixed-content on mobile PWA)
     if (savedWebhookUrl) {
-      fetch(savedWebhookUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      webhookMutation.mutateAsync({
+        url: savedWebhookUrl,
+        payload: {
           event: "add",
           dogId: savedDogId,
           teamIdentifier: savedTeamId,
@@ -289,8 +289,8 @@ export default function AddRecord() {
           source: savedSource,
           addedByStaffId: savedStaffId ?? null,
           addedByStaffName: savedStaffName ?? null,
-        }),
-      }).catch((e) => console.warn("Add webhook failed:", e));
+        },
+      }).catch((e: unknown) => console.warn("Add webhook proxy failed:", e));
     }
 
     // Reset form immediately
