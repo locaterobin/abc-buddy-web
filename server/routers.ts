@@ -644,7 +644,7 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
           }
         }
       }
-      return { success: saved };
+      return { success: saved, releasePhotoUrl: releasePhotoUrl ?? null };
     }),
 
   getRecordDates: publicProcedure

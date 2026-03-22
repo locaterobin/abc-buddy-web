@@ -656,7 +656,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
     });
     try {
       // Save to DB
-      await saveReleaseMutation.mutateAsync({
+      const releaseResult = await saveReleaseMutation.mutateAsync({
         id: record.id,
         teamIdentifier: teamId,
         releasedAt,
@@ -684,6 +684,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
         releaseLongitude: longitude,
         releaseAreaName: areaName || null,
         distanceFromCapture: distanceRounded,
+        releasePhotoUrl: releaseResult?.releasePhotoUrl ?? null,
         releasedByStaffId: staffSession?.staffId ?? null,
         releasedByStaffName: staffSession?.name ?? null,
       };
