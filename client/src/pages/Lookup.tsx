@@ -631,20 +631,20 @@ export default function Lookup() {
               </div>
               <div className="flex gap-3">
                 <Button
-                  variant="default"
-                  size="sm"
-                  onClick={() => cameraInputRef.current?.click()}
-                >
-                  <Camera size={16} className="mr-1.5" />
-                  Camera
-                </Button>
-                <Button
                   variant="outline"
                   size="sm"
                   onClick={() => fileInputRef.current?.click()}
                 >
                   <Upload size={16} className="mr-1.5" />
                   Upload
+                </Button>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => cameraInputRef.current?.click()}
+                >
+                  <Camera size={16} className="mr-1.5" />
+                  Camera
                 </Button>
               </div>
               <input
