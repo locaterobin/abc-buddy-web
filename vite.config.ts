@@ -1,23 +1,19 @@
 import { jsxLocPlugin } from "@builder.io/vite-plugin-jsx-loc";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
-import { execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { defineConfig, type Plugin, type ViteDevServer } from "vite";
 import { vitePluginManusRuntime } from "vite-plugin-manus-runtime";
 
-// Bake git commit hash at build time; fall back to base-36 timestamp if git unavailable
-function getBuildId(): string {
-  try {
-    return execSync("git rev-parse --short HEAD", { stdio: ["pipe", "pipe", "ignore"] })
-      .toString()
-      .trim();
-  } catch {
-    return Date.now().toString(36);
-  }
-}
-const BUILD_ID = getBuildId();
+// Bake a human-readable build timestamp at build time (e.g. "22 Mar 17:46")
+const BUILD_ID = new Date().toLocaleString("en-GB", {
+  day: "2-digit",
+  month: "short",
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+}).replace(",", "");
 
 // =============================================================================
 // Manus Debug Collector - Vite Plugin
