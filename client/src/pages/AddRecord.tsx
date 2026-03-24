@@ -70,10 +70,13 @@ export default function AddRecord() {
   const [catchPlan, setCatchPlan] = useState<string>(() => {
     return localStorage.getItem(PLAN_STORAGE_KEY) ?? "A";
   });
+  // Track whether a plan change just happened so the useEffect always re-applies the suffix
+  const planChangedRef = useRef(false);
   const handlePlanChange = (letter: string) => {
     setCatchPlan(letter);
     localStorage.setItem(PLAN_STORAGE_KEY, letter);
-    setDogId(""); // reset so it gets recalculated for the new plan
+    planChangedRef.current = true;
+    setDogId(""); // clear so useEffect can set the new ID
     utils.dogs.getNextSuffix.invalidate();
   };
 
@@ -115,7 +118,9 @@ export default function AddRecord() {
 
   // Auto-set dog ID when suffix loads or plan changes
   useEffect(() => {
-    if (suffixQuery.data?.suffix && !dogId) {
+    // Set ID if: no ID yet, OR a plan change just happened (even if query data is same)
+    if (suffixQuery.data?.suffix && (!dogId || planChangedRef.current)) {
+      planChangedRef.current = false;
       setDogId(`${datePrefix}${catchPlan}-${suffixQuery.data.suffix}`);
     }
   }, [suffixQuery.data, datePrefix, catchPlan, dogId]);
