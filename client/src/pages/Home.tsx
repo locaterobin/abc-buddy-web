@@ -10,9 +10,20 @@ import ConfigPage from "./ConfigPage";
 import ReleasePlanPage from "./ReleasePlanPage";
 
 type Tab = "add" | "lookup" | "records" | "releases";
+const VALID_TABS: Tab[] = ["add", "lookup", "records", "releases"];
+
+function getTabFromHash(): Tab {
+  const hash = window.location.hash.replace("#", "") as Tab;
+  return VALID_TABS.includes(hash) ? hash : "add";
+}
 
 export default function Home({ onLogout }: { onLogout?: () => void }) {
-  const [activeTab, setActiveTab] = useState<Tab>("add");
+  const [activeTab, setActiveTab] = useState<Tab>(getTabFromHash);
+
+  const navigateTab = useCallback((tab: Tab) => {
+    setActiveTab(tab);
+    window.location.hash = tab;
+  }, []);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
@@ -98,20 +109,20 @@ export default function Home({ onLogout }: { onLogout?: () => void }) {
         <div className="flex">
           <TabButton
             active={activeTab === "add"}
-            onClick={() => setActiveTab("add")}
+            onClick={() => navigateTab("add")}
             icon={<PlusCircle size={20} />}
             label="Catch"
           />
           <TabButton
             active={activeTab === "lookup"}
-            onClick={() => setActiveTab("lookup")}
+            onClick={() => navigateTab("lookup")}
             icon={<Search size={20} />}
             label="Tag"
             badge={pendingCount > 0 ? pendingCount : undefined}
           />
           <TabButton
             active={activeTab === "releases"}
-            onClick={() => setActiveTab("releases")}
+            onClick={() => navigateTab("releases")}
             icon={<CalendarCheck size={20} />}
             label="Release"
           />
@@ -149,7 +160,7 @@ export default function Home({ onLogout }: { onLogout?: () => void }) {
                   active={activeTab === "records"}
                   onClick={() => {
                     setDrawerOpen(false);
-                    setActiveTab("records");
+                    navigateTab("records");
                   }}
                 />
               )}
