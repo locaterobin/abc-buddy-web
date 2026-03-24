@@ -107,7 +107,7 @@ export default function AddRecord() {
   );
   const dogIdCheck = trpc.dogs.checkDogId.useQuery(
     { teamIdentifier: teamId, dogId },
-    { enabled: !!dogId && dogId.length > 4 }
+    { enabled: !!dogId && dogId.length > 4, staleTime: 0 }
   );
   const analyzeMutation = trpc.dogs.analyzeImage.useMutation();
   const annotateMutation = trpc.dogs.annotateRecord.useMutation();
