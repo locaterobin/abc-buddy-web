@@ -253,17 +253,28 @@ export default function AddRecord() {
   );
 
   // Shared reset helper
-  const resetForm = useCallback(() => {
+  const resetForm = useCallback((lastSavedDogId?: string) => {
     setImageBase64("");
     setDescription("");
     setNotes("");
-    setDogId("");
     setAreaName("");
     setAreaNameEdited(false);
     setLatitude(null);
     setLongitude(null);
     setRecordedAt(toLocalDatetimeValue(new Date()));
     setAnalysisError("");
+    // Increment dog ID locally so the next ID is ready immediately without waiting
+    // for a server refetch (the background save may not have completed yet)
+    if (lastSavedDogId) {
+      const parts = lastSavedDogId.split("-");
+      const lastSerial = parseInt(parts[parts.length - 1], 10);
+      if (!isNaN(lastSerial)) {
+        const prefix = parts.slice(0, parts.length - 1).join("-");
+        setDogId(`${prefix}-${String(lastSerial + 1).padStart(3, "0")}`);
+        return; // skip server invalidate — we already have the next ID
+      }
+    }
+    setDogId("");
     utils.dogs.getNextSuffix.invalidate();
   }, [utils]);
 
@@ -321,8 +332,8 @@ export default function AddRecord() {
       }).catch((e: unknown) => console.warn("Add webhook proxy failed:", e));
     }
 
-    // Reset form immediately
-    resetForm();
+    // Reset form immediately — pass current dogId so next ID is incremented locally
+    resetForm(savedDogId);
     setTimeout(() => utils.dogs.getRecords.invalidate(), 6000);
 
     // Run annotation + save in background, with offline queue tracking
