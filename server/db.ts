@@ -191,7 +191,7 @@ export async function getRecordsPaginated(
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   const { page, pageSize, search, dateFrom, dateTo, releasedDateFrom, releasedDateTo, status } = opts;
-  const conditions: ReturnType<typeof eq>[] = [eq(dogRecords.teamIdentifier, teamIdentifier)];
+  const conditions: ReturnType<typeof eq>[] = [eq(dogRecords.teamIdentifier, teamIdentifier), eq(dogRecords.deleted, false) as any];
   if (search?.trim()) {
     conditions.push(like(dogRecords.dogId, `%${search.trim()}%`) as any);
   }
@@ -260,7 +260,7 @@ export async function getRecordsByTeam(teamIdentifier: string): Promise<DogRecor
   return db
     .select()
     .from(dogRecords)
-    .where(eq(dogRecords.teamIdentifier, teamIdentifier))
+    .where(and(eq(dogRecords.teamIdentifier, teamIdentifier), eq(dogRecords.deleted, false)))
     .orderBy(desc(dogRecords.createdAt));
 }
 
@@ -271,7 +271,7 @@ export async function getRecordsByTeamWithTimeRange(
 ): Promise<DogRecord[]> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const conditions = [eq(dogRecords.teamIdentifier, teamIdentifier)];
+  const conditions = [eq(dogRecords.teamIdentifier, teamIdentifier), eq(dogRecords.deleted, false) as any];
   if (sinceDate) {
     conditions.push(gte(dogRecords.recordedAt, sinceDate));
   }
@@ -291,7 +291,8 @@ export async function deleteRecordById(id: number, teamIdentifier: string): Prom
   if (!db) throw new Error("Database not available");
 
   const result = await db
-    .delete(dogRecords)
+    .update(dogRecords)
+    .set({ deleted: true })
     .where(and(eq(dogRecords.id, id), eq(dogRecords.teamIdentifier, teamIdentifier)));
 
   return (result[0] as any).affectedRows > 0;
@@ -338,7 +339,7 @@ export async function getRecordByDogId(dogId: string, teamIdentifier: string): P
   const result = await db
     .select()
     .from(dogRecords)
-    .where(and(eq(dogRecords.dogId, dogId), eq(dogRecords.teamIdentifier, teamIdentifier)))
+    .where(and(eq(dogRecords.dogId, dogId), eq(dogRecords.teamIdentifier, teamIdentifier), eq(dogRecords.deleted, false)))
     .limit(1);
 
   return result.length > 0 ? result[0] : undefined;
@@ -356,6 +357,7 @@ export async function getRecordDates(teamIdentifier: string): Promise<string[]> 
         FROM ${dogRecords}
         WHERE ${dogRecords.teamIdentifier} = ${teamIdentifier}
           AND ${dogRecords.recordedAt} >= ${utcSince}
+          AND ${dogRecords.deleted} = 0
         ORDER BY ist_date DESC`
   );
   const result = (rows[0] as unknown) as Array<{ ist_date: string | Date }>;
@@ -554,7 +556,7 @@ export async function getFullRecordByDogId(dogId: string) {
     })
     .from(dogRecords)
     .leftJoin(releasePlanDogs, eq(releasePlanDogs.dogId, dogRecords.dogId))
-    .where(eq(dogRecords.dogId, dogId))
+    .where(and(eq(dogRecords.dogId, dogId), eq(dogRecords.deleted, false)))
     .limit(1);
   return rows[0] ?? null;
 }

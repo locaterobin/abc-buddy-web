@@ -1,4 +1,4 @@
-import { double, int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { boolean, double, int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
 
 export const users = mysqlTable("users", {
   id: int("id").autoincrement().primaryKey(),
@@ -48,6 +48,8 @@ export const dogRecords = mysqlTable("dog_records", {
   // Staff who marked as released
   releasedByStaffId: varchar("releasedByStaffId", { length: 64 }),
   releasedByStaffName: varchar("releasedByStaffName", { length: 128 }),
+  // Soft delete
+  deleted: boolean("deleted").default(false).notNull(),
 });
 
 export type DogRecord = typeof dogRecords.$inferSelect;
