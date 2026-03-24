@@ -383,6 +383,25 @@ export default function AddRecord() {
 
   return (
     <div className="container py-4 pb-6 max-w-lg mx-auto space-y-4">
+      {/* Catch Plan — always visible at top */}
+      <div>
+        <label className="text-sm font-medium text-foreground mb-1.5 block">
+          Catch Plan
+        </label>
+        <Select value={catchPlan} onValueChange={handlePlanChange}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Select plan" />
+          </SelectTrigger>
+          <SelectContent>
+            {CATCH_PLANS.map((p) => (
+              <SelectItem key={p.letter} value={p.letter}>
+                {p.label} ({p.letter})
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
       {/* Upload Area */}
       {!hasImage ? (
         <Card className="border-2 border-dashed border-primary/30 bg-primary/5">
@@ -501,25 +520,6 @@ export default function AddRecord() {
 
           <Card>
             <CardContent className="py-4 space-y-4">
-              {/* Catch Plan */}
-              <div>
-                <label className="text-sm font-medium text-foreground mb-1.5 block">
-                  Catch Plan
-                </label>
-                <Select value={catchPlan} onValueChange={handlePlanChange}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select plan" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CATCH_PLANS.map((p) => (
-                      <SelectItem key={p.letter} value={p.letter}>
-                        {p.label} ({p.letter})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
               {/* Dog ID */}
               <div>
                 <label className="text-sm font-medium text-foreground mb-1.5 block">
