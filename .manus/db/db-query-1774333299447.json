@@ -1,0 +1,121 @@
+{
+  "query": "SELECT dogId, teamIdentifier, createdAt, addedByStaffName, deleted FROM dog_records WHERE teamIdentifier = 'bold-otter' ORDER BY id DESC LIMIT 20;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4YKkGxc6t8uKQwU.5f0d0a62126a --database hPjpqQFScRPNzVz7QPH5a8 --execute SELECT dogId, teamIdentifier, createdAt, addedByStaffName, deleted FROM dog_records WHERE teamIdentifier = 'bold-otter' ORDER BY id DESC LIMIT 20;",
+  "rows": [
+    {
+      "dogId": "20260324-011",
+      "teamIdentifier": "bold-otter",
+      "createdAt": "2026-03-24 06:07:50",
+      "addedByStaffName": "Sahil Bhatt",
+      "deleted": "0"
+    },
+    {
+      "dogId": "20260324-009",
+      "teamIdentifier": "bold-otter",
+      "createdAt": "2026-03-24 05:57:09",
+      "addedByStaffName": "Sahil Bhatt",
+      "deleted": "0"
+    },
+    {
+      "dogId": "20260324-008",
+      "teamIdentifier": "bold-otter",
+      "createdAt": "2026-03-24 05:43:19",
+      "addedByStaffName": "Sahil Bhatt",
+      "deleted": "0"
+    },
+    {
+      "dogId": "20260324-007",
+      "teamIdentifier": "bold-otter",
+      "createdAt": "2026-03-24 05:34:05",
+      "addedByStaffName": "Sahil Bhatt",
+      "deleted": "0"
+    },
+    {
+      "dogId": "20260324-006",
+      "teamIdentifier": "bold-otter",
+      "createdAt": "2026-03-24 05:19:05",
+      "addedByStaffName": "Sahil Bhatt",
+      "deleted": "0"
+    },
+    {
+      "dogId": "20260324-005",
+      "teamIdentifier": "bold-otter",
+      "createdAt": "2026-03-24 05:18:22",
+      "addedByStaffName": "Sahil Bhatt",
+      "deleted": "0"
+    },
+    {
+      "dogId": "20260324-004",
+      "teamIdentifier": "bold-otter",
+      "createdAt": "2026-03-24 05:06:43",
+      "addedByStaffName": "Sahil Bhatt",
+      "deleted": "0"
+    },
+    {
+      "dogId": "20260324-003",
+      "teamIdentifier": "bold-otter",
+      "createdAt": "2026-03-24 04:30:19",
+      "addedByStaffName": "Sahil Bhatt",
+      "deleted": "0"
+    },
+    {
+      "dogId": "20260324-002",
+      "teamIdentifier": "bold-otter",
+      "createdAt": "2026-03-24 04:29:23",
+      "addedByStaffName": "Sahil Bhatt",
+      "deleted": "0"
+    },
+    {
+      "dogId": "20260322-005",
+      "teamIdentifier": "bold-otter",
+      "createdAt": "2026-03-22 11:04:26",
+      "addedByStaffName": "Robin",
+      "deleted": "0"
+    },
+    {
+      "dogId": "20260322-004",
+      "teamIdentifier": "bold-otter",
+      "createdAt": "2026-03-22 10:58:10",
+      "addedByStaffName": "Robin",
+      "deleted": "0"
+    },
+    {
+      "dogId": "20260322-003",
+      "teamIdentifier": "bold-otter",
+      "createdAt": "2026-03-22 10:55:32",
+      "addedByStaffName": "Robin",
+      "deleted": "0"
+    },
+    {
+      "dogId": "20260322-002",
+      "teamIdentifier": "bold-otter",
+      "createdAt": "2026-03-22 10:54:20",
+      "addedByStaffName": "Robin",
+      "deleted": "0"
+    },
+    {
+      "dogId": "20260322-001",
+      "teamIdentifier": "bold-otter",
+      "createdAt": "2026-03-22 09:46:25",
+      "addedByStaffName": "Robin",
+      "deleted": "0"
+    }
+  ],
+  "messages": [
+    "20260324-001\tbold-otter\t2026-03-24 04:05:39\tDildeep",
+    "\t0",
+    "20260321-007\tbold-otter\t2026-03-21 05:48:38\tDildeep",
+    "\t0",
+    "20260321-006\tbold-otter\t2026-03-21 05:46:31\tDildeep",
+    "\t0",
+    "20260321-005\tbold-otter\t2026-03-21 05:34:12\tDildeep",
+    "\t0",
+    "20260321-004\tbold-otter\t2026-03-21 05:33:10\tDildeep",
+    "\t0",
+    "20260321-003\tbold-otter\t2026-03-21 05:32:19\tDildeep",
+    "\t0"
+  ],
+  "stdout": "dogId\tteamIdentifier\tcreatedAt\taddedByStaffName\tdeleted\n20260324-011\tbold-otter\t2026-03-24 06:07:50\tSahil Bhatt\t0\n20260324-009\tbold-otter\t2026-03-24 05:57:09\tSahil Bhatt\t0\n20260324-008\tbold-otter\t2026-03-24 05:43:19\tSahil Bhatt\t0\n20260324-007\tbold-otter\t2026-03-24 05:34:05\tSahil Bhatt\t0\n20260324-006\tbold-otter\t2026-03-24 05:19:05\tSahil Bhatt\t0\n20260324-005\tbold-otter\t2026-03-24 05:18:22\tSahil Bhatt\t0\n20260324-004\tbold-otter\t2026-03-24 05:06:43\tSahil Bhatt\t0\n20260324-003\tbold-otter\t2026-03-24 04:30:19\tSahil Bhatt\t0\n20260324-002\tbold-otter\t2026-03-24 04:29:23\tSahil Bhatt\t0\n20260324-001\tbold-otter\t2026-03-24 04:05:39\tDildeep\n\t0\n20260322-005\tbold-otter\t2026-03-22 11:04:26\tRobin\t0\n20260322-004\tbold-otter\t2026-03-22 10:58:10\tRobin\t0\n20260322-003\tbold-otter\t2026-03-22 10:55:32\tRobin\t0\n20260322-002\tbold-otter\t2026-03-22 10:54:20\tRobin\t0\n20260322-001\tbold-otter\t2026-03-22 09:46:25\tRobin\t0\n20260321-007\tbold-otter\t2026-03-21 05:48:38\tDildeep\n\t0\n20260321-006\tbold-otter\t2026-03-21 05:46:31\tDildeep\n\t0\n20260321-005\tbold-otter\t2026-03-21 05:34:12\tDildeep\n\t0\n20260321-004\tbold-otter\t2026-03-21 05:33:10\tDildeep\n\t0\n20260321-003\tbold-otter\t2026-03-21 05:32:19\tDildeep\n\t0\n",
+  "stderr": "",
+  "execution_time_ms": 1650
+}

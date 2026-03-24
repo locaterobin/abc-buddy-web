@@ -1,0 +1,35 @@
+{
+  "query": "SELECT dogId, imageUrl, originalImageUrl FROM dog_records WHERE teamIdentifier = 'bold-otter' AND originalImageUrl IS NOT NULL ORDER BY id DESC LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4YKkGxc6t8uKQwU.5f0d0a62126a --database hPjpqQFScRPNzVz7QPH5a8 --execute SELECT dogId, imageUrl, originalImageUrl FROM dog_records WHERE teamIdentifier = 'bold-otter' AND originalImageUrl IS NOT NULL ORDER BY id DESC LIMIT 5;",
+  "rows": [
+    {
+      "dogId": "20260324-023",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310419663032736616/hPjpqQFScRPNzVz7QPH5a8/dogs/bold-otter/20260324-010-annotated-jgNh9oaa.jpg",
+      "originalImageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310419663032736616/hPjpqQFScRPNzVz7QPH5a8/dogs/bold-otter/20260324-010-DMp-zoK7.jpg"
+    },
+    {
+      "dogId": "20260324-022",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310419663032736616/hPjpqQFScRPNzVz7QPH5a8/dogs/bold-otter/20260324-022-annotated-NFsIniKK.jpg",
+      "originalImageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310419663032736616/hPjpqQFScRPNzVz7QPH5a8/dogs/bold-otter/20260324-022-4T-gfevE.jpg"
+    },
+    {
+      "dogId": "20260324-021",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310419663032736616/hPjpqQFScRPNzVz7QPH5a8/dogs/bold-otter/20260324-021-annotated-8l5qOer5.jpg",
+      "originalImageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310419663032736616/hPjpqQFScRPNzVz7QPH5a8/dogs/bold-otter/20260324-021-9PYzYZ71.jpg"
+    },
+    {
+      "dogId": "20260324-020",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310419663032736616/hPjpqQFScRPNzVz7QPH5a8/dogs/bold-otter/20260324-020-annotated-Bsiv08ln.jpg",
+      "originalImageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310419663032736616/hPjpqQFScRPNzVz7QPH5a8/dogs/bold-otter/20260324-020-mwKDIvJ8.jpg"
+    },
+    {
+      "dogId": "20260324-019",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310419663032736616/hPjpqQFScRPNzVz7QPH5a8/dogs/bold-otter/20260324-019-annotated-DptbXzRs.jpg",
+      "originalImageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310419663032736616/hPjpqQFScRPNzVz7QPH5a8/dogs/bold-otter/20260324-019-yW9zsTFg.jpg"
+    }
+  ],
+  "messages": [],
+  "stdout": "dogId\timageUrl\toriginalImageUrl\n20260324-023\thttps://d2xsxph8kpxj0f.cloudfront.net/310419663032736616/hPjpqQFScRPNzVz7QPH5a8/dogs/bold-otter/20260324-010-annotated-jgNh9oaa.jpg\thttps://d2xsxph8kpxj0f.cloudfront.net/310419663032736616/hPjpqQFScRPNzVz7QPH5a8/dogs/bold-otter/20260324-010-DMp-zoK7.jpg\n20260324-022\thttps://d2xsxph8kpxj0f.cloudfront.net/310419663032736616/hPjpqQFScRPNzVz7QPH5a8/dogs/bold-otter/20260324-022-annotated-NFsIniKK.jpg\thttps://d2xsxph8kpxj0f.cloudfront.net/310419663032736616/hPjpqQFScRPNzVz7QPH5a8/dogs/bold-otter/20260324-022-4T-gfevE.jpg\n20260324-021\thttps://d2xsxph8kpxj0f.cloudfront.net/310419663032736616/hPjpqQFScRPNzVz7QPH5a8/dogs/bold-otter/20260324-021-annotated-8l5qOer5.jpg\thttps://d2xsxph8kpxj0f.cloudfront.net/310419663032736616/hPjpqQFScRPNzVz7QPH5a8/dogs/bold-otter/20260324-021-9PYzYZ71.jpg\n20260324-020\thttps://d2xsxph8kpxj0f.cloudfront.net/310419663032736616/hPjpqQFScRPNzVz7QPH5a8/dogs/bold-otter/20260324-020-annotated-Bsiv08ln.jpg\thttps://d2xsxph8kpxj0f.cloudfront.net/310419663032736616/hPjpqQFScRPNzVz7QPH5a8/dogs/bold-otter/20260324-020-mwKDIvJ8.jpg\n20260324-019\thttps://d2xsxph8kpxj0f.cloudfront.net/310419663032736616/hPjpqQFScRPNzVz7QPH5a8/dogs/bold-otter/20260324-019-annotated-DptbXzRs.jpg\thttps://d2xsxph8kpxj0f.cloudfront.net/310419663032736616/hPjpqQFScRPNzVz7QPH5a8/dogs/bold-otter/20260324-019-yW9zsTFg.jpg\n",
+  "stderr": "",
+  "execution_time_ms": 1515
+}

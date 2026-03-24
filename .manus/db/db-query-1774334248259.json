@@ -1,0 +1,80 @@
+{
+  "query": "SELECT dogId, imageUrl, createdAt, addedByStaffName, notes FROM dog_records WHERE teamIdentifier = 'bold-otter' AND imageUrl LIKE '%-annotated-%' AND deleted = 0 ORDER BY id DESC LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4YKkGxc6t8uKQwU.5f0d0a62126a --database hPjpqQFScRPNzVz7QPH5a8 --execute SELECT dogId, imageUrl, createdAt, addedByStaffName, notes FROM dog_records WHERE teamIdentifier = 'bold-otter' AND imageUrl LIKE '%-annotated-%' AND deleted = 0 ORDER BY id DESC LIMIT 10;",
+  "rows": [
+    {
+      "dogId": "20260324-013",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310419663032736616/hPjpqQFScRPNzVz7QPH5a8/dogs/bold-otter/20260324-013-annotated-Ydpen8tX.jpg",
+      "createdAt": "2026-03-24 06:23:24",
+      "addedByStaffName": "Sahil Bhatt",
+      "notes": "Dogb12 green head same as 11"
+    },
+    {
+      "dogId": "20260324-012",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310419663032736616/hPjpqQFScRPNzVz7QPH5a8/dogs/bold-otter/20260324-012-annotated-jzsxcUDr.jpg",
+      "createdAt": "2026-03-24 06:22:00",
+      "addedByStaffName": "Sahil Bhatt",
+      "notes": "Dog 11 ,rodi"
+    },
+    {
+      "dogId": "20260324-011",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310419663032736616/hPjpqQFScRPNzVz7QPH5a8/dogs/bold-otter/20260324-010-annotated-my5nmfH_.jpg",
+      "createdAt": "2026-03-24 06:07:50",
+      "addedByStaffName": "Sahil Bhatt",
+      "notes": "Dog 10 rodi"
+    },
+    {
+      "dogId": "20260324-009",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310419663032736616/hPjpqQFScRPNzVz7QPH5a8/dogs/bold-otter/20260324-009-annotated-Gm9n0k_M.jpg",
+      "createdAt": "2026-03-24 05:57:09",
+      "addedByStaffName": "Sahil Bhatt",
+      "notes": "Dog 8 , mount carmel"
+    },
+    {
+      "dogId": "20260324-008",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310419663032736616/hPjpqQFScRPNzVz7QPH5a8/dogs/bold-otter/20260324-008-annotated-RD-dzlus.jpg",
+      "createdAt": "2026-03-24 05:43:19",
+      "addedByStaffName": "Sahil Bhatt",
+      "notes": "Dog 7 , indian oil pump thakurdwara"
+    },
+    {
+      "dogId": "20260324-007",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310419663032736616/hPjpqQFScRPNzVz7QPH5a8/dogs/bold-otter/20260324-007-annotated-OoDKWgX-.jpg",
+      "createdAt": "2026-03-24 05:34:05",
+      "addedByStaffName": "Sahil Bhatt",
+      "notes": "Dog 6, abm school"
+    },
+    {
+      "dogId": "20260324-006",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310419663032736616/hPjpqQFScRPNzVz7QPH5a8/dogs/bold-otter/20260324-006-annotated-tCzJ9jco.jpg",
+      "createdAt": "2026-03-24 05:19:05",
+      "addedByStaffName": "Sahil Bhatt",
+      "notes": "Dog 5 same as 4"
+    },
+    {
+      "dogId": "20260324-005",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310419663032736616/hPjpqQFScRPNzVz7QPH5a8/dogs/bold-otter/20260324-005-annotated-tFdqnxvR.jpg",
+      "createdAt": "2026-03-24 05:18:22",
+      "addedByStaffName": "Sahil Bhatt",
+      "notes": "Dog 4 ,furry , maranda down railway"
+    },
+    {
+      "dogId": "20260324-004",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310419663032736616/hPjpqQFScRPNzVz7QPH5a8/dogs/bold-otter/20260324-004-annotated-EckaBx1N.jpg",
+      "createdAt": "2026-03-24 05:06:43",
+      "addedByStaffName": "Sahil Bhatt",
+      "notes": "Dog 3 near railway"
+    },
+    {
+      "dogId": "20260324-003",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310419663032736616/hPjpqQFScRPNzVz7QPH5a8/dogs/bold-otter/20260324-003-annotated-YIdGvoOh.jpg",
+      "createdAt": "2026-03-24 04:30:19",
+      "addedByStaffName": "Sahil Bhatt",
+      "notes": "Dog 2 , pregnant female"
+    }
+  ],
+  "messages": [],
+  "stdout": "dogId\timageUrl\tcreatedAt\taddedByStaffName\tnotes\n20260324-013\thttps://d2xsxph8kpxj0f.cloudfront.net/310419663032736616/hPjpqQFScRPNzVz7QPH5a8/dogs/bold-otter/20260324-013-annotated-Ydpen8tX.jpg\t2026-03-24 06:23:24\tSahil Bhatt\tDogb12 green head same as 11\n20260324-012\thttps://d2xsxph8kpxj0f.cloudfront.net/310419663032736616/hPjpqQFScRPNzVz7QPH5a8/dogs/bold-otter/20260324-012-annotated-jzsxcUDr.jpg\t2026-03-24 06:22:00\tSahil Bhatt\tDog 11 ,rodi\n20260324-011\thttps://d2xsxph8kpxj0f.cloudfront.net/310419663032736616/hPjpqQFScRPNzVz7QPH5a8/dogs/bold-otter/20260324-010-annotated-my5nmfH_.jpg\t2026-03-24 06:07:50\tSahil Bhatt\tDog 10 rodi\n20260324-009\thttps://d2xsxph8kpxj0f.cloudfront.net/310419663032736616/hPjpqQFScRPNzVz7QPH5a8/dogs/bold-otter/20260324-009-annotated-Gm9n0k_M.jpg\t2026-03-24 05:57:09\tSahil Bhatt\tDog 8 , mount carmel\n20260324-008\thttps://d2xsxph8kpxj0f.cloudfront.net/310419663032736616/hPjpqQFScRPNzVz7QPH5a8/dogs/bold-otter/20260324-008-annotated-RD-dzlus.jpg\t2026-03-24 05:43:19\tSahil Bhatt\tDog 7 , indian oil pump thakurdwara\n20260324-007\thttps://d2xsxph8kpxj0f.cloudfront.net/310419663032736616/hPjpqQFScRPNzVz7QPH5a8/dogs/bold-otter/20260324-007-annotated-OoDKWgX-.jpg\t2026-03-24 05:34:05\tSahil Bhatt\tDog 6, abm school\n20260324-006\thttps://d2xsxph8kpxj0f.cloudfront.net/310419663032736616/hPjpqQFScRPNzVz7QPH5a8/dogs/bold-otter/20260324-006-annotated-tCzJ9jco.jpg\t2026-03-24 05:19:05\tSahil Bhatt\tDog 5 same as 4\n20260324-005\thttps://d2xsxph8kpxj0f.cloudfront.net/310419663032736616/hPjpqQFScRPNzVz7QPH5a8/dogs/bold-otter/20260324-005-annotated-tFdqnxvR.jpg\t2026-03-24 05:18:22\tSahil Bhatt\tDog 4 ,furry , maranda down railway\n20260324-004\thttps://d2xsxph8kpxj0f.cloudfront.net/310419663032736616/hPjpqQFScRPNzVz7QPH5a8/dogs/bold-otter/20260324-004-annotated-EckaBx1N.jpg\t2026-03-24 05:06:43\tSahil Bhatt\tDog 3 near railway\n20260324-003\thttps://d2xsxph8kpxj0f.cloudfront.net/310419663032736616/hPjpqQFScRPNzVz7QPH5a8/dogs/bold-otter/20260324-003-annotated-YIdGvoOh.jpg\t2026-03-24 04:30:19\tSahil Bhatt\tDog 2 , pregnant female\n",
+  "stderr": "",
+  "execution_time_ms": 1592
+}

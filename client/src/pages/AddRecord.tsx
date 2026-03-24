@@ -319,24 +319,9 @@ export default function AddRecord() {
       // Show a dismissible pending toast
       const toastId = toast.loading(`Saving ${savedDogId}…`, { duration: Infinity });
 
-      // Annotate camera photos before saving
-      let finalImageBase64 = savedImageBase64;
-      if (savedSource === "camera") {
-        try {
-          const annotated = await annotateMutation.mutateAsync({
-            imageBase64: savedImageBase64,
-            dogId: savedDogId,
-            recordedAt: new Date(savedRecordedAt).toISOString(),
-            areaName: savedAreaName || undefined,
-            latitude: savedLat ?? undefined,
-            longitude: savedLng ?? undefined,
-            notes: savedNotes || undefined,
-          });
-          finalImageBase64 = annotated.annotatedBase64;
-        } catch (e) {
-          console.warn("Annotation failed, saving without annotation:", e);
-        }
-      }
+      // Client-side pre-annotation removed — saveRecord handles annotation server-side.
+      // This avoids sending the image twice and prevents double-annotation.
+      const finalImageBase64 = savedImageBase64;
 
       try {
         await saveMutation.mutateAsync({
