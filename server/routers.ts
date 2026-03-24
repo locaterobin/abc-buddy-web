@@ -72,9 +72,9 @@ const dogsRouter = router({
   }),
 
   getNextSuffix: publicProcedure
-    .input(z.object({ teamIdentifier: z.string(), datePrefix: z.string() }))
+    .input(z.object({ teamIdentifier: z.string(), datePrefix: z.string(), planLetter: z.string().optional() }))
     .query(async ({ input }) => {
-      const suffix = await getNextDogIdSuffix(input.teamIdentifier, input.datePrefix);
+      const suffix = await getNextDogIdSuffix(input.teamIdentifier, input.datePrefix, input.planLetter);
       return { suffix };
     }),
 

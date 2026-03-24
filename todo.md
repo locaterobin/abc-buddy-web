@@ -285,3 +285,11 @@
 ## Header Org Name from Teams Table
 - [x] Fetch Organization field from abc-teams table during login using staff's teamId
 - [x] Store orgName in StaffSession and display as staffName @ orgName in header
+
+## Catch Plan Feature
+- [x] Add Catch Plan dropdown (Alpha/Beta/Charlie/Delta/Echo) to Add Record screen
+- [x] Persist selected plan to localStorage
+- [x] Dog IDs use format YYYYMMDD[A-E]-NNN (e.g. 20260324A-001)
+- [x] Each plan has its own independent serial counter per day
+- [x] Update getNextDogIdSuffix in db.ts to scope by planLetter
+- [x] Update getNextSuffix tRPC procedure to accept planLetter

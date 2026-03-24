@@ -90,11 +90,14 @@ export async function getUserByOpenId(openId: string) {
 
 // ─── Dog Record Helpers ───
 
-export async function getNextDogIdSuffix(teamIdentifier: string, datePrefix: string): Promise<string> {
+export async function getNextDogIdSuffix(teamIdentifier: string, datePrefix: string, planLetter?: string): Promise<string> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const pattern = `${datePrefix}-%`;
+  // If a plan letter is provided, scope the counter to that plan (e.g. 20260324A-)
+  // Otherwise fall back to the legacy format (20260324-)
+  const prefix = planLetter ? `${datePrefix}${planLetter}` : datePrefix;
+  const pattern = `${prefix}-%`;
   const result = await db
     .select({ dogId: dogRecords.dogId })
     .from(dogRecords)
@@ -105,7 +108,9 @@ export async function getNextDogIdSuffix(teamIdentifier: string, datePrefix: str
   if (result.length === 0) return "001";
 
   const lastId = result[0].dogId;
-  const suffix = parseInt(lastId.split("-")[1], 10);
+  // Serial is always the part after the last "-"
+  const parts = lastId.split("-");
+  const suffix = parseInt(parts[parts.length - 1], 10);
   return String(suffix + 1).padStart(3, "0");
 }
 

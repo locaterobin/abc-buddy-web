@@ -20,6 +20,17 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { enqueueRecord, removeFromQueue, updateQueueStatus } from "@/hooks/useOfflineQueue";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+const CATCH_PLANS = [
+  { label: "Alpha", letter: "A" },
+  { label: "Beta",  letter: "B" },
+  { label: "Charlie", letter: "C" },
+  { label: "Delta", letter: "D" },
+  { label: "Echo",  letter: "E" },
+] as const;
+
+const PLAN_STORAGE_KEY = "abc-buddy-catch-plan";
 
 function generateQueueId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
@@ -55,6 +66,17 @@ export default function AddRecord() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
+  // Catch plan — persisted to localStorage
+  const [catchPlan, setCatchPlan] = useState<string>(() => {
+    return localStorage.getItem(PLAN_STORAGE_KEY) ?? "A";
+  });
+  const handlePlanChange = (letter: string) => {
+    setCatchPlan(letter);
+    localStorage.setItem(PLAN_STORAGE_KEY, letter);
+    setDogId(""); // reset so it gets recalculated for the new plan
+    utils.dogs.getNextSuffix.invalidate();
+  };
+
   // Image state
   const [imageBase64, setImageBase64] = useState<string>("");
   const [imageSource, setImageSource] = useState<ImageSource>("upload");
@@ -77,7 +99,7 @@ export default function AddRecord() {
 
   // Queries & mutations
   const suffixQuery = trpc.dogs.getNextSuffix.useQuery(
-    { teamIdentifier: teamId, datePrefix },
+    { teamIdentifier: teamId, datePrefix, planLetter: catchPlan },
     { enabled: !!teamId }
   );
   const dogIdCheck = trpc.dogs.checkDogId.useQuery(
@@ -91,12 +113,12 @@ export default function AddRecord() {
   const webhookMutation = trpc.webhook.fire.useMutation();
   const utils = trpc.useUtils();
 
-  // Auto-set dog ID when suffix loads
+  // Auto-set dog ID when suffix loads or plan changes
   useEffect(() => {
     if (suffixQuery.data?.suffix && !dogId) {
-      setDogId(`${datePrefix}-${suffixQuery.data.suffix}`);
+      setDogId(`${datePrefix}${catchPlan}-${suffixQuery.data.suffix}`);
     }
-  }, [suffixQuery.data, datePrefix, dogId]);
+  }, [suffixQuery.data, datePrefix, catchPlan, dogId]);
 
   // Reverse geocode helper
   const geocode = useCallback(
@@ -479,6 +501,25 @@ export default function AddRecord() {
 
           <Card>
             <CardContent className="py-4 space-y-4">
+              {/* Catch Plan */}
+              <div>
+                <label className="text-sm font-medium text-foreground mb-1.5 block">
+                  Catch Plan
+                </label>
+                <Select value={catchPlan} onValueChange={handlePlanChange}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select plan" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CATCH_PLANS.map((p) => (
+                      <SelectItem key={p.letter} value={p.letter}>
+                        {p.label} ({p.letter})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               {/* Dog ID */}
               <div>
                 <label className="text-sm font-medium text-foreground mb-1.5 block">
@@ -488,7 +529,7 @@ export default function AddRecord() {
                   <Input
                     value={dogId}
                     onChange={(e) => setDogId(e.target.value)}
-                    placeholder="YYYYMMDD-NNN"
+                    placeholder="YYYYMMDDP-NNN"
                     className="font-mono pr-10"
                   />
                   <div className="absolute right-3 top-1/2 -translate-y-1/2">
