@@ -78,7 +78,18 @@ export default function Home({ onLogout }: { onLogout?: () => void }) {
           </div>
           <div className="flex flex-col">
             <h1 className="text-lg font-semibold text-foreground leading-tight">ABC Buddy</h1>
-            <span className="text-[10px] font-mono text-muted-foreground leading-tight">build {buildVersion}</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-mono text-muted-foreground leading-tight">build {buildVersion}</span>
+              <a
+                href="/"
+                onClick={(e) => { e.preventDefault(); window.location.reload(); }}
+                title="Download / install latest version"
+                className="text-[10px] text-primary hover:text-primary/80 leading-tight flex items-center gap-0.5"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                <span>update</span>
+              </a>
+            </div>
           </div>
         </div>
 

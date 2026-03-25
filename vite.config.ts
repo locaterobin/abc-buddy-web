@@ -6,14 +6,14 @@ import path from "node:path";
 import { defineConfig, type Plugin, type ViteDevServer } from "vite";
 import { vitePluginManusRuntime } from "vite-plugin-manus-runtime";
 
-// Bake a human-readable build timestamp at build time (e.g. "22 Mar 17:46")
-const BUILD_ID = new Date().toLocaleString("en-GB", {
-  day: "2-digit",
-  month: "short",
-  hour: "2-digit",
-  minute: "2-digit",
-  hour12: false,
-}).replace(",", "");
+// Bake a human-readable build timestamp at build time in YYMMDD HH:MM IST format
+const _buildDate = new Date(Date.now() + 5.5 * 60 * 60 * 1000); // UTC → IST
+const _yy = String(_buildDate.getUTCFullYear()).slice(2);
+const _mm = String(_buildDate.getUTCMonth() + 1).padStart(2, "0");
+const _dd = String(_buildDate.getUTCDate()).padStart(2, "0");
+const _hh = String(_buildDate.getUTCHours()).padStart(2, "0");
+const _min = String(_buildDate.getUTCMinutes()).padStart(2, "0");
+const BUILD_ID = `${_yy}${_mm}${_dd} ${_hh}:${_min} IST`;
 
 // =============================================================================
 // Manus Debug Collector - Vite Plugin
