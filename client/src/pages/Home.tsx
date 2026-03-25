@@ -28,9 +28,54 @@ export default function Home({ onLogout }: { onLogout?: () => void }) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
   const [pendingCount, setPendingCount] = useState(0);
+  const [updateStatus, setUpdateStatus] = useState<"idle" | "checking" | "updated" | "latest">("idle");
   const { staffSession } = useTeam();
   const isManager = staffSession?.role?.toLowerCase() === "manager";
   const buildVersion = __BUILD_ID__;
+
+  const handleCheckForUpdate = useCallback(async () => {
+    setUpdateStatus("checking");
+    try {
+      if ("serviceWorker" in navigator) {
+        const reg = await navigator.serviceWorker.getRegistration();
+        if (reg) {
+          await reg.update();
+          // If a new SW is waiting, activate it
+          if (reg.waiting) {
+            reg.waiting.postMessage({ type: "SKIP_WAITING" });
+            setUpdateStatus("updated");
+            setTimeout(() => window.location.reload(), 800);
+            return;
+          }
+          // Listen for a new SW installing
+          let resolved = false;
+          const timeout = setTimeout(() => {
+            if (!resolved) { resolved = true; setUpdateStatus("latest"); }
+          }, 4000);
+          reg.addEventListener("updatefound", () => {
+            const newSW = reg.installing;
+            if (!newSW) return;
+            newSW.addEventListener("statechange", () => {
+              if (newSW.state === "installed" && navigator.serviceWorker.controller) {
+                if (!resolved) {
+                  resolved = true;
+                  clearTimeout(timeout);
+                  newSW.postMessage({ type: "SKIP_WAITING" });
+                  setUpdateStatus("updated");
+                  setTimeout(() => window.location.reload(), 800);
+                }
+              }
+            });
+          });
+          return;
+        }
+      }
+      // Fallback: hard reload
+      window.location.reload();
+    } catch {
+      window.location.reload();
+    }
+  }, []);
 
   // Refresh pending count every 5 seconds and on focus
   const refreshPendingCount = useCallback(async () => {
@@ -78,18 +123,7 @@ export default function Home({ onLogout }: { onLogout?: () => void }) {
           </div>
           <div className="flex flex-col">
             <h1 className="text-lg font-semibold text-foreground leading-tight">ABC Buddy</h1>
-            <div className="flex items-center gap-1.5">
-              <span className="text-[10px] font-mono text-muted-foreground leading-tight">build {buildVersion}</span>
-              <a
-                href="/"
-                onClick={(e) => { e.preventDefault(); window.location.reload(); }}
-                title="Download / install latest version"
-                className="text-[10px] text-primary hover:text-primary/80 leading-tight flex items-center gap-0.5"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                <span>update</span>
-              </a>
-            </div>
+            <span className="text-[10px] font-mono text-muted-foreground leading-tight">build {buildVersion}</span>
           </div>
         </div>
 
@@ -164,6 +198,24 @@ export default function Home({ onLogout }: { onLogout?: () => void }) {
 
             {/* Drawer items */}
             <div className="flex-1 py-2">
+              <DrawerItem
+                icon={
+                  updateStatus === "checking" ? (
+                    <svg className="animate-spin" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+                  ) : updateStatus === "updated" ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  )
+                }
+                label={
+                  updateStatus === "checking" ? "Checking..." :
+                  updateStatus === "updated" ? "Updating..." :
+                  updateStatus === "latest" ? "Already up to date" :
+                  "Check for Update"
+                }
+                onClick={() => { handleCheckForUpdate(); }}
+              />
               {isManager && (
                 <DrawerItem
                   icon={<ClipboardList size={18} />}
