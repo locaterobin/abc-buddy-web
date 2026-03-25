@@ -13,7 +13,7 @@ const _mm = String(_buildDate.getUTCMonth() + 1).padStart(2, "0");
 const _dd = String(_buildDate.getUTCDate()).padStart(2, "0");
 const _hh = String(_buildDate.getUTCHours()).padStart(2, "0");
 const _min = String(_buildDate.getUTCMinutes()).padStart(2, "0");
-const BUILD_ID = `${_yy}${_mm}${_dd} ${_hh}:${_min} IST`;
+const BUILD_ID = `${_yy}${_mm}${_dd} ${_hh}:${_min}`;
 
 // =============================================================================
 // Manus Debug Collector - Vite Plugin

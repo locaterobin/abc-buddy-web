@@ -106,6 +106,9 @@ export default function Lookup() {
   const [timeRange, setTimeRange] = useState<string>(
     () => localStorage.getItem("lookup-date-selection") ?? ""
   );
+  const [planFilter, setPlanFilter] = useState<string>(
+    () => localStorage.getItem("lookup-plan-filter") ?? "all"
+  );
   const [imageBase64, setImageBase64] = useState("");
   const [selectedRecord, setSelectedRecord] = useState<any>(null);
 
@@ -197,6 +200,22 @@ export default function Lookup() {
     }
   }, [recordDates, timeRange]);
 
+  // Plan letter filter — derived from dogId prefix (e.g. 20260324A-001 → "A")
+  const PLAN_OPTIONS = [
+    { value: "all", label: "All" },
+    { value: "A", label: "Alpha" },
+    { value: "B", label: "Beta" },
+    { value: "C", label: "Charlie" },
+    { value: "D", label: "Delta" },
+    { value: "E", label: "Echo" },
+  ];
+
+  function getPlanLetter(dogId: string): string {
+    // dogId format: YYYYMMDD[A-E]-NNN
+    const match = dogId?.match(/^\d{8}([A-E])-/);
+    return match ? match[1] : "";
+  }
+
   // Default list: all records in the selected time range (no photo needed)
   const { dateFrom, dateTo } = timeRangeToDateFilter(timeRange);
   const defaultListQuery = trpc.dogs.getRecordsPaginated.useQuery(
@@ -224,7 +243,10 @@ export default function Lookup() {
 
   // Show cached records whenever server data is not yet available (offline, loading, or error)
   const serverRecords = defaultListQuery.data?.records;
-  const defaultRecords: any[] = serverRecords ?? filterCachedByTimeRange(cachedRecords, timeRange);
+  const allDefaultRecords: any[] = serverRecords ?? filterCachedByTimeRange(cachedRecords, timeRange);
+  const defaultRecords: any[] = planFilter === "all"
+    ? allDefaultRecords
+    : allDefaultRecords.filter((r) => getPlanLetter(r.dogId) === planFilter);
 
   const handleFile = useCallback(async (file: File) => {
     try {
@@ -588,6 +610,26 @@ export default function Lookup() {
       >
         <RefreshCw size={16} className={isSyncing ? "animate-spin" : ""} />
       </Button>
+      </div>
+
+      {/* Catch Plan Filter Pills */}
+      <div className="flex gap-1.5 flex-wrap">
+        {PLAN_OPTIONS.map((opt) => (
+          <button
+            key={opt.value}
+            onClick={() => {
+              setPlanFilter(opt.value);
+              localStorage.setItem("lookup-plan-filter", opt.value);
+            }}
+            className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors border ${
+              planFilter === opt.value
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-transparent text-muted-foreground border-border hover:border-primary/50 hover:text-foreground"
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
       </div>
 
       {/* Upload Area */}
