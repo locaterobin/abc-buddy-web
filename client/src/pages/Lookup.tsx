@@ -849,6 +849,15 @@ export default function Lookup() {
                           Checked
                         </span>
                       )}
+                      {rec.gender && rec.gender !== "Unknown" && (
+                        <span className={`inline-flex items-center text-[10px] font-semibold px-1.5 py-0.5 rounded-full border ${
+                          rec.gender === "Male"
+                            ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400 border-blue-300/50"
+                            : "bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-400 border-pink-300/50"
+                        }`}>
+                          {rec.gender}
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
                       <Clock size={12} />

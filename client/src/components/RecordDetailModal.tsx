@@ -912,10 +912,21 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
           ) : (
             /* ── VIEW MODE ── */
             <>
-              {/* Capture date */}
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Clock size={16} className="flex-shrink-0" />
-                <span>{formatDate(rec.recordedAt)}</span>
+              {/* Capture date + gender */}
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Clock size={16} className="flex-shrink-0" />
+                  <span>{formatDate(rec.recordedAt)}</span>
+                </div>
+                {rec.gender && rec.gender !== "Unknown" && (
+                  <span className={`inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full border ${
+                    rec.gender === "Male"
+                      ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400 border-blue-300/50"
+                      : "bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-400 border-pink-300/50"
+                  }`}>
+                    {rec.gender}
+                  </span>
+                )}
               </div>
 
               {/* Capture location */}
