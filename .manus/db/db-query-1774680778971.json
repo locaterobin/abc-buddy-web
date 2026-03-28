@@ -1,0 +1,70 @@
+{
+  "query": "SELECT dogId, gender FROM dog_records ORDER BY createdAt DESC LIMIT 15;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4YKkGxc6t8uKQwU.5f0d0a62126a --database hPjpqQFScRPNzVz7QPH5a8 --execute SELECT dogId, gender FROM dog_records ORDER BY createdAt DESC LIMIT 15;",
+  "rows": [
+    {
+      "dogId": "20260327A-020",
+      "gender": "Male"
+    },
+    {
+      "dogId": "20260327A-019",
+      "gender": "Unknown"
+    },
+    {
+      "dogId": "20260327A-018",
+      "gender": "Unknown"
+    },
+    {
+      "dogId": "20260327A-017",
+      "gender": "Unknown"
+    },
+    {
+      "dogId": "20260327B-002",
+      "gender": "Unknown"
+    },
+    {
+      "dogId": "20260327B-001",
+      "gender": "Unknown"
+    },
+    {
+      "dogId": "20260327A-016",
+      "gender": "Female"
+    },
+    {
+      "dogId": "20260327A-015",
+      "gender": "Male"
+    },
+    {
+      "dogId": "20260327A-014",
+      "gender": "Unknown"
+    },
+    {
+      "dogId": "20260327A-013",
+      "gender": "Female"
+    },
+    {
+      "dogId": "20260327A-012",
+      "gender": "Unknown"
+    },
+    {
+      "dogId": "20260327A-011",
+      "gender": "Unknown"
+    },
+    {
+      "dogId": "20260327A-010",
+      "gender": "Unknown"
+    },
+    {
+      "dogId": "20260327A-009",
+      "gender": "Unknown"
+    },
+    {
+      "dogId": "20260327A-008",
+      "gender": "Unknown"
+    }
+  ],
+  "messages": [],
+  "stdout": "dogId\tgender\n20260327A-020\tMale\n20260327A-019\tUnknown\n20260327A-018\tUnknown\n20260327A-017\tUnknown\n20260327B-002\tUnknown\n20260327B-001\tUnknown\n20260327A-016\tFemale\n20260327A-015\tMale\n20260327A-014\tUnknown\n20260327A-013\tFemale\n20260327A-012\tUnknown\n20260327A-011\tUnknown\n20260327A-010\tUnknown\n20260327A-009\tUnknown\n20260327A-008\tUnknown\n",
+  "stderr": "",
+  "execution_time_ms": 1628
+}

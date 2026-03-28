@@ -152,6 +152,7 @@ export async function updateDogRecord(
     latitude?: number | null;
     longitude?: number | null;
     recordedAt?: Date;
+    gender?: "Unknown" | "Male" | "Female";
     updatedByStaffId?: string | null;
     updatedByStaffName?: string | null;
     updatedAt?: Date;
@@ -507,6 +508,7 @@ export async function getReleasePlanDogs(planId: number) {
       releaseAreaName: dogRecords.releaseAreaName,
       releaseDistanceMetres: dogRecords.releaseDistanceMetres,
       notes: dogRecords.notes,
+      gender: dogRecords.gender,
       createdAt: dogRecords.createdAt,
       addedByStaffId: dogRecords.addedByStaffId,
       addedByStaffName: dogRecords.addedByStaffName,
@@ -550,6 +552,7 @@ export async function getFullRecordByDogId(dogId: string) {
       releaseAreaName: dogRecords.releaseAreaName,
       releaseDistanceMetres: dogRecords.releaseDistanceMetres,
       notes: dogRecords.notes,
+      gender: dogRecords.gender,
       createdAt: dogRecords.createdAt,
       addedByStaffId: dogRecords.addedByStaffId,
       addedByStaffName: dogRecords.addedByStaffName,
