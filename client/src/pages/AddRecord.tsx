@@ -19,7 +19,7 @@ import {
   RotateCcw,
   AlertCircle,
 } from "lucide-react";
-import { enqueueRecord, removeFromQueue, updateQueueStatus } from "@/hooks/useOfflineQueue";
+import { enqueueRecord, removeFromQueue, updateQueueStatus, getPendingRecords, type PendingRecord } from "@/hooks/useOfflineQueue";
 import { logEvent } from "@/lib/appLog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -113,6 +113,19 @@ export default function AddRecord() {
   const [gpsLoading, setGpsLoading] = useState(false);
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [analysisError, setAnalysisError] = useState("");
+
+  // Pending sync count — polls IndexedDB every 3 s
+  const [pendingCount, setPendingCount] = useState(0);
+  useEffect(() => {
+    if (!teamId) return;
+    const refresh = () =>
+      getPendingRecords(teamId).then((recs: PendingRecord[]) =>
+        setPendingCount(recs.filter((r) => r.status === "pending" || r.status === "syncing").length)
+      );
+    refresh();
+    const id = setInterval(refresh, 3000);
+    return () => clearInterval(id);
+  }, [teamId]);
 
   // Queries & mutations
   const suffixQuery = trpc.dogs.getNextSuffix.useQuery(
@@ -321,8 +334,19 @@ export default function AddRecord() {
       return;
     }
 
-    // Log immediately — first thing before any async work
-    logEvent("info", `Save pressed for ${dogId}`, dogId);
+    // Log immediately — first thing before any async work, with full record data
+    logEvent("info", JSON.stringify({
+      event: "save_pressed",
+      dogId,
+      team: teamId,
+      staff: staffSession?.name ?? null,
+      area: areaName || null,
+      lat: latitude ?? null,
+      lng: longitude ?? null,
+      notes: notes || null,
+      source: imageSource,
+      recordedAt: new Date(recordedAt).toISOString(),
+    }), dogId);
 
     // Snapshot values before reset
     const savedDogId = dogId;
@@ -431,6 +455,14 @@ export default function AddRecord() {
 
   return (
     <div className="container py-4 pb-6 max-w-lg mx-auto space-y-4">
+      {/* Pending sync badge */}
+      {pendingCount > 0 && (
+        <div className="flex items-center gap-2 rounded-md bg-amber-500/15 border border-amber-500/40 px-3 py-2 text-sm text-amber-700 dark:text-amber-300">
+          <Loader2 className="animate-spin" size={14} />
+          <span>{pendingCount} record{pendingCount !== 1 ? "s" : ""} pending sync</span>
+        </div>
+      )}
+
       {/* Catch Plan — always visible at top */}
       <div>
         <label className="text-sm font-medium text-foreground mb-1.5 block">

@@ -299,3 +299,7 @@
 - [x] Client-side activity log stored in IndexedDB (appLog utility, capped at 500 entries)
 - [x] AddRecord instrumented with logEvent calls (queued, save attempt, save confirmed, save failed)
 - [x] Activity Log viewer in hamburger menu (IST timestamps, colour-coded by level, copy + clear buttons)
+
+## Activity Log & Pending Sync Badge
+- [x] Enrich "Save pressed" log entry with full record data (dogId, team, staff, area, lat/lng, notes, source, recordedAt)
+- [x] Add amber "X records pending sync" badge at top of Catching screen (polls IndexedDB every 3 s)
