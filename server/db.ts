@@ -527,7 +527,7 @@ export async function getReleasePlanDogs(planId: number) {
   return rows;
 }
 
-export async function getFullRecordByDogId(dogId: string) {
+export async function getFullRecordByDogId(dogId: string, teamIdentifier?: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   const rows = await db
@@ -564,15 +564,22 @@ export async function getFullRecordByDogId(dogId: string) {
     })
     .from(dogRecords)
     .leftJoin(releasePlanDogs, eq(releasePlanDogs.dogId, dogRecords.dogId))
-    .where(and(eq(dogRecords.dogId, dogId), eq(dogRecords.deleted, false)))
+    .where(and(
+      eq(dogRecords.dogId, dogId),
+      eq(dogRecords.deleted, false),
+      ...(teamIdentifier ? [eq(dogRecords.teamIdentifier, teamIdentifier)] : [])
+    ))
     .limit(1);
   return rows[0] ?? null;
 }
 
-export async function updateCheckedPhotoUrl(dogId: string, photo2Url: string): Promise<void> {
+export async function updateCheckedPhotoUrl(dogId: string, photo2Url: string, teamIdentifier?: string): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.update(dogRecords).set({ photo2Url }).where(eq(dogRecords.dogId, dogId));
+  const conditions = teamIdentifier
+    ? and(eq(dogRecords.dogId, dogId), eq(dogRecords.teamIdentifier, teamIdentifier))
+    : eq(dogRecords.dogId, dogId);
+  await db.update(dogRecords).set({ photo2Url }).where(conditions);
 }
 
 export async function addDogToReleasePlan(planId: number, dogId: string, photo2Url?: string, staffId?: string | null, staffName?: string | null): Promise<boolean> {

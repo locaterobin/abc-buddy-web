@@ -1,0 +1,46 @@
+{
+  "query": "SELECT dogId, teamIdentifier, recordedAt, areaName FROM dog_records WHERE dogId IN ('20260403A-001','20260403A-002','20260403A-003','20260403A-015') ORDER BY dogId, recordedAt;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4YKkGxc6t8uKQwU.5f0d0a62126a --database hPjpqQFScRPNzVz7QPH5a8 --execute SELECT dogId, teamIdentifier, recordedAt, areaName FROM dog_records WHERE dogId IN ('20260403A-001','20260403A-002','20260403A-003','20260403A-015') ORDER BY dogId, recordedAt;",
+  "rows": [
+    {
+      "dogId": "20260403A-001",
+      "teamIdentifier": "bold-otter",
+      "recordedAt": "2026-04-03 03:00:00",
+      "areaName": "SH17, Palampur"
+    },
+    {
+      "dogId": "20260403A-001",
+      "teamIdentifier": "giant-crab",
+      "recordedAt": "2026-04-03 04:32:00",
+      "areaName": "Yadav colony, Sagar"
+    },
+    {
+      "dogId": "20260403A-002",
+      "teamIdentifier": "bold-otter",
+      "recordedAt": "2026-04-03 03:13:00",
+      "areaName": "NH 20, Palampur"
+    },
+    {
+      "dogId": "20260403A-002",
+      "teamIdentifier": "giant-crab",
+      "recordedAt": "2026-04-03 05:36:00",
+      "areaName": "Yadav Colony, Sagar"
+    },
+    {
+      "dogId": "20260403A-003",
+      "teamIdentifier": "bold-otter",
+      "recordedAt": "2026-04-03 03:25:00",
+      "areaName": "Palampur"
+    },
+    {
+      "dogId": "20260403A-003",
+      "teamIdentifier": "giant-crab",
+      "recordedAt": "2026-04-03 06:10:00",
+      "areaName": "Yadav colony, Sagar"
+    }
+  ],
+  "messages": [],
+  "stdout": "dogId\tteamIdentifier\trecordedAt\tareaName\n20260403A-001\tbold-otter\t2026-04-03 03:00:00\tSH17, Palampur\n20260403A-001\tgiant-crab\t2026-04-03 04:32:00\tYadav colony, Sagar\n20260403A-002\tbold-otter\t2026-04-03 03:13:00\tNH 20, Palampur\n20260403A-002\tgiant-crab\t2026-04-03 05:36:00\tYadav Colony, Sagar\n20260403A-003\tbold-otter\t2026-04-03 03:25:00\tPalampur\n20260403A-003\tgiant-crab\t2026-04-03 06:10:00\tYadav colony, Sagar\n",
+  "stderr": "",
+  "execution_time_ms": 1515
+}

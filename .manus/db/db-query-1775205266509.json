@@ -1,0 +1,154 @@
+{
+  "query": "SELECT dogId, recordedAt, areaName, notes FROM dog_records WHERE dogId LIKE '20260403A-%' ORDER BY dogId;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4YKkGxc6t8uKQwU.5f0d0a62126a --database hPjpqQFScRPNzVz7QPH5a8 --execute SELECT dogId, recordedAt, areaName, notes FROM dog_records WHERE dogId LIKE '20260403A-%' ORDER BY dogId;",
+  "rows": [
+    {
+      "dogId": "20260403A-001",
+      "recordedAt": "2026-04-03 04:32:00",
+      "areaName": "Yadav colony, Sagar",
+      "notes": "NULL"
+    },
+    {
+      "dogId": "20260403A-001",
+      "recordedAt": "2026-04-03 03:00:00",
+      "areaName": "SH17, Palampur",
+      "notes": "NULL"
+    },
+    {
+      "dogId": "20260403A-002",
+      "recordedAt": "2026-04-03 03:13:00",
+      "areaName": "NH 20, Palampur",
+      "notes": "NULL"
+    },
+    {
+      "dogId": "20260403A-002",
+      "recordedAt": "2026-04-03 05:36:00",
+      "areaName": "Yadav Colony, Sagar",
+      "notes": "Photo taken after bringing to center"
+    },
+    {
+      "dogId": "20260403A-003",
+      "recordedAt": "2026-04-03 03:25:00",
+      "areaName": "Palampur",
+      "notes": "NULL"
+    },
+    {
+      "dogId": "20260403A-003",
+      "recordedAt": "2026-04-03 06:10:00",
+      "areaName": "Yadav colony, Sagar",
+      "notes": "Photo taken after bringing to center"
+    },
+    {
+      "dogId": "20260403A-004",
+      "recordedAt": "2026-04-03 03:32:00",
+      "areaName": "Palampur",
+      "notes": "NULL"
+    },
+    {
+      "dogId": "20260403A-005",
+      "recordedAt": "2026-04-03 03:52:00",
+      "areaName": "Patti",
+      "notes": "NULL"
+    },
+    {
+      "dogId": "20260403A-006",
+      "recordedAt": "2026-04-03 04:06:00",
+      "areaName": "Patti tanda",
+      "notes": "NULL"
+    },
+    {
+      "dogId": "20260403A-007",
+      "recordedAt": "2026-04-03 04:14:00",
+      "areaName": "Patti",
+      "notes": "NULL"
+    },
+    {
+      "dogId": "20260403A-008",
+      "recordedAt": "2026-04-03 04:24:00",
+      "areaName": "Patti",
+      "notes": "NULL"
+    },
+    {
+      "dogId": "20260403A-009",
+      "recordedAt": "2026-04-03 04:26:00",
+      "areaName": "Patti",
+      "notes": "NULL"
+    },
+    {
+      "dogId": "20260403A-010",
+      "recordedAt": "2026-04-03 04:30:00",
+      "areaName": "Patti",
+      "notes": "NULL"
+    },
+    {
+      "dogId": "20260403A-011",
+      "recordedAt": "2026-04-03 04:54:00",
+      "areaName": "Palampur",
+      "notes": "Yello spray head"
+    },
+    {
+      "dogId": "20260403A-012",
+      "recordedAt": "2026-04-03 05:05:00",
+      "areaName": "NH154, Banuri",
+      "notes": "NULL"
+    },
+    {
+      "dogId": "20260403A-013",
+      "recordedAt": "2026-04-03 05:07:00",
+      "areaName": "NH154, Banuri",
+      "notes": "NULL"
+    },
+    {
+      "dogId": "20260403A-014",
+      "recordedAt": "2026-04-03 05:09:00",
+      "areaName": "NH154, Banuri",
+      "notes": "NULL"
+    },
+    {
+      "dogId": "20260403A-016",
+      "recordedAt": "2026-04-03 05:21:00",
+      "areaName": "NH154, Dramman",
+      "notes": "Pregnant orange paint head and neck same as above location"
+    },
+    {
+      "dogId": "20260403A-017",
+      "recordedAt": "2026-04-03 05:56:00",
+      "areaName": "NH154, Banuri",
+      "notes": "NULL"
+    },
+    {
+      "dogId": "20260403A-018",
+      "recordedAt": "2026-04-03 05:57:00",
+      "areaName": "NH154, Banuri",
+      "notes": "NULL"
+    },
+    {
+      "dogId": "20260403A-019",
+      "recordedAt": "2026-04-03 06:06:00",
+      "areaName": "NH154, Banuri",
+      "notes": "Small height"
+    },
+    {
+      "dogId": "20260403A-020",
+      "recordedAt": "2026-04-03 06:06:00",
+      "areaName": "NH154, Banuri",
+      "notes": "NULL"
+    },
+    {
+      "dogId": "20260403A-021",
+      "recordedAt": "2026-04-03 06:07:00",
+      "areaName": "NH154, Banuri",
+      "notes": "NULL"
+    },
+    {
+      "dogId": "20260403A-022",
+      "recordedAt": "2026-04-03 06:07:00",
+      "areaName": "NH154, Banuri",
+      "notes": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "dogId\trecordedAt\tareaName\tnotes\n20260403A-001\t2026-04-03 04:32:00\tYadav colony, Sagar\tNULL\n20260403A-001\t2026-04-03 03:00:00\tSH17, Palampur\tNULL\n20260403A-002\t2026-04-03 03:13:00\tNH 20, Palampur\tNULL\n20260403A-002\t2026-04-03 05:36:00\tYadav Colony, Sagar\tPhoto taken after bringing to center\n20260403A-003\t2026-04-03 03:25:00\tPalampur\tNULL\n20260403A-003\t2026-04-03 06:10:00\tYadav colony, Sagar\tPhoto taken after bringing to center\n20260403A-004\t2026-04-03 03:32:00\tPalampur\tNULL\n20260403A-005\t2026-04-03 03:52:00\tPatti\tNULL\n20260403A-006\t2026-04-03 04:06:00\tPatti tanda\tNULL\n20260403A-007\t2026-04-03 04:14:00\tPatti\tNULL\n20260403A-008\t2026-04-03 04:24:00\tPatti\tNULL\n20260403A-009\t2026-04-03 04:26:00\tPatti\tNULL\n20260403A-010\t2026-04-03 04:30:00\tPatti\tNULL\n20260403A-011\t2026-04-03 04:54:00\tPalampur\tYello spray head\n20260403A-012\t2026-04-03 05:05:00\tNH154, Banuri\tNULL\n20260403A-013\t2026-04-03 05:07:00\tNH154, Banuri\tNULL\n20260403A-014\t2026-04-03 05:09:00\tNH154, Banuri\tNULL\n20260403A-016\t2026-04-03 05:21:00\tNH154, Dramman\tPregnant orange paint head and neck same as above location\n20260403A-017\t2026-04-03 05:56:00\tNH154, Banuri\tNULL\n20260403A-018\t2026-04-03 05:57:00\tNH154, Banuri\tNULL\n20260403A-019\t2026-04-03 06:06:00\tNH154, Banuri\tSmall height\n20260403A-020\t2026-04-03 06:06:00\tNH154, Banuri\tNULL\n20260403A-021\t2026-04-03 06:07:00\tNH154, Banuri\tNULL\n20260403A-022\t2026-04-03 06:07:00\tNH154, Banuri\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 1572
+}

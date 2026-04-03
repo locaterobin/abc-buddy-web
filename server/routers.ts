@@ -831,14 +831,15 @@ const releasePlansRouter = router({
       return { success: true };
     }),
   getFullRecord: publicProcedure
-    .input(z.object({ dogId: z.string() }))
+    .input(z.object({ dogId: z.string(), teamIdentifier: z.string().optional() }))
     .query(async ({ input }) => {
-      return getFullRecordByDogId(input.dogId);
+      return getFullRecordByDogId(input.dogId, input.teamIdentifier);
     }),
   updateCheckedPhoto: publicProcedure
     .input(z.object({
       dogId: z.string(),
       photo2Base64: z.string(), // base64 data URL
+      teamIdentifier: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
       const imgBuffer = Buffer.from(
@@ -848,7 +849,7 @@ const releasePlansRouter = router({
       const ext = input.photo2Base64.startsWith("data:image/png") ? "png" : "jpg";
       const key = `checked-photos/${input.dogId}-${Date.now()}.${ext}`;
       const { url } = await storagePut(key, imgBuffer, `image/${ext}`);
-      await updateCheckedPhotoUrl(input.dogId, url);
+      await updateCheckedPhotoUrl(input.dogId, url, input.teamIdentifier);
       return { url };
     }),
   reorderDogs: publicProcedure

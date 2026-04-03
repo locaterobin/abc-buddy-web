@@ -387,7 +387,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
       });
       toast.success("Record updated");
       setEditMode(false);
-      utils.releasePlans.getFullRecord.invalidate({ dogId: rec.dogId });
+      utils.releasePlans.getFullRecord.invalidate({ dogId: rec.dogId, teamIdentifier: teamId });
       utils.dogs.getRecords.invalidate();
       utils.dogs.getRecordsPaginated.invalidate();
     } catch (err: any) {
@@ -397,7 +397,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
 
   // Always fetch the full record (with photo2Url from release_plan_dogs) as the source of truth
   const { data: freshRecord } = trpc.releasePlans.getFullRecord.useQuery(
-    { dogId: record.dogId },
+    { dogId: record.dogId, teamIdentifier: teamId },
     { enabled: !!record.dogId }
   );
   // Merge: use freshRecord when available, fall back to prop for initial render
@@ -436,7 +436,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
       utils.releasePlans.getDogPlans.invalidate({ dogId: record.dogId });
       utils.releasePlans.getDogPlanDetails.invalidate({ dogId: record.dogId });
       utils.releasePlans.getPlanDogs.invalidate();
-      utils.releasePlans.getFullRecord.invalidate({ dogId: record.dogId });
+      utils.releasePlans.getFullRecord.invalidate({ dogId: record.dogId, teamIdentifier: teamId });
       utils.dogs.getRecords.invalidate();
       setShowMovePicker(false);
     },
@@ -450,7 +450,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
   const updateCheckedPhotoMutation = trpc.releasePlans.updateCheckedPhoto.useMutation({
     onSuccess: () => {
       toast.success("Checked photo updated");
-      utils.releasePlans.getFullRecord.invalidate({ dogId: record.dogId });
+      utils.releasePlans.getFullRecord.invalidate({ dogId: record.dogId, teamIdentifier: teamId });
       utils.dogs.getRecords.invalidate();
       setReplaceCheckedBase64(null);
       setReplacingChecked(false);
@@ -473,7 +473,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
       else toast.info("Already in this plan");
       utils.releasePlans.getDogPlans.invalidate({ dogId: record.dogId });
       utils.releasePlans.getPlanDogs.invalidate();
-      utils.releasePlans.getFullRecord.invalidate({ dogId: record.dogId });
+      utils.releasePlans.getFullRecord.invalidate({ dogId: record.dogId, teamIdentifier: teamId });
       setPendingPlanId(null);
       setPhoto2Base64(null);
       setShowPlanPicker(false);
@@ -795,7 +795,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
                         disabled={replacingChecked}
                         onClick={async () => {
                           setReplacingChecked(true);
-                          updateCheckedPhotoMutation.mutate({ dogId: record.dogId, photo2Base64: replaceCheckedBase64 });
+                          updateCheckedPhotoMutation.mutate({ dogId: record.dogId, photo2Base64: replaceCheckedBase64, teamIdentifier: teamId });
                         }}
                         className="text-xs bg-primary text-primary-foreground px-3 py-1 rounded-md font-medium disabled:opacity-50"
                       >{replacingChecked ? "Saving…" : "Save"}</button>
