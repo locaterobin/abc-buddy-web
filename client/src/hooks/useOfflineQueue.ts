@@ -4,7 +4,7 @@
  */
 
 const DB_NAME = "abc-buddy-cache";
-const DB_VERSION = 6; // v6: added app_log store
+const DB_VERSION = 5; // consolidated: records, recordDates, releasePlans, planDogs, offline_queue, plan_photo_queue
 const QUEUE_STORE = "offline_queue";
 const PLAN_PHOTO_QUEUE_STORE = "plan_photo_queue";
 
@@ -52,9 +52,7 @@ function openDB(): Promise<IDBDatabase> {
       if (!db.objectStoreNames.contains(PLAN_PHOTO_QUEUE_STORE)) {
         db.createObjectStore(PLAN_PHOTO_QUEUE_STORE, { keyPath: "queueId" });
       }
-      if (!db.objectStoreNames.contains("app_log")) {
-        db.createObjectStore("app_log", { keyPath: "id" });
-      }
+
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
