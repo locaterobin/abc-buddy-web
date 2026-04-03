@@ -303,3 +303,18 @@
 ## Activity Log & Pending Sync Badge
 - [x] Enrich "Save pressed" log entry with full record data (dogId, team, staff, area, lat/lng, notes, source, recordedAt)
 - [x] Add amber "X records pending sync" badge at top of Catching screen (polls IndexedDB every 3 s)
+
+## Bug Fixes - Reconnect Save Failure
+- [ ] Fix "failed to fetch" on reconnect: add 1.5s delay after `online` event before retrying, so the network stack is fully ready before the save attempt fires
+- [ ] Fix failed records not appearing in Lookup queue: Lookup only loads queue on mount; failed records from AddRecord are invisible until user navigates away and back. Add a storage event / BroadcastChannel so Lookup refreshes the queue whenever AddRecord writes a failure.
+
+## Queue Display in Catching Tab
+- [ ] Move full pending queue UI (per-item Retry/Discard + Sync All) from Lookup to Catching tab
+- [ ] Keep BroadcastChannel listener in Catching tab so queue refreshes live after each save attempt
+- [ ] Auto-retry on reconnect (with 2s delay) also runs from Catching tab
+
+## Queue in Both Catching and Tag Tabs
+- [x] Show full pending queue card (Retry/Discard per item + Sync All) in Catching tab
+- [x] Show full pending queue card in Lookup (Tag) tab
+- [x] Both tabs use BroadcastChannel so queue updates live in both places simultaneously
+- [x] refreshQueue called after every save success/failure so card updates immediately

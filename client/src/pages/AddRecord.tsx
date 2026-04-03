@@ -18,10 +18,23 @@ import {
   MapPin,
   RotateCcw,
   AlertCircle,
+  RefreshCw,
+  Trash2,
+  AlertTriangle,
 } from "lucide-react";
-import { enqueueRecord, removeFromQueue, updateQueueStatus, getPendingRecords, type PendingRecord } from "@/hooks/useOfflineQueue";
+import { enqueueRecord, removeFromQueue, updateQueueStatus, getPendingRecords, type PendingRecord, QUEUE_CHANNEL_NAME } from "@/hooks/useOfflineQueue";
 import { logEvent } from "@/lib/appLog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+function formatAge(ts: number): string {
+  const ms = Date.now() - ts;
+  const mins = Math.floor(ms / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
 
 const CATCH_PLANS = [
   { label: "Alpha", letter: "A" },
@@ -114,18 +127,10 @@ export default function AddRecord() {
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [analysisError, setAnalysisError] = useState("");
 
-  // Pending sync count — polls IndexedDB every 3 s
-  const [pendingCount, setPendingCount] = useState(0);
-  useEffect(() => {
-    if (!teamId) return;
-    const refresh = () =>
-      getPendingRecords(teamId).then((recs: PendingRecord[]) =>
-        setPendingCount(recs.filter((r) => r.status === "pending" || r.status === "syncing").length)
-      );
-    refresh();
-    const id = setInterval(refresh, 3000);
-    return () => clearInterval(id);
-  }, [teamId]);
+  // Pending queue state (populated after mutations are declared below)
+  const [pendingRecords, setPendingRecords] = useState<PendingRecord[]>([]);
+  const [syncingIds, setSyncingIds] = useState<Set<string>>(new Set());
+  const pendingCount = pendingRecords.length;
 
   // Queries & mutations
   const suffixQuery = trpc.dogs.getNextSuffix.useQuery(
@@ -142,6 +147,80 @@ export default function AddRecord() {
   const geocodeMutation = trpc.dogs.geocodeLatLng.useMutation();
   const webhookMutation = trpc.webhook.fire.useMutation();
   const utils = trpc.useUtils();
+
+  // Queue helpers — declared after mutations so saveMutation/utils are in scope
+  const refreshQueue = useCallback(async () => {
+    if (!teamId) return;
+    const recs = await getPendingRecords(teamId);
+    setPendingRecords(recs);
+  }, [teamId]);
+
+  // Initial load + BroadcastChannel listener so queue updates live
+  useEffect(() => {
+    refreshQueue();
+    let ch: BroadcastChannel | null = null;
+    try {
+      ch = new BroadcastChannel(QUEUE_CHANNEL_NAME);
+      ch.onmessage = () => refreshQueue();
+    } catch { /* not supported */ }
+    return () => { ch?.close(); };
+  }, [refreshQueue]);
+
+  // Retry a single queued record
+  const retryRecord = useCallback(async (item: PendingRecord) => {
+    setSyncingIds((prev) => new Set(prev).add(item.queueId));
+    await updateQueueStatus(item.queueId, "syncing");
+    try {
+      await saveMutation.mutateAsync({
+        teamIdentifier: item.teamIdentifier,
+        dogId: item.dogId,
+        imageBase64: item.imageBase64,
+        description: item.description,
+        notes: item.notes,
+        latitude: item.latitude,
+        longitude: item.longitude,
+        areaName: item.areaName,
+        source: item.source,
+        recordedAt: item.recordedAt,
+        webhookUrl: item.webhookUrl,
+      });
+      await removeFromQueue(item.queueId);
+      logEvent("success", `Retry succeeded for ${item.dogId}`, item.dogId);
+      toast.success(`${item.dogId} synced!`);
+      utils.dogs.getRecords.invalidate();
+    } catch (err: any) {
+      await updateQueueStatus(item.queueId, "failed", err?.message ?? "Unknown error");
+      logEvent("error", `Retry failed for ${item.dogId}: ${err?.message}`, item.dogId);
+      toast.error(`${item.dogId} sync failed`);
+    } finally {
+      setSyncingIds((prev) => { const s = new Set(prev); s.delete(item.queueId); return s; });
+      refreshQueue();
+    }
+  }, [saveMutation, utils, refreshQueue]);
+
+  const syncAll = useCallback(async () => {
+    const items = await getPendingRecords(teamId);
+    for (const item of items) await retryRecord(item);
+  }, [teamId, retryRecord]);
+
+  const discardRecord = useCallback(async (queueId: string) => {
+    await removeFromQueue(queueId);
+    refreshQueue();
+  }, [refreshQueue]);
+
+  // Auto-retry 2 s after coming back online (grace period for network stack)
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const handleOnline = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => syncAll(), 2000);
+    };
+    window.addEventListener("online", handleOnline);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      if (timer) clearTimeout(timer);
+    };
+  }, [syncAll]);
 
   // Auto-set dog ID when suffix loads or plan changes
   useEffect(() => {
@@ -437,14 +516,16 @@ export default function AddRecord() {
         logEvent("success", `Saved & confirmed by server (resolvedId: ${result?.dogId ?? savedDogId})`, savedDogId);
         toast.dismiss(toastId);
         toast.success(`${savedDogId} saved!`);
+        refreshQueue(); // remove from queue card immediately
       } catch (err: any) {
-        // Mark as failed in queue — will appear in Lookup for retry
+        // Mark as failed in queue — stays visible in queue card for retry
         await updateQueueStatus(queueId, "failed", err?.message ?? "Unknown error");
         logEvent("error", `Save failed: ${err?.message ?? "Unknown error"}`, savedDogId);
         toast.dismiss(toastId);
-        toast.error(`${savedDogId} failed to save — check Lookup to retry`, {
+        toast.error(`${savedDogId} failed — tap Retry in the queue above`, {
           duration: 10000,
         });
+        refreshQueue(); // show failure in queue card immediately
       }
     };
 
@@ -455,12 +536,89 @@ export default function AddRecord() {
 
   return (
     <div className="container py-4 pb-6 max-w-lg mx-auto space-y-4">
-      {/* Pending sync badge */}
+      {/* Pending queue card */}
       {pendingCount > 0 && (
-        <div className="flex items-center gap-2 rounded-md bg-amber-500/15 border border-amber-500/40 px-3 py-2 text-sm text-amber-700 dark:text-amber-300">
-          <Loader2 className="animate-spin" size={14} />
-          <span>{pendingCount} record{pendingCount !== 1 ? "s" : ""} pending sync</span>
-        </div>
+        <Card className="border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-700">
+          <CardContent className="py-3 px-4 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 text-amber-800 dark:text-amber-300 font-medium text-sm">
+                <AlertTriangle size={15} />
+                {pendingCount} record{pendingCount !== 1 ? "s" : ""} pending sync
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs border-amber-400 text-amber-800 dark:text-amber-300 bg-transparent"
+                onClick={syncAll}
+                disabled={syncingIds.size > 0}
+              >
+                {syncingIds.size > 0 ? (
+                  <Loader2 size={12} className="mr-1 animate-spin" />
+                ) : (
+                  <RefreshCw size={12} className="mr-1" />
+                )}
+                Sync All
+              </Button>
+            </div>
+            {pendingRecords.map((item) => {
+              const isSyncing = syncingIds.has(item.queueId);
+              return (
+                <div
+                  key={item.queueId}
+                  className="flex items-center justify-between gap-2 text-xs text-amber-700 dark:text-amber-400"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    {item.imageBase64 && (
+                      <img
+                        src={item.imageBase64}
+                        alt={item.dogId}
+                        className="w-10 h-10 rounded object-cover flex-shrink-0"
+                      />
+                    )}
+                    <div className="min-w-0">
+                      <p className="font-mono font-bold text-sm text-amber-900 dark:text-amber-200">
+                        {item.dogId}
+                      </p>
+                      {item.areaName && (
+                        <p className="truncate text-amber-600 dark:text-amber-500">{item.areaName}</p>
+                      )}
+                      <p className="text-amber-500 dark:text-amber-600 text-[10px]">{formatAge(item.queuedAt)}</p>
+                      {item.status === "failed" && item.errorMessage && (
+                        <p className="text-red-600 dark:text-red-400 truncate">{item.errorMessage}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex gap-1 flex-shrink-0">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs border-amber-400 text-amber-800 dark:text-amber-300 bg-transparent"
+                      onClick={() => retryRecord(item)}
+                      disabled={isSyncing}
+                      title="Retry"
+                    >
+                      {isSyncing ? (
+                        <Loader2 size={12} className="animate-spin" />
+                      ) : (
+                        <RefreshCw size={12} />
+                      )}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs border-red-300 text-red-600 dark:text-red-400 bg-transparent"
+                      onClick={() => discardRecord(item.queueId)}
+                      disabled={isSyncing}
+                      title="Discard"
+                    >
+                      <Trash2 size={12} />
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
       )}
 
       {/* Catch Plan — always visible at top */}

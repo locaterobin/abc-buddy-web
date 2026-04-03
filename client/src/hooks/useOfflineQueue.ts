@@ -8,6 +8,20 @@ const DB_VERSION = 5; // consolidated: records, recordDates, releasePlans, planD
 const QUEUE_STORE = "offline_queue";
 const PLAN_PHOTO_QUEUE_STORE = "plan_photo_queue";
 
+// BroadcastChannel used to notify other components (e.g. Lookup) that the queue changed.
+// Falls back silently in environments that don't support it.
+const QUEUE_CHANNEL_NAME = "abc-buddy-queue-changed";
+function notifyQueueChanged(): void {
+  try {
+    const ch = new BroadcastChannel(QUEUE_CHANNEL_NAME);
+    ch.postMessage({ ts: Date.now() });
+    ch.close();
+  } catch {
+    // BroadcastChannel not supported — no-op
+  }
+}
+export { QUEUE_CHANNEL_NAME };
+
 export type QueueStatus = "pending" | "syncing" | "failed";
 
 export interface PendingRecord {
@@ -72,6 +86,7 @@ export async function enqueueRecord(record: Omit<PendingRecord, "status" | "queu
       tx.oncomplete = () => res();
       tx.onerror = () => rej(tx.error);
     });
+    notifyQueueChanged();
   } catch (e) {
     console.warn("IndexedDB queue write failed:", e);
   }
@@ -118,6 +133,7 @@ export async function updateQueueStatus(
       tx.oncomplete = () => res();
       tx.onerror = () => rej(tx.error);
     });
+    notifyQueueChanged();
   } catch (e) {
     console.warn("IndexedDB queue status update failed:", e);
   }
@@ -132,6 +148,7 @@ export async function removeFromQueue(queueId: string): Promise<void> {
       tx.oncomplete = () => res();
       tx.onerror = () => rej(tx.error);
     });
+    notifyQueueChanged();
   } catch (e) {
     console.warn("IndexedDB queue delete failed:", e);
   }

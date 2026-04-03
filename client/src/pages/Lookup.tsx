@@ -37,6 +37,7 @@ import {
   removePlanPhotoFromQueue,
   updatePlanPhotoStatus,
   type PendingPlanPhoto,
+  QUEUE_CHANNEL_NAME,
 } from "@/hooks/useOfflineQueue";
 
 function fileToBase64(file: File): Promise<string> {
@@ -164,6 +165,13 @@ export default function Lookup() {
 
   useEffect(() => {
     refreshQueue();
+    // Listen for queue changes broadcast from AddRecord (or any other tab)
+    let ch: BroadcastChannel | null = null;
+    try {
+      ch = new BroadcastChannel(QUEUE_CHANNEL_NAME);
+      ch.onmessage = () => refreshQueue();
+    } catch { /* not supported */ }
+    return () => { ch?.close(); };
   }, [refreshQueue]);
 
   // Load plan photo queue
@@ -379,22 +387,33 @@ export default function Lookup() {
     refreshPlanPhotoQueue();
   }, [refreshPlanPhotoQueue]);
 
-  // Auto-retry when device comes back online
+  // Auto-retry when device comes back online.
+  // We wait 2 s after the `online` event fires before attempting saves — the browser
+  // fires `online` the moment the OS reports a link, but the network stack (DNS,
+  // TLS, service-worker fetch routing) may not be fully ready for another second or
+  // two, which is exactly what causes the "failed to fetch" error on reconnect.
   useEffect(() => {
-    const handleOnline = async () => {
-      const items = await getPendingRecords(teamId);
-      if (items.length > 0) {
-        for (const item of items) {
-          await retryRecord(item);
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    const handleOnline = () => {
+      if (retryTimer) clearTimeout(retryTimer);
+      retryTimer = setTimeout(async () => {
+        const items = await getPendingRecords(teamId);
+        if (items.length > 0) {
+          for (const item of items) {
+            await retryRecord(item);
+          }
         }
-      }
-      const planItems = await getPendingPlanPhotos();
-      if (planItems.length > 0) {
-        for (const item of planItems) await retryPlanPhoto(item);
-      }
+        const planItems = await getPendingPlanPhotos();
+        if (planItems.length > 0) {
+          for (const item of planItems) await retryPlanPhoto(item);
+        }
+      }, 2000); // 2 s grace period for network stack to stabilise
     };
     window.addEventListener("online", handleOnline);
-    return () => window.removeEventListener("online", handleOnline);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      if (retryTimer) clearTimeout(retryTimer);
+    };
   }, [teamId, retryRecord, retryPlanPhoto]);
 
   const confidenceConfig = {
