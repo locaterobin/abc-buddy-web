@@ -321,6 +321,9 @@ export default function AddRecord() {
       return;
     }
 
+    // Log immediately — first thing before any async work
+    logEvent("info", `Save pressed for ${dogId}`, dogId);
+
     // Snapshot values before reset
     const savedDogId = dogId;
     const savedImageBase64 = imageBase64;
