@@ -293,3 +293,9 @@
 - [x] Each plan has its own independent serial counter per day
 - [x] Update getNextDogIdSuffix in db.ts to scope by planLetter
 - [x] Update getNextSuffix tRPC procedure to accept planLetter
+
+## Reliability & Observability
+- [x] saveRecord server: S3 upload + DB insert now synchronous (client waits for confirmed DB write before clearing queue)
+- [x] Client-side activity log stored in IndexedDB (appLog utility, capped at 500 entries)
+- [x] AddRecord instrumented with logEvent calls (queued, save attempt, save confirmed, save failed)
+- [x] Activity Log viewer in hamburger menu (IST timestamps, colour-coded by level, copy + clear buttons)

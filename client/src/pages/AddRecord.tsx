@@ -20,6 +20,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { enqueueRecord, removeFromQueue, updateQueueStatus } from "@/hooks/useOfflineQueue";
+import { logEvent } from "@/lib/appLog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const CATCH_PLANS = [
@@ -338,7 +339,7 @@ export default function AddRecord() {
 
     // Run annotation + save in background, with offline queue tracking
     const runBackground = async () => {
-      // Enqueue first so it's visible in Lookup immediately
+      // Enqueue first — record is safe on device before any network call
       await enqueueRecord({
         queueId,
         teamIdentifier: savedTeamId,
@@ -353,16 +354,17 @@ export default function AddRecord() {
         recordedAt: savedRecordedAt,
         webhookUrl: savedWebhookUrl || undefined,
       });
+      logEvent("info", `Queued for save`, savedDogId);
 
       // Show a dismissible pending toast
       const toastId = toast.loading(`Saving ${savedDogId}…`, { duration: Infinity });
 
       // Client-side pre-annotation removed — saveRecord handles annotation server-side.
-      // This avoids sending the image twice and prevents double-annotation.
       const finalImageBase64 = savedImageBase64;
 
       try {
-        await saveMutation.mutateAsync({
+        logEvent("info", `Save attempt started`, savedDogId);
+        const result = await saveMutation.mutateAsync({
           teamIdentifier: savedTeamId,
           dogId: savedDogId,
           imageBase64: finalImageBase64,
@@ -378,13 +380,15 @@ export default function AddRecord() {
           addedByStaffName: savedStaffName,
         });
 
-        // Success — remove from queue
+        // Server confirmed DB insert — safe to remove from queue
         await removeFromQueue(queueId);
+        logEvent("success", `Saved & confirmed by server (resolvedId: ${result?.dogId ?? savedDogId})`, savedDogId);
         toast.dismiss(toastId);
         toast.success(`${savedDogId} saved!`);
       } catch (err: any) {
         // Mark as failed in queue — will appear in Lookup for retry
         await updateQueueStatus(queueId, "failed", err?.message ?? "Unknown error");
+        logEvent("error", `Save failed: ${err?.message ?? "Unknown error"}`, savedDogId);
         toast.dismiss(toastId);
         toast.error(`${savedDogId} failed to save — check Lookup to retry`, {
           duration: 10000,

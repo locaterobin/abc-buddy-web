@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { PlusCircle, Search, ClipboardList, CalendarCheck, Menu, X, Settings, LogOut } from "lucide-react";
+import { PlusCircle, Search, ClipboardList, CalendarCheck, Menu, X, Settings, LogOut, ScrollText, Copy, Trash2 } from "lucide-react";
 import { getPendingRecords, getPendingPlanPhotos } from "../hooks/useOfflineQueue";
 import { useTeam } from "../contexts/TeamContext";
 import { clearStaffSession } from "./LoginPage";
@@ -8,6 +8,7 @@ import Lookup from "./Lookup";
 import SettingsPage from "./SettingsPage";
 import ConfigPage from "./ConfigPage";
 import ReleasePlanPage from "./ReleasePlanPage";
+import { getLogEntries, clearLog, formatIST, type LogEntry } from "../lib/appLog";
 
 type Tab = "add" | "lookup" | "records" | "releases";
 const VALID_TABS: Tab[] = ["add", "lookup", "records", "releases"];
@@ -26,6 +27,27 @@ export default function Home({ onLogout }: { onLogout?: () => void }) {
   }, []);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [logOpen, setLogOpen] = useState(false);
+  const [logEntries, setLogEntries] = useState<LogEntry[]>([]);
+
+  const openLog = useCallback(async () => {
+    const entries = await getLogEntries();
+    setLogEntries(entries);
+    setLogOpen(true);
+    setDrawerOpen(false);
+  }, []);
+
+  const handleClearLog = useCallback(async () => {
+    await clearLog();
+    setLogEntries([]);
+  }, []);
+
+  const handleCopyLog = useCallback(() => {
+    const text = logEntries
+      .map(e => `[${formatIST(e.ts)}] [${e.level.toUpperCase()}] ${e.dogId ? `[${e.dogId}] ` : ""}${e.message}`)
+      .join("\n");
+    navigator.clipboard.writeText(text).catch(() => {});
+  }, [logEntries]);
   const drawerRef = useRef<HTMLDivElement>(null);
   const [pendingCount, setPendingCount] = useState(0);
   const [updateStatus, setUpdateStatus] = useState<"idle" | "checking" | "updated" | "latest">("idle");
@@ -237,6 +259,11 @@ export default function Home({ onLogout }: { onLogout?: () => void }) {
                   }}
                 />
               )}
+              <DrawerItem
+                icon={<ScrollText size={18} />}
+                label="Activity Log"
+                onClick={openLog}
+              />
             </div>
 
             {/* Drawer footer */}
@@ -257,6 +284,48 @@ export default function Home({ onLogout }: { onLogout?: () => void }) {
               <p className="text-[10px] text-muted-foreground font-mono">ABC Buddy build {buildVersion}</p>
               <p className="text-[9px] text-muted-foreground/60 font-sans tracking-widest uppercase">by Peepal Farm</p>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Activity Log overlay */}
+      {logOpen && (
+        <div className="fixed inset-0 z-50 bg-background flex flex-col">
+          <header className="flex-shrink-0 bg-card border-b border-border px-4 py-3 flex items-center gap-3">
+            <button
+              onClick={() => setLogOpen(false)}
+              className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            >
+              <X size={20} />
+            </button>
+            <h2 className="font-semibold text-foreground flex-1">Activity Log</h2>
+            <button onClick={handleCopyLog} title="Copy log" className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+              <Copy size={16} />
+            </button>
+            <button onClick={handleClearLog} title="Clear log" className="w-8 h-8 flex items-center justify-center rounded-lg text-destructive hover:bg-destructive/10 transition-colors">
+              <Trash2 size={16} />
+            </button>
+          </header>
+          <div className="flex-1 overflow-y-auto p-3 space-y-1 font-mono text-xs">
+            {logEntries.length === 0 && (
+              <p className="text-muted-foreground text-center py-8">No log entries yet.</p>
+            )}
+            {logEntries.map(entry => (
+              <div
+                key={entry.id}
+                className={`flex gap-2 py-1 border-b border-border/40 ${
+                  entry.level === "error" ? "text-destructive" :
+                  entry.level === "success" ? "text-green-500" :
+                  entry.level === "warn" ? "text-yellow-500" :
+                  "text-muted-foreground"
+                }`}
+              >
+                <span className="shrink-0 text-[10px] text-muted-foreground/60">{formatIST(entry.ts)}</span>
+                <span className="shrink-0 uppercase text-[9px] font-bold tracking-wider w-12">{entry.level}</span>
+                {entry.dogId && <span className="shrink-0 text-primary/80">[{entry.dogId}]</span>}
+                <span className="break-all">{entry.message}</span>
+              </div>
+            ))}
           </div>
         </div>
       )}

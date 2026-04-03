@@ -301,64 +301,65 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
       })
     )
     .mutation(async ({ input }) => {
-      // Return immediately with a pending acknowledgement.
-      // All heavy work (S3 upload, DB insert, webhook) runs in the background.
+      // Phase 1 (synchronous): S3 upload + DB insert — client waits for this before clearing queue.
+      // Phase 2 (fire-and-forget): annotation, AI description, geocoding, webhooks.
       const suffix = nanoid(8);
       const fileKey = `dogs/${input.teamIdentifier}/${input.dogId}-${suffix}.jpg`;
       const origKey = input.originalImageBase64
         ? `dogs/${input.teamIdentifier}/${input.dogId}-original-${suffix}.jpg`
         : null;
 
-      // Fire-and-forget background task
+      console.log(`[saveRecord] start dogId=${input.dogId}`);
+      const imgBuffer = Buffer.from(
+        input.imageBase64.replace(/^data:image\/\w+;base64,/, ""),
+        "base64"
+      );
+      console.log(`[saveRecord] uploading image to S3 key=${fileKey}`);
+      const { url: imageUrl } = await storagePut(fileKey, imgBuffer, "image/jpeg");
+      console.log(`[saveRecord] S3 upload done imageUrl=${imageUrl}`);
+
+      let originalImageUrl: string | undefined;
+      if (input.originalImageBase64 && origKey) {
+        const origBuffer = Buffer.from(
+          input.originalImageBase64.replace(/^data:image\/\w+;base64,/, ""),
+          "base64"
+        );
+        const { url } = await storagePut(origKey, origBuffer, "image/jpeg");
+        originalImageUrl = url;
+      }
+
+      // Resolve dogId — auto-increment suffix if there's a collision (race condition between concurrent saves)
+      let resolvedDogId = input.dogId;
+      const existing = await getRecordByDogId(resolvedDogId, input.teamIdentifier);
+      if (existing) {
+        const parts = resolvedDogId.split("-");
+        const datePrefix = parts[0];
+        const newSuffix = await getNextDogIdSuffix(input.teamIdentifier, datePrefix);
+        resolvedDogId = `${datePrefix}-${newSuffix}`;
+        console.warn(`[saveRecord] Collision on ${input.dogId}, reassigned to ${resolvedDogId}`);
+      }
+
+      console.log(`[saveRecord] inserting DB record resolvedDogId=${resolvedDogId}`);
+      const savedRecord = await insertDogRecord({
+        teamIdentifier: input.teamIdentifier,
+        dogId: resolvedDogId,
+        imageUrl,
+        originalImageUrl: originalImageUrl ?? null,
+        description: input.description ?? null,
+        notes: input.notes ?? null,
+        latitude: input.latitude ?? null,
+        longitude: input.longitude ?? null,
+        areaName: input.areaName ?? null,
+        source: input.source,
+        recordedAt: new Date(input.recordedAt),
+        addedByStaffId: input.addedByStaffId ?? null,
+        addedByStaffName: input.addedByStaffName ?? null,
+      });
+      console.log(`[saveRecord] DB insert confirmed id=${savedRecord.id} dogId=${resolvedDogId}`);
+
+      // Phase 2: fire-and-forget background tasks (annotation, AI, geocoding, webhooks)
       Promise.resolve().then(async () => {
         try {
-          console.log(`[saveRecord] BG start dogId=${input.dogId} webhookUrl=${input.webhookUrl}`);
-          const imgBuffer = Buffer.from(
-            input.imageBase64.replace(/^data:image\/\w+;base64,/, ""),
-            "base64"
-          );
-          console.log(`[saveRecord] uploading image to S3 key=${fileKey}`);
-          const { url: imageUrl } = await storagePut(fileKey, imgBuffer, "image/jpeg");
-          console.log(`[saveRecord] S3 upload done imageUrl=${imageUrl}`);
-
-          let originalImageUrl: string | undefined;
-          if (input.originalImageBase64 && origKey) {
-            const origBuffer = Buffer.from(
-              input.originalImageBase64.replace(/^data:image\/\w+;base64,/, ""),
-              "base64"
-            );
-            const { url } = await storagePut(origKey, origBuffer, "image/jpeg");
-            originalImageUrl = url;
-          }
-
-          // Resolve dogId — auto-increment suffix if there's a collision (race condition between concurrent saves)
-          let resolvedDogId = input.dogId;
-          const existing = await getRecordByDogId(resolvedDogId, input.teamIdentifier);
-          if (existing) {
-            // Extract date prefix and current numeric suffix, then find next available
-            const parts = resolvedDogId.split("-");
-            const datePrefix = parts[0];
-            const newSuffix = await getNextDogIdSuffix(input.teamIdentifier, datePrefix);
-            resolvedDogId = `${datePrefix}-${newSuffix}`;
-            console.warn(`[saveRecord] Collision on ${input.dogId}, reassigned to ${resolvedDogId}`);
-          }
-
-          console.log(`[saveRecord] inserting DB record resolvedDogId=${resolvedDogId}`);
-          const savedRecord = await insertDogRecord({
-            teamIdentifier: input.teamIdentifier,
-            dogId: resolvedDogId,
-            imageUrl,
-            originalImageUrl: originalImageUrl ?? null,
-            description: input.description ?? null,
-            notes: input.notes ?? null,
-            latitude: input.latitude ?? null,
-            longitude: input.longitude ?? null,
-            areaName: input.areaName ?? null,
-            source: input.source,
-            recordedAt: new Date(input.recordedAt),
-            addedByStaffId: input.addedByStaffId ?? null,
-            addedByStaffName: input.addedByStaffName ?? null,
-          });
 
           // Server-side annotation: stamp the image and update DB in background
           // Always annotate camera photos regardless of whether a description exists
@@ -431,7 +432,7 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
             });
           }
 
-          console.log(`[saveRecord] DB insert done id=${savedRecord.id}, firing image-ready webhook`);
+          console.log(`[saveRecord BG] firing image-ready webhook id=${savedRecord.id}`);
           // Fire image-ready webhook server-side once we have the real S3 URL
           if (input.webhookUrl) {
             fetch(`${input.webhookUrl}/image-ready`, {
@@ -523,13 +524,13 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
             }
           }
         } catch (e) {
-          console.error("[saveRecord background] Error:", e);
-          console.error("[saveRecord background] Stack:", (e as any)?.stack);
+          console.error("[saveRecord BG] Error:", e);
+          console.error("[saveRecord BG] Stack:", (e as any)?.stack);
         }
       });
 
-      // Return instantly — UI can reset immediately
-      return { dogId: input.dogId, queued: true };
+      // Return after DB insert is confirmed — client can now safely clear the queue
+      return { dogId: resolvedDogId, saved: true };
     }),
 
   getRecords: publicProcedure
