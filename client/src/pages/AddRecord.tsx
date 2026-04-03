@@ -32,6 +32,19 @@ const CATCH_PLANS = [
 ] as const;
 
 const PLAN_STORAGE_KEY = "abc-buddy-catch-plan";
+const LOCAL_SUFFIX_KEY_PREFIX = "abc-buddy-suffix-"; // key: prefix+plan e.g. "20260403A"
+
+function getLocalSuffix(datePrefix: string, planLetter: string): string {
+  const key = LOCAL_SUFFIX_KEY_PREFIX + datePrefix + planLetter;
+  const stored = localStorage.getItem(key);
+  const next = stored ? parseInt(stored, 10) + 1 : 1;
+  return String(next).padStart(3, "0");
+}
+
+function saveLocalSuffix(datePrefix: string, planLetter: string, suffix: string): void {
+  const key = LOCAL_SUFFIX_KEY_PREFIX + datePrefix + planLetter;
+  localStorage.setItem(key, String(parseInt(suffix, 10)));
+}
 
 function generateQueueId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
@@ -122,9 +135,17 @@ export default function AddRecord() {
     // Set ID if: no ID yet, OR a plan change just happened (even if query data is same)
     if (suffixQuery.data?.suffix && (!dogId || planChangedRef.current)) {
       planChangedRef.current = false;
-      setDogId(`${datePrefix}${catchPlan}-${suffixQuery.data.suffix}`);
+      const suffix = suffixQuery.data.suffix;
+      // Keep local counter in sync with server
+      saveLocalSuffix(datePrefix, catchPlan, suffix);
+      setDogId(`${datePrefix}${catchPlan}-${suffix}`);
+    } else if (suffixQuery.isError && (!dogId || planChangedRef.current)) {
+      // Offline fallback: use localStorage-based counter
+      planChangedRef.current = false;
+      const suffix = getLocalSuffix(datePrefix, catchPlan);
+      setDogId(`${datePrefix}${catchPlan}-${suffix}`);
     }
-  }, [suffixQuery.data, datePrefix, catchPlan, dogId]);
+  }, [suffixQuery.data, suffixQuery.isError, datePrefix, catchPlan, dogId]);
 
   // Reverse geocode helper
   const geocode = useCallback(
@@ -271,7 +292,11 @@ export default function AddRecord() {
       const lastSerial = parseInt(parts[parts.length - 1], 10);
       if (!isNaN(lastSerial)) {
         const prefix = parts.slice(0, parts.length - 1).join("-");
-        setDogId(`${prefix}-${String(lastSerial + 1).padStart(3, "0")}`);
+        const nextSerial = lastSerial + 1;
+        const nextSuffix = String(nextSerial).padStart(3, "0");
+        // Keep local counter in sync so offline fallback is accurate
+        saveLocalSuffix(datePrefix, catchPlan, String(lastSerial).padStart(3, "0"));
+        setDogId(`${prefix}-${nextSuffix}`);
         return; // skip server invalidate — we already have the next ID
       }
     }
@@ -648,7 +673,7 @@ export default function AddRecord() {
             className="w-full"
             size="lg"
             onClick={handleSave}
-            disabled={isSaving || !dogId || dogIdCheck.data?.exists || (imageSource === "camera" && (latitude === null || longitude === null))}
+            disabled={isSaving || !dogId || dogIdCheck.data?.exists === true || (imageSource === "camera" && (latitude === null || longitude === null) && !areaName.trim())}
           >
             {isSaving ? (
               <>
