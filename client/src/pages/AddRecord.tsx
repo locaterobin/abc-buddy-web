@@ -400,8 +400,6 @@ export default function AddRecord() {
     resetForm();
   }, [resetForm]);
 
-  const [isSaving, setIsSaving] = useState(false);
-
   // Save record — enqueue locally first, then sync in background
   const handleSave = () => {
     if (!imageBase64 || !dogId) {
@@ -529,8 +527,7 @@ export default function AddRecord() {
       }
     };
 
-    setIsSaving(true);
-    runBackground().finally(() => setIsSaving(false));
+    runBackground();
   };
   const hasImage = !!imageBase64;
 
@@ -866,19 +863,10 @@ export default function AddRecord() {
             className="w-full"
             size="lg"
             onClick={handleSave}
-            disabled={isSaving || !dogId || dogIdCheck.data?.exists === true || (imageSource === "camera" && (latitude === null || longitude === null) && !areaName.trim())}
+            disabled={!dogId || dogIdCheck.data?.exists === true || (imageSource === "camera" && (latitude === null || longitude === null) && !areaName.trim())}
           >
-            {isSaving ? (
-              <>
-                <Loader2 size={16} className="mr-2 animate-spin" />
-                {"Saving…"}
-              </>
-            ) : (
-              <>
-                <Save size={16} className="mr-2" />
-                Save Record
-              </>
-            )}
+            <Save size={16} className="mr-2" />
+            Save Record
           </Button>
         </>
       )}

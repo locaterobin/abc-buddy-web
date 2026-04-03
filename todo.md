@@ -318,3 +318,11 @@
 - [x] Show full pending queue card in Lookup (Tag) tab
 - [x] Both tabs use BroadcastChannel so queue updates live in both places simultaneously
 - [x] refreshQueue called after every save success/failure so card updates immediately
+
+## Activity Log Layout
+- [x] Row 1: timestamp | level badge | dogId — all on one line
+- [x] Row 2: message spanning full width
+
+## AddRecord Bugs
+- [x] Queue card not showing — only a spinner appears, full list invisible
+- [x] Save button blocked while background save in progress — user cannot save next record

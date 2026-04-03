@@ -310,22 +310,27 @@ export default function Home({ onLogout }: { onLogout?: () => void }) {
             {logEntries.length === 0 && (
               <p className="text-muted-foreground text-center py-8">No log entries yet.</p>
             )}
-            {logEntries.map(entry => (
-              <div
-                key={entry.id}
-                className={`flex gap-2 py-1 border-b border-border/40 ${
-                  entry.level === "error" ? "text-destructive" :
-                  entry.level === "success" ? "text-green-500" :
-                  entry.level === "warn" ? "text-yellow-500" :
-                  "text-muted-foreground"
-                }`}
-              >
-                <span className="shrink-0 text-[10px] text-muted-foreground/60">{formatIST(entry.ts)}</span>
-                <span className="shrink-0 uppercase text-[9px] font-bold tracking-wider w-12">{entry.level}</span>
-                {entry.dogId && <span className="shrink-0 text-primary/80">[{entry.dogId}]</span>}
-                <span className="break-all">{entry.message}</span>
-              </div>
-            ))}
+            {logEntries.map(entry => {
+              const levelColor =
+                entry.level === "error" ? "text-destructive" :
+                entry.level === "success" ? "text-green-500" :
+                entry.level === "warn" ? "text-yellow-500" :
+                "text-muted-foreground";
+              return (
+                <div key={entry.id} className={`py-1.5 border-b border-border/40 ${levelColor}`}>
+                  {/* Row 1: timestamp · level · dogId */}
+                  <div className="flex items-center gap-2">
+                    <span className="shrink-0 text-[10px] text-muted-foreground/60 tabular-nums">{formatIST(entry.ts)}</span>
+                    <span className="shrink-0 uppercase text-[9px] font-bold tracking-wider">{entry.level}</span>
+                    {entry.dogId && (
+                      <span className="shrink-0 font-mono text-[10px] text-primary/80">{entry.dogId}</span>
+                    )}
+                  </div>
+                  {/* Row 2: message spanning full width */}
+                  <p className="text-[11px] break-all mt-0.5 leading-snug">{entry.message}</p>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
