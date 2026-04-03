@@ -326,3 +326,9 @@
 ## AddRecord Bugs
 - [x] Queue card not showing — only a spinner appears, full list invisible
 - [x] Save button blocked while background save in progress — user cannot save next record
+
+## Queue Tray Redesign
+- [x] Move queue out of page scroll into a fixed bottom slide-up tray
+- [x] Tray shows a collapsed pill/banner when items exist, expands on tap
+- [x] Remove inline queue card from AddRecord and Lookup scroll area
+- [x] Tray visible in both Catching and Tag tabs

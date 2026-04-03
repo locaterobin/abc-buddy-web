@@ -18,11 +18,9 @@ import {
   MapPin,
   RotateCcw,
   AlertCircle,
-  RefreshCw,
-  Trash2,
-  AlertTriangle,
 } from "lucide-react";
 import { enqueueRecord, removeFromQueue, updateQueueStatus, getPendingRecords, type PendingRecord, QUEUE_CHANNEL_NAME } from "@/hooks/useOfflineQueue";
+import PendingQueueBar from "@/components/PendingQueueBar";
 import { logEvent } from "@/lib/appLog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -532,92 +530,7 @@ export default function AddRecord() {
   const hasImage = !!imageBase64;
 
   return (
-    <div className="container py-4 pb-6 max-w-lg mx-auto space-y-4">
-      {/* Pending queue card */}
-      {pendingCount > 0 && (
-        <Card className="border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-700">
-          <CardContent className="py-3 px-4 space-y-2">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2 text-amber-800 dark:text-amber-300 font-medium text-sm">
-                <AlertTriangle size={15} />
-                {pendingCount} record{pendingCount !== 1 ? "s" : ""} pending sync
-              </div>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 text-xs border-amber-400 text-amber-800 dark:text-amber-300 bg-transparent"
-                onClick={syncAll}
-                disabled={syncingIds.size > 0}
-              >
-                {syncingIds.size > 0 ? (
-                  <Loader2 size={12} className="mr-1 animate-spin" />
-                ) : (
-                  <RefreshCw size={12} className="mr-1" />
-                )}
-                Sync All
-              </Button>
-            </div>
-            {pendingRecords.map((item) => {
-              const isSyncing = syncingIds.has(item.queueId);
-              return (
-                <div
-                  key={item.queueId}
-                  className="flex items-center justify-between gap-2 text-xs text-amber-700 dark:text-amber-400"
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    {item.imageBase64 && (
-                      <img
-                        src={item.imageBase64}
-                        alt={item.dogId}
-                        className="w-10 h-10 rounded object-cover flex-shrink-0"
-                      />
-                    )}
-                    <div className="min-w-0">
-                      <p className="font-mono font-bold text-sm text-amber-900 dark:text-amber-200">
-                        {item.dogId}
-                      </p>
-                      {item.areaName && (
-                        <p className="truncate text-amber-600 dark:text-amber-500">{item.areaName}</p>
-                      )}
-                      <p className="text-amber-500 dark:text-amber-600 text-[10px]">{formatAge(item.queuedAt)}</p>
-                      {item.status === "failed" && item.errorMessage && (
-                        <p className="text-red-600 dark:text-red-400 truncate">{item.errorMessage}</p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex gap-1 flex-shrink-0">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-7 text-xs border-amber-400 text-amber-800 dark:text-amber-300 bg-transparent"
-                      onClick={() => retryRecord(item)}
-                      disabled={isSyncing}
-                      title="Retry"
-                    >
-                      {isSyncing ? (
-                        <Loader2 size={12} className="animate-spin" />
-                      ) : (
-                        <RefreshCw size={12} />
-                      )}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-7 text-xs border-red-300 text-red-600 dark:text-red-400 bg-transparent"
-                      onClick={() => discardRecord(item.queueId)}
-                      disabled={isSyncing}
-                      title="Discard"
-                    >
-                      <Trash2 size={12} />
-                    </Button>
-                  </div>
-                </div>
-              );
-            })}
-          </CardContent>
-        </Card>
-      )}
-
+    <div className="container py-4 pb-24 max-w-lg mx-auto space-y-4">
       {/* Catch Plan — always visible at top */}
       <div>
         <label className="text-sm font-medium text-foreground mb-1.5 block">
@@ -870,6 +783,13 @@ export default function AddRecord() {
           </Button>
         </>
       )}
+      <PendingQueueBar
+        records={pendingRecords}
+        syncingIds={syncingIds}
+        onRetry={retryRecord}
+        onDiscard={discardRecord}
+        onSyncAll={syncAll}
+      />
     </div>
   );
 }
