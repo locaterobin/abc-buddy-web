@@ -169,19 +169,20 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
     .input(z.object({ latitude: z.number(), longitude: z.number() }))
     .mutation(async ({ input }) => {
       try {
-        const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${input.latitude}&lon=${input.longitude}&zoom=16&addressdetails=1`;
-        const res = await fetch(url, {
-          headers: { "User-Agent": "ABCBuddy/1.0" },
-        });
+        const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+        if (!apiKey) throw new Error("GOOGLE_MAPS_API_KEY not set");
+        const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${input.latitude},${input.longitude}&key=${apiKey}&result_type=route|sublocality|locality`;
+        const res = await fetch(url);
         if (!res.ok) throw new Error("Geocoding failed");
         const data = await res.json();
-        const addr = data.address || {};
-        const parts = [
-          addr.road,
-          addr.neighbourhood || addr.suburb,
-          addr.city || addr.town || addr.village,
-        ].filter(Boolean);
-        const areaName = parts.join(", ") || data.display_name || "Unknown location";
+        if (data.status !== "OK" || !data.results?.length) throw new Error(`Geocoding status: ${data.status}`);
+        // Build a concise area name: prefer route + locality
+        const components = data.results[0].address_components as Array<{ long_name: string; types: string[] }>;
+        const get = (type: string) => components.find((c) => c.types.includes(type))?.long_name ?? "";
+        const road = get("route") || get("sublocality_level_1") || get("sublocality");
+        const locality = get("locality") || get("administrative_area_level_3") || get("administrative_area_level_2");
+        const parts = [road, locality].filter(Boolean);
+        const areaName = parts.join(", ") || data.results[0].formatted_address || "Unknown location";
         return { areaName };
       } catch (e) {
         console.error("Geocoding error:", e);
@@ -482,16 +483,20 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
           if (!input.areaName && input.latitude != null && input.longitude != null) {
             try {
               console.log(`[saveRecord backfill] Reverse geocoding for ${resolvedDogId}`);
-              const geoRes = await fetch(
-                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${input.latitude}&lon=${input.longitude}&zoom=16&addressdetails=1`,
-                { headers: { "User-Agent": "ABCBuddy/1.0" } }
-              );
+              const geoApiKey = process.env.GOOGLE_MAPS_API_KEY;
+              const geoUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${input.latitude},${input.longitude}&key=${geoApiKey}&result_type=route|sublocality|locality`;
+              const geoRes = await fetch(geoUrl);
               if (geoRes.ok) {
                 const geoData = await geoRes.json();
-                const addr = geoData.address || {};
-                const parts = [addr.road, addr.neighbourhood || addr.suburb, addr.city || addr.town || addr.village].filter(Boolean);
-                backfilledAreaName = parts.join(", ") || geoData.display_name || null;
-                console.log(`[saveRecord backfill] Area name: ${backfilledAreaName}`);
+                if (geoData.status === "OK" && geoData.results?.length) {
+                  const comps = geoData.results[0].address_components as Array<{ long_name: string; types: string[] }>;
+                  const getC = (type: string) => comps.find((c: { long_name: string; types: string[] }) => c.types.includes(type))?.long_name ?? "";
+                  const road = getC("route") || getC("sublocality_level_1") || getC("sublocality");
+                  const locality = getC("locality") || getC("administrative_area_level_3") || getC("administrative_area_level_2");
+                  const parts = [road, locality].filter(Boolean);
+                  backfilledAreaName = parts.join(", ") || geoData.results[0].formatted_address || null;
+                  console.log(`[saveRecord backfill] Area name: ${backfilledAreaName}`);
+                }
               }
             } catch (e) {
               console.warn("[saveRecord backfill] Geocoding failed:", e);

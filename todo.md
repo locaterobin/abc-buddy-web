@@ -332,3 +332,8 @@
 - [x] Tray shows a collapsed pill/banner when items exist, expands on tap
 - [x] Remove inline queue card from AddRecord and Lookup scroll area
 - [x] Tray visible in both Catching and Tag tabs
+
+## Google Geocoding API
+- [x] Store GOOGLE_MAPS_API_KEY as environment secret
+- [x] Replace Nominatim with Google Geocoding API in geocodeLatLng procedure
+- [x] Replace Nominatim with Google Geocoding API in saveRecord backfill
