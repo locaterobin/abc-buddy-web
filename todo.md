@@ -344,3 +344,8 @@
 - [x] Add admin_area column to dog_records (State + Country, hidden from UI)
 - [x] Pass district and admin_area in webhook payload on save
 - [x] Geocode procedure returns district and adminArea alongside areaName
+
+## Client-Side Share Flow
+- [x] Install piexifjs for EXIF injection
+- [x] Build annotateAndShare utility (Canvas annotation + EXIF + navigator.share)
+- [x] Wire into AddRecord on Save — parallel, no impact on existing flow

@@ -22,6 +22,7 @@ import {
 import { enqueueRecord, removeFromQueue, updateQueueStatus, getPendingRecords, type PendingRecord, QUEUE_CHANNEL_NAME } from "@/hooks/useOfflineQueue";
 import PendingQueueBar from "@/components/PendingQueueBar";
 import { logEvent } from "@/lib/appLog";
+import { annotateAndShare } from "@/lib/annotateAndShare";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 function formatAge(ts: number): string {
@@ -473,6 +474,17 @@ export default function AddRecord() {
     // Reset form immediately — pass current dogId so next ID is incremented locally
     resetForm(savedDogId);
     setTimeout(() => utils.dogs.getRecords.invalidate(), 6000);
+
+    // Parallel share flow — annotate client-side, inject EXIF, trigger share sheet.
+    // Completely independent: errors are swallowed, no impact on save/queue.
+    annotateAndShare({
+      imageBase64: savedImageBase64,
+      dogId: savedDogId,
+      latitude: savedLat,
+      longitude: savedLng,
+      areaName: savedAreaName || undefined,
+      recordedAt: savedRecordedAt,
+    });
 
     // Run annotation + save in background, with offline queue tracking
     const runBackground = async () => {
