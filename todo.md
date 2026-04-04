@@ -337,3 +337,10 @@
 - [x] Store GOOGLE_MAPS_API_KEY as environment secret
 - [x] Replace Nominatim with Google Geocoding API in geocodeLatLng procedure
 - [x] Replace Nominatim with Google Geocoding API in saveRecord backfill
+
+## Geocoding Enhancements
+- [x] Area name format: Locality first, then Route (e.g. "Sungal, Mandi - Pathankot Road")
+- [x] Add district column to dog_records (District/Tehsil, hidden from UI)
+- [x] Add admin_area column to dog_records (State + Country, hidden from UI)
+- [x] Pass district and admin_area in webhook payload on save
+- [x] Geocode procedure returns district and adminArea alongside areaName

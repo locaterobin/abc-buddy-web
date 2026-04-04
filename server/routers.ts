@@ -176,14 +176,19 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
         if (!res.ok) throw new Error("Geocoding failed");
         const data = await res.json();
         if (data.status !== "OK" || !data.results?.length) throw new Error(`Geocoding status: ${data.status}`);
-        // Build a concise area name: prefer route + locality
+        // Build a concise area name: Locality first, then Route
         const components = data.results[0].address_components as Array<{ long_name: string; types: string[] }>;
         const get = (type: string) => components.find((c) => c.types.includes(type))?.long_name ?? "";
         const road = get("route") || get("sublocality_level_1") || get("sublocality");
         const locality = get("locality") || get("administrative_area_level_3") || get("administrative_area_level_2");
-        const parts = [road, locality].filter(Boolean);
+        const parts = [locality, road].filter(Boolean); // locality first
         const areaName = parts.join(", ") || data.results[0].formatted_address || "Unknown location";
-        return { areaName };
+        // District and state+country (hidden from UI, stored in DB + sent in webhook)
+        const district = get("administrative_area_level_3") || get("administrative_area_level_2") || "";
+        const state = get("administrative_area_level_1");
+        const country = get("country");
+        const adminArea = [state, country].filter(Boolean).join(", ");
+        return { areaName, district, adminArea };
       } catch (e) {
         console.error("Geocoding error:", e);
         return { areaName: "" };
@@ -294,6 +299,8 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
         latitude: z.number().optional(),
         longitude: z.number().optional(),
         areaName: z.string().optional(),
+        district: z.string().optional(),
+        adminArea: z.string().optional(),
         source: z.enum(["camera", "upload"]).default("upload"),
         recordedAt: z.number(), // unix timestamp ms
         webhookUrl: z.string().optional(),
@@ -351,6 +358,8 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
         latitude: input.latitude ?? null,
         longitude: input.longitude ?? null,
         areaName: input.areaName ?? null,
+        district: input.district ?? null,
+        adminArea: input.adminArea ?? null,
         source: input.source,
         recordedAt: new Date(input.recordedAt),
         addedByStaffId: input.addedByStaffId ?? null,
@@ -446,6 +455,8 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
                 description: input.description ?? null,
                 notes: input.notes ?? null,
                 areaName: input.areaName ?? null,
+                district: input.district ?? null,
+                adminArea: input.adminArea ?? null,
                 latitude: input.latitude ?? null,
                 longitude: input.longitude ?? null,
                 recordedAt: new Date(input.recordedAt).toISOString(),
@@ -459,6 +470,8 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
           // Backfill description and/or areaName if they were missing when saved
           let backfilledDescription: string | null = null;
           let backfilledAreaName: string | null = null;
+          let backfilledDistrict: string | null = null;
+          let backfilledAdminArea: string | null = null;
 
           if (!input.description) {
             try {
@@ -493,9 +506,13 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
                   const getC = (type: string) => comps.find((c: { long_name: string; types: string[] }) => c.types.includes(type))?.long_name ?? "";
                   const road = getC("route") || getC("sublocality_level_1") || getC("sublocality");
                   const locality = getC("locality") || getC("administrative_area_level_3") || getC("administrative_area_level_2");
-                  const parts = [road, locality].filter(Boolean);
+                  const parts = [locality, road].filter(Boolean); // locality first
                   backfilledAreaName = parts.join(", ") || geoData.results[0].formatted_address || null;
-                  console.log(`[saveRecord backfill] Area name: ${backfilledAreaName}`);
+                  backfilledDistrict = getC("administrative_area_level_3") || getC("administrative_area_level_2") || null;
+                  const bState = getC("administrative_area_level_1");
+                  const bCountry = getC("country");
+                  backfilledAdminArea = [bState, bCountry].filter(Boolean).join(", ") || null;
+                  console.log(`[saveRecord backfill] Area name: ${backfilledAreaName}, district: ${backfilledDistrict}`);
                 }
               }
             } catch (e) {
@@ -503,11 +520,13 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
             }
           }
 
-          if (backfilledDescription || backfilledAreaName) {
+          if (backfilledDescription || backfilledAreaName || backfilledDistrict || backfilledAdminArea) {
             try {
               await updateDogRecord(savedRecord.id, input.teamIdentifier, {
                 ...(backfilledDescription ? { description: backfilledDescription } : {}),
                 ...(backfilledAreaName ? { areaName: backfilledAreaName } : {}),
+                ...(backfilledDistrict ? { district: backfilledDistrict } : {}),
+                ...(backfilledAdminArea ? { adminArea: backfilledAdminArea } : {}),
               });
               console.log(`[saveRecord backfill] DB updated for ${resolvedDogId}`);
               if (input.webhookUrl) {
@@ -520,6 +539,8 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
                     teamIdentifier: input.teamIdentifier,
                     ...(backfilledDescription ? { description: backfilledDescription } : {}),
                     ...(backfilledAreaName ? { areaName: backfilledAreaName } : {}),
+                    ...(backfilledDistrict ? { district: backfilledDistrict } : {}),
+                    ...(backfilledAdminArea ? { adminArea: backfilledAdminArea } : {}),
                     source: "backfill",
                   }),
                 }).catch((e) => console.warn("[saveRecord backfill] update webhook failed:", e));

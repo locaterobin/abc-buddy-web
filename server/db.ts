@@ -149,6 +149,8 @@ export async function updateDogRecord(
     description?: string | null;
     notes?: string | null;
     areaName?: string | null;
+    district?: string | null;
+    adminArea?: string | null;
     latitude?: number | null;
     longitude?: number | null;
     recordedAt?: Date;

@@ -35,6 +35,8 @@ export interface PendingRecord {
   latitude?: number;
   longitude?: number;
   areaName?: string;
+  district?: string;
+  adminArea?: string;
   source: "camera" | "upload";
   recordedAt: number;     // UTC ms
   webhookUrl?: string;

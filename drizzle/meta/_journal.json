@@ -106,6 +106,13 @@
       "when": 1774329382489,
       "tag": "0014_good_shocker",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "5",
+      "when": 1775274092397,
+      "tag": "0015_daily_garia",
+      "breakpoints": true
     }
   ]
 }

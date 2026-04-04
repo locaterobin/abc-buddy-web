@@ -115,6 +115,8 @@ export default function AddRecord() {
   const [recordedAt, setRecordedAt] = useState(() => toLocalDatetimeValue(new Date()));
   const [areaName, setAreaName] = useState("");
   const [areaNameEdited, setAreaNameEdited] = useState(false);
+  const [district, setDistrict] = useState("");
+  const [adminArea, setAdminArea] = useState("");
   const [notes, setNotes] = useState("");
   const [description, setDescription] = useState("");
   const [latitude, setLatitude] = useState<number | null>(null);
@@ -178,6 +180,8 @@ export default function AddRecord() {
         latitude: item.latitude,
         longitude: item.longitude,
         areaName: item.areaName,
+        district: item.district,
+        adminArea: item.adminArea,
         source: item.source,
         recordedAt: item.recordedAt,
         webhookUrl: item.webhookUrl,
@@ -247,6 +251,8 @@ export default function AddRecord() {
             if (data.areaName && !areaNameEdited) {
               setAreaName(data.areaName);
             }
+            if (data.district) setDistrict(data.district);
+            if (data.adminArea) setAdminArea(data.adminArea);
           },
         }
       );
@@ -371,6 +377,8 @@ export default function AddRecord() {
     setNotes("");
     setAreaName("");
     setAreaNameEdited(false);
+    setDistrict("");
+    setAdminArea("");
     setLatitude(null);
     setLongitude(null);
     setRecordedAt(toLocalDatetimeValue(new Date()));
@@ -432,6 +440,8 @@ export default function AddRecord() {
     const savedLat = latitude;
     const savedLng = longitude;
     const savedAreaName = areaName;
+    const savedDistrict = district;
+    const savedAdminArea = adminArea;
     const savedRecordedAt = new Date(recordedAt).getTime();
     const savedWebhookUrl = webhookUrl;
     const savedTeamId = teamId;
@@ -477,6 +487,8 @@ export default function AddRecord() {
         latitude: savedLat ?? undefined,
         longitude: savedLng ?? undefined,
         areaName: savedAreaName || undefined,
+        district: savedDistrict || undefined,
+        adminArea: savedAdminArea || undefined,
         source: savedSource,
         recordedAt: savedRecordedAt,
         webhookUrl: savedWebhookUrl || undefined,
@@ -500,6 +512,8 @@ export default function AddRecord() {
           latitude: savedLat ?? undefined,
           longitude: savedLng ?? undefined,
           areaName: savedAreaName || undefined,
+          district: savedDistrict || undefined,
+          adminArea: savedAdminArea || undefined,
           source: savedSource,
           recordedAt: savedRecordedAt,
           webhookUrl: savedWebhookUrl || undefined,

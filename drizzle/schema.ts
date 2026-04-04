@@ -26,6 +26,8 @@ export const dogRecords = mysqlTable("dog_records", {
   latitude: double("latitude"),
   longitude: double("longitude"),
   areaName: varchar("areaName", { length: 255 }),
+  district: varchar("district", { length: 255 }),   // e.g. "Kangra" — hidden from UI
+  adminArea: varchar("adminArea", { length: 255 }),  // e.g. "Himachal Pradesh, India" — hidden from UI
   source: mysqlEnum("source", ["camera", "upload", "api"]).default("upload").notNull(),
   gender: mysqlEnum("gender", ["Unknown", "Male", "Female"]).default("Unknown"),
   recordedAt: timestamp("recordedAt").notNull(),
