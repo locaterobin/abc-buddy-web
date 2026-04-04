@@ -916,7 +916,7 @@ const settingsRouter = router({
 
 // ─── IP Rate Limiting Helpers ───
 const MAX_FAILURES = 10;
-const WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+const WINDOW_MS = 2 * 60 * 60 * 1000; // 2 hours
 
 function getClientIp(req: any): string {
   return (
