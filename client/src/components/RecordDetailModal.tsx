@@ -643,13 +643,12 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
 
   const handleConfirmRelease = async () => {
     if (!confirmData) return;
-    setConfirming(true);
     const { latitude, longitude, areaName, distanceMetres } = confirmData;
-
     const releasedAt = new Date().toISOString();
     const distanceRounded = distanceMetres !== null ? Math.round(distanceMetres) : null;
     const queueId = crypto.randomUUID();
-    // Save to offline queue first
+
+    // 1. Save full payload to IndexedDB immediately
     await enqueuePlanPhoto({
       queueId,
       type: "release",
@@ -658,66 +657,74 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
       photo3Base64: photo3Base64 ?? undefined,
       releaseNotes: releasedAt,
       webhookUrl: webhookUrl ?? undefined,
+      releaseLatitude: latitude ?? undefined,
+      releaseLongitude: longitude ?? undefined,
+      releaseAreaName: areaName || undefined,
+      releaseDistanceMetres: distanceRounded ?? undefined,
+      captureDogId: record.dogId,
+      captureLatitude: record.latitude ?? undefined,
+      captureLongitude: record.longitude ?? undefined,
+      captureAreaName: record.areaName ?? undefined,
+      releasedByStaffId: staffSession?.staffId ?? undefined,
+      releasedByStaffName: staffSession?.name ?? undefined,
     });
-    try {
-      // Save to DB
-      const releaseResult = await saveReleaseMutation.mutateAsync({
-        id: record.id,
-        teamIdentifier: teamId,
-        releasedAt,
-        releaseLatitude: latitude,
-        releaseLongitude: longitude,
-        releaseAreaName: areaName || null,
-        releaseDistanceMetres: distanceRounded,
-        photo3Base64: photo3Base64 ?? undefined,
-        releasedByStaffId: staffSession?.staffId ?? null,
-        releasedByStaffName: staffSession?.name ?? null,
-      });
-      await removePlanPhotoFromQueue(queueId);
 
-      // Fire webhook
-      const releaseUrl = webhookUrl!.replace(/\/$/, "") + "/release";
-      const payload = {
-        event: "release",
-        dogId: record.dogId,
-        teamIdentifier: teamId,
-        releasedAt,
-        captureLatitude: record.latitude ?? null,
-        captureLongitude: record.longitude ?? null,
-        captureAreaName: record.areaName ?? null,
-        releaseLatitude: latitude,
-        releaseLongitude: longitude,
-        releaseAreaName: areaName || null,
-        distanceFromCapture: distanceRounded,
-        releasePhotoUrl: releaseResult?.releasePhotoUrl ?? null,
-        releasedByStaffId: staffSession?.staffId ?? null,
-        releasedByStaffName: staffSession?.name ?? null,
-      };
+    // 2. Close dialog immediately — team can move on
+    setReleased(true);
+    setConfirmData(null);
+    setPhoto3Base64(null);
+    const distanceMsg = distanceMetres !== null ? ` · ${formatDistance(distanceMetres)} from capture` : "";
+    toast.success(`${record.dogId} queued for release${distanceMsg}`);
 
-      fetch(releaseUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      }).catch((e) => console.warn("Release webhook failed:", e));
-      webhookMutation.mutate({ url: releaseUrl, payload });
+    // 3. Background sync — fire and forget
+    (async () => {
+      try {
+        const releaseResult = await saveReleaseMutation.mutateAsync({
+          id: record.id,
+          teamIdentifier: teamId,
+          releasedAt,
+          releaseLatitude: latitude,
+          releaseLongitude: longitude,
+          releaseAreaName: areaName || null,
+          releaseDistanceMetres: distanceRounded,
+          photo3Base64: photo3Base64 ?? undefined,
+          releasedByStaffId: staffSession?.staffId ?? null,
+          releasedByStaffName: staffSession?.name ?? null,
+        });
+        await removePlanPhotoFromQueue(queueId);
 
-      utils.dogs.getRecords.invalidate();
-      setReleased(true);
-      setConfirmData(null);
-      setPhoto3Base64(null);
-      const distanceMsg =
-        distanceMetres !== null ? ` · ${formatDistance(distanceMetres)} from capture` : "";
-      toast.success(`${record.dogId} marked as Released${distanceMsg}`);
-    } catch (err: any) {
-      await updatePlanPhotoStatus(queueId, "failed", err?.message || "Network error");
-      // Still mark as released locally so UI reflects it
-      setReleased(true);
-      setConfirmData(null);
-      setPhoto3Base64(null);
-      toast("Release saved offline — will sync when online", { icon: "📋" });
-    } finally {
-      setConfirming(false);
-    }
+        // Fire webhook
+        if (webhookUrl) {
+          const releaseUrl = webhookUrl.replace(/\/$/, "") + "/release";
+          const payload = {
+            event: "release",
+            dogId: record.dogId,
+            teamIdentifier: teamId,
+            releasedAt,
+            captureLatitude: record.latitude ?? null,
+            captureLongitude: record.longitude ?? null,
+            captureAreaName: record.areaName ?? null,
+            releaseLatitude: latitude,
+            releaseLongitude: longitude,
+            releaseAreaName: areaName || null,
+            distanceFromCapture: distanceRounded,
+            releasePhotoUrl: releaseResult?.releasePhotoUrl ?? null,
+            releasedByStaffId: staffSession?.staffId ?? null,
+            releasedByStaffName: staffSession?.name ?? null,
+          };
+          fetch(releaseUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          }).catch((e) => console.warn("Release webhook failed:", e));
+          webhookMutation.mutate({ url: releaseUrl, payload });
+        }
+        utils.dogs.getRecords.invalidate();
+      } catch (err: any) {
+        await updatePlanPhotoStatus(queueId, "failed", err?.message || "Network error");
+        console.warn("[Release] Background sync failed, kept in queue:", err?.message);
+      }
+    })();
   };
 
   const handleCancelRelease = () => {
@@ -1073,7 +1080,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
 
                 {/* Photo 3 capture */}
                 <div className="w-full">
-                  <p className="text-xs text-muted-foreground mb-2 text-center">Add a release photo (optional)</p>
+                  <p className="text-xs text-muted-foreground mb-2 text-center">Add a release photo</p>
                   {photo3Base64 ? (
                     <div className="relative">
                       <img src={photo3Base64} alt="release photo" className="w-full h-28 object-cover rounded-xl" />
@@ -1141,7 +1148,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
                         : "flex-1 bg-green-600 hover:bg-green-700 text-white"
                     }
                     onClick={handleConfirmRelease}
-                    disabled={confirming}
+                    disabled={confirming || !photo3Base64}
                   >
                     {confirming ? (
                       <>

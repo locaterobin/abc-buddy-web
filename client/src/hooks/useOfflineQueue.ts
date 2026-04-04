@@ -171,8 +171,19 @@ export interface PendingPlanPhoto {
   recordId?: number;
   teamIdentifier?: string;
   photo3Base64?: string;
-  releaseNotes?: string;
+  releaseNotes?: string; // stores releasedAt ISO string
   webhookUrl?: string;
+  // Full release GPS + metadata (needed for background retry)
+  releaseLatitude?: number;
+  releaseLongitude?: number;
+  releaseAreaName?: string | null;
+  releaseDistanceMetres?: number | null;
+  captureDogId?: string;
+  captureLatitude?: number | null;
+  captureLongitude?: number | null;
+  captureAreaName?: string | null;
+  releasedByStaffId?: string | null;
+  releasedByStaffName?: string | null;
   status: QueueStatus;
   queuedAt: number;
   errorMessage?: string;
@@ -201,6 +212,7 @@ export async function enqueuePlanPhoto(item: Omit<PendingPlanPhoto, "status" | "
     const tx = db.transaction(PLAN_PHOTO_QUEUE_STORE, "readwrite");
     tx.objectStore(PLAN_PHOTO_QUEUE_STORE).put({ ...item, status: "pending" as QueueStatus, queuedAt: Date.now() });
     await new Promise<void>((res, rej) => { tx.oncomplete = () => res(); tx.onerror = () => rej(tx.error); });
+    notifyQueueChanged();
   } catch (e) { console.warn("IndexedDB plan photo queue write failed:", e); }
 }
 

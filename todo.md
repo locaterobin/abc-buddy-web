@@ -366,3 +366,10 @@
 ## notifyOwner on IP Block
 - [x] Call notifyOwner() when an IP is auto-blocked in recordLoginAttempt
 - [x] Update ip-login-ratelimit skill with notifyOwner pattern
+
+## Release Flow - Photo Required + Offline Queue
+- [x] Release button disabled until photo is added (camera or upload)
+- [x] Remove "(optional)" text from release dialog
+- [x] Queue release entry to IndexedDB on confirm (background sync)
+- [x] Background retry for release queue items (same pattern as catch queue)
+- [x] Release queue items shown in PendingQueueBar
