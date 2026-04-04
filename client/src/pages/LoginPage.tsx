@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, ShieldAlert } from "lucide-react";
 
 export interface StaffSession {
   name: string;
@@ -45,6 +45,12 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  // Check if this IP is blocked before showing the login form
+  const ipBlockQuery = trpc.airtable.checkIpBlock.useQuery(undefined, {
+    retry: false,
+    staleTime: 60_000,
+  });
+
   const loginMutation = trpc.airtable.login.useMutation({
     onSuccess: (data) => {
       const session: StaffSession = {
@@ -62,7 +68,12 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
       toast.success(`Welcome, ${data.name || data.email}`);
     },
     onError: (err) => {
-      toast.error(err.message || "Login failed");
+      if (err.message === "IP_BLOCKED") {
+        // Force a re-check so the blocked screen appears
+        ipBlockQuery.refetch();
+      } else {
+        toast.error(err.message || "Login failed");
+      }
     },
   });
 
@@ -71,6 +82,44 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
     if (!email.trim() || !password.trim()) return;
     loginMutation.mutate({ email: email.trim(), password });
   };
+
+  // Show loading while checking IP status
+  if (ipBlockQuery.isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 size={28} className="animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  // Show blocked screen if IP is blocked
+  if (ipBlockQuery.data?.blocked) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background px-4">
+        <div className="w-full max-w-sm space-y-6 text-center">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-red-100 dark:bg-red-900/30 mb-2">
+            <ShieldAlert size={32} className="text-red-600 dark:text-red-400" />
+          </div>
+          <div className="space-y-2">
+            <h1 className="text-2xl font-bold text-foreground">Access Blocked</h1>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Your IP address has been blocked due to too many failed login attempts.
+            </p>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Please contact your administrator to restore access.
+            </p>
+          </div>
+          <Card>
+            <CardContent className="pt-4 pb-4">
+              <p className="text-xs text-muted-foreground font-mono break-all">
+                Blocked IP: {ipBlockQuery.data.ip}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">

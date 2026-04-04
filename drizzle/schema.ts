@@ -95,3 +95,23 @@ export const teamSettings = mysqlTable("team_settings", {
 });
 
 export type TeamSettings = typeof teamSettings.$inferSelect;
+
+export const loginAttempts = mysqlTable("login_attempts", {
+  id: int("id").autoincrement().primaryKey(),
+  ip: varchar("ip", { length: 64 }).notNull(),
+  email: varchar("email", { length: 320 }),
+  success: boolean("success").default(false).notNull(),
+  attemptedAt: timestamp("attemptedAt").defaultNow().notNull(),
+});
+
+export type LoginAttempt = typeof loginAttempts.$inferSelect;
+
+export const blockedIps = mysqlTable("blocked_ips", {
+  id: int("id").autoincrement().primaryKey(),
+  ip: varchar("ip", { length: 64 }).notNull().unique(),
+  blockedAt: timestamp("blockedAt").defaultNow().notNull(),
+  reason: varchar("reason", { length: 255 }).default("Too many failed login attempts").notNull(),
+  unblockedAt: timestamp("unblockedAt"), // null = permanently blocked until manual unblock
+});
+
+export type BlockedIp = typeof blockedIps.$inferSelect;

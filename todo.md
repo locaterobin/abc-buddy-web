@@ -355,3 +355,10 @@
 
 ## Label Change
 - [x] Rename "Catch Plan" to "Catching Team" in Catch tab
+
+## IP Login Rate Limiting
+- [x] Add login_attempts table to DB schema
+- [x] Add blocked_ips table to DB schema
+- [x] Rate-limit logic in airtable.login (block after 10 failures in 15 min window)
+- [x] Public checkIpBlock tRPC endpoint
+- [x] IP Blocked screen shown instead of login form for blocked IPs

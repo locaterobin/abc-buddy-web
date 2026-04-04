@@ -35,6 +35,9 @@ import {
   updateDogRecord,
   updateCheckedPhotoUrl,
 } from "./db";
+import { getDb } from "./db";
+import { loginAttempts, blockedIps } from "../drizzle/schema";
+import { eq, and, gte, count, sql } from "drizzle-orm";
 import { storagePut } from "./storage";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createPatchedFetch } from "./_core/patchedFetch";
@@ -911,15 +914,77 @@ const settingsRouter = router({
     }),
 });
 
+// ─── IP Rate Limiting Helpers ───
+const MAX_FAILURES = 10;
+const WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+
+function getClientIp(req: any): string {
+  return (
+    (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ||
+    req.socket?.remoteAddress ||
+    "unknown"
+  );
+}
+
+async function isIpBlocked(ip: string): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  const rows = await db.select().from(blockedIps).where(eq(blockedIps.ip, ip)).limit(1);
+  if (rows.length === 0) return false;
+  const row = rows[0];
+  // If unblockedAt is set and in the past, treat as unblocked
+  if (row.unblockedAt && row.unblockedAt < new Date()) return false;
+  return true;
+}
+
+async function recordLoginAttempt(ip: string, email: string, success: boolean): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(loginAttempts).values({ ip, email, success });
+  if (!success) {
+    // Count failures in the last 15 minutes
+    const windowStart = new Date(Date.now() - WINDOW_MS);
+    const result = await db
+      .select({ cnt: count() })
+      .from(loginAttempts)
+      .where(and(
+        eq(loginAttempts.ip, ip),
+        eq(loginAttempts.success, false),
+        gte(loginAttempts.attemptedAt, windowStart),
+      ));
+    const failures = Number(result[0]?.cnt ?? 0);
+    if (failures >= MAX_FAILURES) {
+      // Auto-block this IP
+      await db.insert(blockedIps)
+        .values({ ip, reason: `Auto-blocked after ${failures} failed login attempts` })
+        .onDuplicateKeyUpdate({ set: { blockedAt: sql`NOW()`, unblockedAt: null, reason: sql`VALUES(reason)` } });
+      console.warn(`[Security] IP ${ip} auto-blocked after ${failures} failed login attempts`);
+    }
+  }
+}
+
 // ─── Airtable Login Router ───
 const AIRTABLE_BASE = "appoMiBAQmtIDb1D2";
 const STAFF_TABLE = "tbltkS9ncZmJbGaeh";
 const TEAMS_TABLE = "tblG6klpIc4Eu948N";
 
 const airtableLoginRouter = router({
+  checkIpBlock: publicProcedure
+    .query(async ({ ctx }) => {
+      const ip = getClientIp(ctx.req);
+      const blocked = await isIpBlocked(ip);
+      return { blocked, ip };
+    }),
   login: publicProcedure
     .input(z.object({ email: z.string().email(), password: z.string().min(1) }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      const ip = getClientIp(ctx.req);
+
+      // Reject immediately if IP is blocked
+      if (await isIpBlocked(ip)) {
+        throw new Error("IP_BLOCKED");
+      }
+
       const apiKey = process.env.AIRTABLE_API_TOKEN;
       if (!apiKey) throw new Error("Airtable API token not configured");
 
@@ -930,11 +995,13 @@ const airtableLoginRouter = router({
       const data = await res.json() as { records: Array<{ fields: Record<string, string> }> };
 
       if (!data.records || data.records.length === 0) {
+        await recordLoginAttempt(ip, input.email, false);
         throw new Error("Invalid email or password");
       }
 
       const staff = data.records[0].fields;
       if (staff["Password"] !== input.password) {
+        await recordLoginAttempt(ip, input.email, false);
         throw new Error("Invalid email or password");
       }
 
@@ -958,6 +1025,9 @@ const airtableLoginRouter = router({
           }
         } catch { /* ignore, orgName stays empty */ }
       }
+
+      // Record successful login
+      await recordLoginAttempt(ip, input.email, true);
 
       // Return user session data
       return {
