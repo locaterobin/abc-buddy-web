@@ -304,7 +304,7 @@ async function canvasAnnotate(
       ctx.fillStyle = "rgba(0,0,0,0.65)";
       ctx.fillRect(0, H - overlayH, W, overlayH);
 
-      ctx.fillStyle = "#ffffff";
+      ctx.fillStyle = "#FFE600";
       let y = H - overlayH + padding + idFontSize;
       for (let i = 0; i < lines.length; i++) {
         const size = i === 0 ? idFontSize : lineFontSize;
