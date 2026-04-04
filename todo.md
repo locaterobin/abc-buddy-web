@@ -373,3 +373,7 @@
 - [x] Queue release entry to IndexedDB on confirm (background sync)
 - [x] Background retry for release queue items (same pattern as catch queue)
 - [x] Release queue items shown in PendingQueueBar
+
+## Server Save Integrity + Release Queue in Releases Tab
+- [x] Audit saveRecord: confirm server only returns success after DB write is fully committed
+- [x] Add PendingReleaseBar to Releases tab showing pending release queue items

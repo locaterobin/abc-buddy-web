@@ -243,6 +243,7 @@ export async function updatePlanPhotoStatus(queueId: string, status: QueueStatus
       getReq.onerror = () => rej(getReq.error);
     });
     await new Promise<void>((res, rej) => { tx.oncomplete = () => res(); tx.onerror = () => rej(tx.error); });
+    notifyQueueChanged();
   } catch (e) { console.warn("IndexedDB plan photo status update failed:", e); }
 }
 
@@ -252,5 +253,6 @@ export async function removePlanPhotoFromQueue(queueId: string): Promise<void> {
     const tx = db.transaction(PLAN_PHOTO_QUEUE_STORE, "readwrite");
     tx.objectStore(PLAN_PHOTO_QUEUE_STORE).delete(queueId);
     await new Promise<void>((res, rej) => { tx.oncomplete = () => res(); tx.onerror = () => rej(tx.error); });
+    notifyQueueChanged();
   } catch (e) { console.warn("IndexedDB plan photo queue delete failed:", e); }
 }

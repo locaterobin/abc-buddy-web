@@ -1,4 +1,12 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import PendingReleaseBar from "@/components/PendingReleaseBar";
+import {
+  getPendingPlanPhotos,
+  updatePlanPhotoStatus,
+  removePlanPhotoFromQueue,
+  type PendingPlanPhoto,
+  QUEUE_CHANNEL_NAME,
+} from "@/hooks/useOfflineQueue";
 import { getCachedReleasePlans, setCachedReleasePlans, getCachedPlanDogs, setCachedPlanDogs } from "@/hooks/useRecordCache";
 import { trpc } from "@/lib/trpc";
 import { useTeam } from "@/contexts/TeamContext";
@@ -210,6 +218,29 @@ export default function ReleasePlanPage() {
   const staffSession = JSON.parse(localStorage.getItem("abc-buddy-staff-session") || "null");
   const isManager = staffSession?.role?.toLowerCase() === "manager";
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
+
+  // ── Release queue (plan photos) ─────────────────────────────────────────────
+  const [pendingReleaseItems, setPendingReleaseItems] = useState<PendingPlanPhoto[]>([]);
+  const [syncingReleaseIds, setSyncingReleaseIds] = useState<Set<string>>(new Set());
+
+  const refreshReleaseQueue = useCallback(async () => {
+    const all = await getPendingPlanPhotos();
+    // Only show release-type items in this tab
+    setPendingReleaseItems(all.filter((i) => i.type === "release"));
+  }, []);
+
+  useEffect(() => {
+    refreshReleaseQueue();
+    let ch: BroadcastChannel | null = null;
+    try {
+      ch = new BroadcastChannel(QUEUE_CHANNEL_NAME);
+      ch.onmessage = () => refreshReleaseQueue();
+    } catch { /* not supported */ }
+    return () => { ch?.close(); };
+  }, [refreshReleaseQueue]);
+
+  const saveReleaseMutation = trpc.dogs.saveRelease.useMutation();
+
   const [selectedRecord, setSelectedRecord] = useState<any>(null);
   const [dogIdFilter, setDogIdFilter] = useState("");
   // Local order state for optimistic drag reorder
@@ -226,6 +257,46 @@ export default function ReleasePlanPage() {
   }, [teamIdentifier]);
 
   const utils = trpc.useUtils();
+
+  // ── Release queue retry handlers (need utils) ───────────────────────────────
+  const retryReleaseItem = useCallback(async (item: PendingPlanPhoto) => {
+    if (item.type !== "release" || !item.recordId || !item.teamIdentifier) return;
+    setSyncingReleaseIds((prev) => new Set(prev).add(item.queueId));
+    await updatePlanPhotoStatus(item.queueId, "syncing");
+    try {
+      await saveReleaseMutation.mutateAsync({
+        id: item.recordId,
+        teamIdentifier: item.teamIdentifier,
+        releasedAt: item.releaseNotes ?? new Date().toISOString(),
+        releaseLatitude: item.releaseLatitude ?? null,
+        releaseLongitude: item.releaseLongitude ?? null,
+        releaseAreaName: item.releaseAreaName ?? null,
+        releaseDistanceMetres: item.releaseDistanceMetres ?? null,
+        photo3Base64: item.photo3Base64,
+      });
+      await removePlanPhotoFromQueue(item.queueId);
+      toast.success(`${item.captureDogId ?? "Dog"} release synced`);
+      utils.releasePlans.getPlans.invalidate();
+      utils.releasePlans.getPlanDogs.invalidate();
+    } catch (err: any) {
+      await updatePlanPhotoStatus(item.queueId, "failed", err?.message || "Network error");
+      toast.error(`Sync failed: ${err?.message ?? "Unknown error"}`);
+    } finally {
+      setSyncingReleaseIds((prev) => { const s = new Set(prev); s.delete(item.queueId); return s; });
+      refreshReleaseQueue();
+    }
+  }, [saveReleaseMutation, utils, refreshReleaseQueue]);
+
+  const syncAllReleases = useCallback(async () => {
+    const all = await getPendingPlanPhotos();
+    const releaseItems = all.filter((i) => i.type === "release");
+    for (const item of releaseItems) await retryReleaseItem(item);
+  }, [retryReleaseItem]);
+
+  const discardReleaseItem = useCallback(async (queueId: string) => {
+    await removePlanPhotoFromQueue(queueId);
+    refreshReleaseQueue();
+  }, [refreshReleaseQueue]);
 
   // Plans list
   const { data: freshPlans, isLoading: plansLoading } = trpc.releasePlans.getPlans.useQuery(
@@ -564,6 +635,13 @@ export default function ReleasePlanPage() {
           ))
         )}
       </div>
+      <PendingReleaseBar
+        items={pendingReleaseItems}
+        syncingIds={syncingReleaseIds}
+        onRetry={retryReleaseItem}
+        onDiscard={discardReleaseItem}
+        onSyncAll={syncAllReleases}
+      />
     </div>
   );
 }
