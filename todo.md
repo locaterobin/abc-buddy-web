@@ -349,3 +349,6 @@
 - [x] Install piexifjs for EXIF injection
 - [x] Build annotateAndShare utility (Canvas annotation + EXIF + navigator.share)
 - [x] Wire into AddRecord on Save — parallel, no impact on existing flow
+
+## Share Flow Guard
+- [x] annotateAndShare only fires for camera captures in Catch flow (not uploads, not release/other photos)

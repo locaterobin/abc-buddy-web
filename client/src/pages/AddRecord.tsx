@@ -476,8 +476,8 @@ export default function AddRecord() {
     setTimeout(() => utils.dogs.getRecords.invalidate(), 6000);
 
     // Parallel share flow — annotate client-side, inject EXIF, trigger share sheet.
-    // Completely independent: errors are swallowed, no impact on save/queue.
-    annotateAndShare({
+    // Only for camera captures in the Catch flow (not uploads, not release/other photos).
+    if (savedSource === "camera") annotateAndShare({
       imageBase64: savedImageBase64,
       dogId: savedDogId,
       latitude: savedLat,
