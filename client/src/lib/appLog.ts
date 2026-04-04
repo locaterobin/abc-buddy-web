@@ -21,12 +21,27 @@ function makeId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
-/** Write a log entry synchronously to localStorage. Never throws. */
-export function logEvent(level: LogLevel, message: string, dogId?: string): void {
+/**
+ * Write a log entry synchronously to localStorage. Never throws.
+ *
+ * @param level   - Log severity level
+ * @param message - Event name / message string (e.g. "release_queued")
+ * @param dogId   - Optional dog ID for filtering
+ * @param payload - Optional structured data; serialized to JSON and appended to message
+ */
+export function logEvent(
+  level: LogLevel,
+  message: string,
+  dogId?: string,
+  payload?: Record<string, unknown>
+): void {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     const entries: LogEntry[] = raw ? JSON.parse(raw) : [];
-    const entry: LogEntry = { id: makeId(), ts: Date.now(), level, message, dogId };
+    const fullMessage = payload
+      ? `${message} ${JSON.stringify(payload)}`
+      : message;
+    const entry: LogEntry = { id: makeId(), ts: Date.now(), level, message: fullMessage, dogId };
     entries.push(entry);
     // Trim oldest entries if over limit
     if (entries.length > MAX_ENTRIES) {

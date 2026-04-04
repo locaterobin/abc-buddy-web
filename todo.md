@@ -377,3 +377,14 @@
 ## Server Save Integrity + Release Queue in Releases Tab
 - [x] Audit saveRecord: confirm server only returns success after DB write is fully committed
 - [x] Add PendingReleaseBar to Releases tab showing pending release queue items
+
+## Release Activity Log
+- [ ] Add release_queued log entry in RecordDetailModal (dogId, team, staff, GPS, distance, photo3 present)
+- [ ] Add release_attempt, release_confirmed, release_failed log entries in background retry
+
+## Release Flow Activity Logging
+- [x] Extend logEvent to accept optional payload object (4th arg, serialized as JSON)
+- [x] Add release_queued log entry when release is saved to IndexedDB
+- [x] Add release_attempt log entry when background sync starts
+- [x] Add release_confirmed log entry on successful server save
+- [x] Add release_failed log entry on background sync error

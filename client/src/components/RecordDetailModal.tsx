@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { logEvent } from "@/lib/appLog";
 import { trpc } from "@/lib/trpc";
 import { resizeImage } from "@/lib/resizeImage";
 import { enqueuePlanPhoto, removePlanPhotoFromQueue, getPendingPlanPhotos, updatePlanPhotoStatus } from "@/hooks/useOfflineQueue";
@@ -648,7 +649,23 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
     const distanceRounded = distanceMetres !== null ? Math.round(distanceMetres) : null;
     const queueId = crypto.randomUUID();
 
-    // 1. Save full payload to IndexedDB immediately
+    // 1. Log release queued
+    logEvent("info", "release_queued", record.dogId, {
+      dogId: record.dogId,
+      team: teamId,
+      staff: staffSession?.name,
+      staffId: staffSession?.staffId,
+      releaseLatitude: latitude,
+      releaseLongitude: longitude,
+      releaseAreaName: areaName,
+      distanceMetres: distanceRounded,
+      captureLatitude: record.latitude,
+      captureLongitude: record.longitude,
+      photo3Present: !!photo3Base64,
+      recordedAt: releasedAt,
+    });
+
+    // 2. Save full payload to IndexedDB immediately
     await enqueuePlanPhoto({
       queueId,
       type: "release",
@@ -678,6 +695,12 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
 
     // 3. Background sync — fire and forget
     (async () => {
+      logEvent("info", "release_attempt", record.dogId, {
+        dogId: record.dogId,
+        team: teamId,
+        staff: staffSession?.name,
+        queueId,
+      });
       try {
         const releaseResult = await saveReleaseMutation.mutateAsync({
           id: record.id,
@@ -692,6 +715,13 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
           releasedByStaffName: staffSession?.name ?? null,
         });
         await removePlanPhotoFromQueue(queueId);
+        logEvent("info", "release_confirmed", record.dogId, {
+          dogId: record.dogId,
+          team: teamId,
+          staff: staffSession?.name,
+          releasePhotoUrl: releaseResult?.releasePhotoUrl ?? null,
+          queueId,
+        });
 
         // Fire webhook
         if (webhookUrl) {
@@ -722,6 +752,13 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
         utils.dogs.getRecords.invalidate();
       } catch (err: any) {
         await updatePlanPhotoStatus(queueId, "failed", err?.message || "Network error");
+        logEvent("error", "release_failed", record.dogId, {
+          dogId: record.dogId,
+          team: teamId,
+          staff: staffSession?.name,
+          error: err?.message || "Network error",
+          queueId,
+        });
         console.warn("[Release] Background sync failed, kept in queue:", err?.message);
       }
     })();
