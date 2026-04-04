@@ -362,3 +362,7 @@
 - [x] Rate-limit logic in airtable.login (block after 10 failures in 15 min window)
 - [x] Public checkIpBlock tRPC endpoint
 - [x] IP Blocked screen shown instead of login form for blocked IPs
+
+## notifyOwner on IP Block
+- [x] Call notifyOwner() when an IP is auto-blocked in recordLoginAttempt
+- [x] Update ip-login-ratelimit skill with notifyOwner pattern

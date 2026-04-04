@@ -38,6 +38,7 @@ import {
 import { getDb } from "./db";
 import { loginAttempts, blockedIps } from "../drizzle/schema";
 import { eq, and, gte, count, sql } from "drizzle-orm";
+import { notifyOwner } from "./_core/notification";
 import { storagePut } from "./storage";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createPatchedFetch } from "./_core/patchedFetch";
@@ -958,6 +959,11 @@ async function recordLoginAttempt(ip: string, email: string, success: boolean): 
       await db.insert(blockedIps)
         .values({ ip, reason: `Auto-blocked after ${failures} failed login attempts` })
         .onDuplicateKeyUpdate({ set: { blockedAt: sql`NOW()`, unblockedAt: null, reason: sql`VALUES(reason)` } });
+      // Notify the project owner immediately
+      notifyOwner({
+        title: "IP Auto-Blocked",
+        content: `IP ${ip} was blocked after ${failures} failed login attempts within the past 2 hours. Email attempted: ${email}`,
+      }).catch(() => {}); // fire-and-forget, don't block the response
       console.warn(`[Security] IP ${ip} auto-blocked after ${failures} failed login attempts`);
     }
   }
