@@ -352,3 +352,6 @@
 
 ## Share Flow Guard
 - [x] annotateAndShare only fires for camera captures in Catch flow (not uploads, not release/other photos)
+
+## Label Change
+- [x] Rename "Catch Plan" to "Catching Team" in Catch tab

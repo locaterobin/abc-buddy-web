@@ -557,10 +557,10 @@ export default function AddRecord() {
 
   return (
     <div className="container py-4 pb-24 max-w-lg mx-auto space-y-4">
-      {/* Catch Plan — always visible at top */}
+      {/* Catching Team — always visible at top */}
       <div>
         <label className="text-sm font-medium text-foreground mb-1.5 block">
-          Catch Plan
+          Catching Team
         </label>
         <Select value={catchPlan} onValueChange={handlePlanChange}>
           <SelectTrigger className="w-full">
