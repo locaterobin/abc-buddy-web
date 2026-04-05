@@ -388,3 +388,11 @@
 - [x] Add release_attempt log entry when background sync starts
 - [x] Add release_confirmed log entry on successful server save
 - [x] Add release_failed log entry on background sync error
+
+## Queue Bar & Badge Fixes
+- [x] Hide catch queue bar (PendingQueueBar) from Tag/Lookup tab — only show in Catching tab
+- [x] Fix pending badge: show on Catch tab when catch queue has items, Releases tab when release queue has items (not always Tag)
+
+## Queue Bar Placement Fix
+- [x] Remove PendingQueueBar from Lookup/Tag tab (catch queue bar belongs only in Catch tab)
+- [x] Fix nav badge: show on Catch tab for catch queue items, Release tab for release queue items

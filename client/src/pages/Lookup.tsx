@@ -431,85 +431,7 @@ export default function Lookup() {
   return (
     <div className="container py-4 pb-24 max-w-lg mx-auto space-y-4">
 
-      {/* Pending plan photos banner */}
-      {pendingPlanPhotos.length > 0 && (
-        <Card className="border-blue-300 bg-blue-50 dark:bg-blue-950/30 dark:border-blue-700">
-          <CardContent className="py-3 px-4 space-y-2">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2 text-blue-800 dark:text-blue-300 font-medium text-sm">
-                <AlertTriangle size={15} />
-                {pendingPlanPhotos.length} plan action{pendingPlanPhotos.length !== 1 ? "s" : ""} pending sync
-              </div>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 text-xs border-blue-400 text-blue-800 dark:text-blue-300 bg-transparent"
-                onClick={syncAllPlanPhotos}
-                disabled={syncingPlanIds.size > 0}
-              >
-                {syncingPlanIds.size > 0 ? (
-                  <Loader2 size={12} className="mr-1 animate-spin" />
-                ) : (
-                  <RefreshCw size={12} className="mr-1" />
-                )}
-                Sync All
-              </Button>
-            </div>
-            {pendingPlanPhotos.map((item) => {
-              const isSyncing = syncingPlanIds.has(item.queueId);
-              return (
-                <div
-                  key={item.queueId}
-                  className="flex items-center justify-between gap-2 text-xs text-blue-700 dark:text-blue-400"
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    {(item.photo2Base64 || item.photo3Base64) && (
-                      <img
-                        src={item.photo2Base64 ?? item.photo3Base64}
-                        alt="plan photo"
-                        className="w-10 h-10 rounded object-cover flex-shrink-0"
-                      />
-                    )}
-                    <div className="min-w-0">
-                      <p className="font-mono font-bold text-sm text-blue-900 dark:text-blue-200">
-                        {item.dogId ?? (item.type === "release" ? "Release" : "Checked")} — {item.type}
-                      </p>
-                      <p className="text-blue-500 dark:text-blue-600 text-[10px]">{formatAge(item.queuedAt)}</p>
-                      {item.status === "failed" && item.errorMessage && (
-                        <p className="text-red-600 dark:text-red-400 truncate">{item.errorMessage}</p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex gap-1 flex-shrink-0">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-7 text-xs border-blue-400 text-blue-800 dark:text-blue-300 bg-transparent"
-                      onClick={() => retryPlanPhoto(item)}
-                      disabled={isSyncing}
-                    >
-                      {isSyncing ? (
-                        <Loader2 size={12} className="animate-spin" />
-                      ) : (
-                        <RefreshCw size={12} />
-                      )}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-7 text-xs border-red-300 text-red-600 dark:text-red-400 bg-transparent"
-                      onClick={() => discardPlanPhoto(item.queueId)}
-                      disabled={isSyncing}
-                    >
-                      <Trash2 size={12} />
-                    </Button>
-                  </div>
-                </div>
-              );
-            })}
-          </CardContent>
-        </Card>
-      )}
+
 
       {/* Date Range Dropdown + Sync */}
       <div className="flex gap-2">
@@ -832,13 +754,6 @@ export default function Lookup() {
           }}
         />
       )}
-      <PendingQueueBar
-        records={pendingRecords}
-        syncingIds={syncingIds}
-        onRetry={retryRecord}
-        onDiscard={discardRecord}
-        onSyncAll={syncAll}
-      />
     </div>
   );
 }

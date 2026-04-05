@@ -49,7 +49,8 @@ export default function Home({ onLogout }: { onLogout?: () => void }) {
     navigator.clipboard.writeText(text).catch(() => {});
   }, [logEntries]);
   const drawerRef = useRef<HTMLDivElement>(null);
-  const [pendingCount, setPendingCount] = useState(0);
+  const [catchPendingCount, setCatchPendingCount] = useState(0);
+  const [releasePendingCount, setReleasePendingCount] = useState(0);
   const [updateStatus, setUpdateStatus] = useState<"idle" | "checking" | "updated" | "latest">("idle");
   const { staffSession } = useTeam();
   const isManager = staffSession?.role?.toLowerCase() === "manager";
@@ -99,7 +100,7 @@ export default function Home({ onLogout }: { onLogout?: () => void }) {
     }
   }, []);
 
-  // Refresh pending count every 5 seconds and on focus
+  // Refresh pending counts every 5 seconds and on focus
   const refreshPendingCount = useCallback(async () => {
     try {
       const teamId = localStorage.getItem("teamIdentifier") ?? "";
@@ -107,7 +108,8 @@ export default function Home({ onLogout }: { onLogout?: () => void }) {
         getPendingRecords(teamId),
         getPendingPlanPhotos(),
       ]);
-      setPendingCount(records.length + planPhotos.length);
+      setCatchPendingCount(records.length);
+      setReleasePendingCount(planPhotos.filter(p => p.type === "release").length);
     } catch {
       // silently ignore
     }
@@ -179,19 +181,20 @@ export default function Home({ onLogout }: { onLogout?: () => void }) {
             onClick={() => navigateTab("add")}
             icon={<PlusCircle size={20} />}
             label="Catch"
+            badge={catchPendingCount > 0 ? catchPendingCount : undefined}
           />
           <TabButton
             active={activeTab === "lookup"}
             onClick={() => navigateTab("lookup")}
             icon={<Search size={20} />}
             label="Tag"
-            badge={pendingCount > 0 ? pendingCount : undefined}
           />
           <TabButton
             active={activeTab === "releases"}
             onClick={() => navigateTab("releases")}
             icon={<CalendarCheck size={20} />}
             label="Release"
+            badge={releasePendingCount > 0 ? releasePendingCount : undefined}
           />
         </div>
       </nav>
