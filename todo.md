@@ -401,3 +401,9 @@
 - [x] Create PendingCheckedBar component (same style as PendingQueueBar/PendingReleaseBar) for type:checked items
 - [x] Add PendingCheckedBar to Lookup/Tag tab
 - [x] Show red badge on Tag nav tab only when checked plan photo items are queued
+
+## Queue Age Warning & Reconnect Retry
+- [x] Add amber/red age warning to PendingQueueBar items older than 30 min
+- [x] Add amber/red age warning to PendingReleaseBar items older than 30 min
+- [x] Add amber/red age warning to PendingCheckedBar items older than 30 min
+- [x] Extend online reconnect handler in Lookup to also retry checked plan-add items (already handled — retryPlanPhoto covers all types)

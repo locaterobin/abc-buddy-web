@@ -1,6 +1,9 @@
 import { useState } from "react";
-import { ChevronUp, ChevronDown, RefreshCw, Trash2, Loader2, CloudOff } from "lucide-react";
+import { ChevronUp, ChevronDown, RefreshCw, Trash2, Loader2, CloudOff, Clock } from "lucide-react";
 import { type PendingPlanPhoto } from "@/hooks/useOfflineQueue";
+
+const WARN_MS = 30 * 60 * 1000;  // 30 min → amber/orange
+const CRIT_MS = 60 * 60 * 1000;  // 60 min → red
 
 function formatAge(ts: number): string {
   const ms = Date.now() - ts;
@@ -10,6 +13,13 @@ function formatAge(ts: number): string {
   const hrs = Math.floor(mins / 60);
   if (hrs < 24) return `${hrs}h ago`;
   return `${Math.floor(hrs / 24)}d ago`;
+}
+
+function ageClass(ts: number): string {
+  const ms = Date.now() - ts;
+  if (ms >= CRIT_MS) return "text-red-500 font-semibold";
+  if (ms >= WARN_MS) return "text-orange-500 font-semibold";
+  return "text-amber-500 dark:text-amber-500";
 }
 
 interface PendingCheckedBarProps {
@@ -32,6 +42,7 @@ export default function PendingCheckedBar({
   if (items.length === 0) return null;
 
   const failedCount = items.filter((r) => r.status === "failed").length;
+  const staleCount = items.filter((r) => Date.now() - r.queuedAt >= WARN_MS).length;
   const isBusy = syncingIds.size > 0;
 
   return (
@@ -46,15 +57,17 @@ export default function PendingCheckedBar({
             <div className="max-h-56 overflow-y-auto divide-y divide-amber-200 dark:divide-amber-800">
               {items.map((item, idx) => {
                 const isSyncing = syncingIds.has(item.queueId);
+                const isStale = Date.now() - item.queuedAt >= WARN_MS;
+                const isCrit = Date.now() - item.queuedAt >= CRIT_MS;
                 const label = item.dogId ?? "Plan add";
                 const photo = item.photo2Base64;
                 return (
                   <div
                     key={item.queueId}
-                    className="flex items-center gap-2 px-3 py-2 text-xs text-amber-800 dark:text-amber-300"
+                    className={`flex items-center gap-2 px-3 py-2 text-xs ${isCrit ? "bg-red-50 dark:bg-red-950/30" : isStale ? "bg-orange-50 dark:bg-orange-950/30" : ""} text-amber-800 dark:text-amber-300`}
                   >
                     {/* Number badge */}
-                    <span className="shrink-0 w-5 h-5 rounded-full bg-amber-200 dark:bg-amber-800 text-amber-900 dark:text-amber-100 flex items-center justify-center text-[10px] font-bold">
+                    <span className={`shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${isCrit ? "bg-red-200 dark:bg-red-800 text-red-900 dark:text-red-100" : "bg-amber-200 dark:bg-amber-800 text-amber-900 dark:text-amber-100"}`}>
                       {idx + 1}
                     </span>
 
@@ -72,7 +85,8 @@ export default function PendingCheckedBar({
                       <p className="font-mono font-bold text-[11px] text-amber-900 dark:text-amber-100 truncate">
                         {label}
                       </p>
-                      <p className="text-[10px] text-amber-500 dark:text-amber-500">
+                      <p className={`text-[10px] flex items-center gap-1 ${ageClass(item.queuedAt)}`}>
+                        {isStale && <Clock size={10} className="shrink-0" />}
                         Plan add · {formatAge(item.queuedAt)}
                         {item.status === "failed" && (
                           <span className="ml-1 text-red-500">· failed</span>
@@ -111,7 +125,7 @@ export default function PendingCheckedBar({
         )}
 
         {/* Collapsed bar / pill */}
-        <div className="mx-3 mb-1 rounded-xl bg-amber-500 dark:bg-amber-600 shadow-lg flex items-center overflow-hidden">
+        <div className={`mx-3 mb-1 rounded-xl shadow-lg flex items-center overflow-hidden ${staleCount > 0 ? "bg-orange-500 dark:bg-orange-600" : "bg-amber-500 dark:bg-amber-600"}`}>
           {/* Left: toggle expand */}
           <button
             onClick={() => setExpanded((e) => !e)}
@@ -120,8 +134,11 @@ export default function PendingCheckedBar({
             <CloudOff size={14} className="shrink-0" />
             <span>
               {items.length} plan add{items.length !== 1 ? "s" : ""} pending sync
+              {staleCount > 0 && (
+                <span className="ml-1 text-white/80">· {staleCount} stale</span>
+              )}
               {failedCount > 0 && (
-                <span className="ml-1 text-amber-100">({failedCount} failed)</span>
+                <span className="ml-1 text-white/80">({failedCount} failed)</span>
               )}
             </span>
             {expanded ? (
@@ -135,7 +152,7 @@ export default function PendingCheckedBar({
           <button
             onClick={onSyncAll}
             disabled={isBusy}
-            className="shrink-0 px-3 py-2.5 border-l border-amber-400 dark:border-amber-500 text-white text-xs font-semibold flex items-center gap-1 disabled:opacity-60"
+            className={`shrink-0 px-3 py-2.5 border-l text-white text-xs font-semibold flex items-center gap-1 disabled:opacity-60 ${staleCount > 0 ? "border-orange-400 dark:border-orange-500" : "border-amber-400 dark:border-amber-500"}`}
           >
             {isBusy ? (
               <Loader2 size={13} className="animate-spin" />
