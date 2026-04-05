@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import RecordDetailModal from "@/components/RecordDetailModal";
 import PendingQueueBar from "@/components/PendingQueueBar";
+import PendingCheckedBar from "@/components/PendingCheckedBar";
 import { getCachedRecordDates, setCachedRecordDates, getCachedRecords } from "@/hooks/useRecordCache";
 import {
   getPendingRecords,
@@ -121,6 +122,9 @@ export default function Lookup() {
   // Plan photo offline queue state
   const [pendingPlanPhotos, setPendingPlanPhotos] = useState<PendingPlanPhoto[]>([]);
   const [syncingPlanIds, setSyncingPlanIds] = useState<Set<string>>(new Set());
+
+  // Only the "checked" (add-to-plan) items belong in the Tag tab
+  const pendingCheckedItems = pendingPlanPhotos.filter((p) => p.type === "checked");
 
   const lookupMutation = trpc.dogs.lookupDog.useMutation();
   const saveMutation = trpc.dogs.saveRecord.useMutation();
@@ -754,6 +758,13 @@ export default function Lookup() {
           }}
         />
       )}
+      <PendingCheckedBar
+        items={pendingCheckedItems}
+        syncingIds={syncingPlanIds}
+        onRetry={retryPlanPhoto}
+        onDiscard={discardPlanPhoto}
+        onSyncAll={syncAllPlanPhotos}
+      />
     </div>
   );
 }

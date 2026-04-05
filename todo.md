@@ -396,3 +396,8 @@
 ## Queue Bar Placement Fix
 - [x] Remove PendingQueueBar from Lookup/Tag tab (catch queue bar belongs only in Catch tab)
 - [x] Fix nav badge: show on Catch tab for catch queue items, Release tab for release queue items
+
+## Checked Plan Photo Queue in Tag Tab
+- [x] Create PendingCheckedBar component (same style as PendingQueueBar/PendingReleaseBar) for type:checked items
+- [x] Add PendingCheckedBar to Lookup/Tag tab
+- [x] Show red badge on Tag nav tab only when checked plan photo items are queued

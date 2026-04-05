@@ -51,6 +51,7 @@ export default function Home({ onLogout }: { onLogout?: () => void }) {
   const drawerRef = useRef<HTMLDivElement>(null);
   const [catchPendingCount, setCatchPendingCount] = useState(0);
   const [releasePendingCount, setReleasePendingCount] = useState(0);
+  const [checkedPendingCount, setCheckedPendingCount] = useState(0);
   const [updateStatus, setUpdateStatus] = useState<"idle" | "checking" | "updated" | "latest">("idle");
   const { staffSession } = useTeam();
   const isManager = staffSession?.role?.toLowerCase() === "manager";
@@ -110,6 +111,7 @@ export default function Home({ onLogout }: { onLogout?: () => void }) {
       ]);
       setCatchPendingCount(records.length);
       setReleasePendingCount(planPhotos.filter(p => p.type === "release").length);
+      setCheckedPendingCount(planPhotos.filter(p => p.type === "checked").length);
     } catch {
       // silently ignore
     }
@@ -188,6 +190,7 @@ export default function Home({ onLogout }: { onLogout?: () => void }) {
             onClick={() => navigateTab("lookup")}
             icon={<Search size={20} />}
             label="Tag"
+            badge={checkedPendingCount > 0 ? checkedPendingCount : undefined}
           />
           <TabButton
             active={activeTab === "releases"}
