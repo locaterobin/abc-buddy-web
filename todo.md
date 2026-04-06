@@ -484,3 +484,6 @@
 
 ## Non-blocking GPS in Release Flow
 - [x] Release GPS request should time out gracefully (not block) when GPS is on but data is off
+
+## Non-blocking Geocode in Release Flow
+- [x] Restore enableHighAccuracy GPS; fire geocode in background so dialog opens immediately after GPS fix

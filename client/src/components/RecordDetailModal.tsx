@@ -76,6 +76,7 @@ interface ReleaseConfirmData {
   longitude: number | null;
   areaName: string;
   distanceMetres: number | null;
+  geocodingInProgress?: boolean;
 }
 
 /** Swipeable thumbnail carousel for the record detail modal */
@@ -586,13 +587,13 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
     let areaName = "";
 
     try {
-      // 1. Get current GPS — 5s timeout, low accuracy first so it doesn't block on data-off devices
+      // 1. Get current GPS — high accuracy, 15s timeout
       try {
         const pos = await new Promise<GeolocationPosition>((resolve, reject) =>
           navigator.geolocation.getCurrentPosition(resolve, reject, {
-            timeout: 5000,
-            maximumAge: 60000,
-            enableHighAccuracy: false,
+            timeout: 15000,
+            maximumAge: 30000,
+            enableHighAccuracy: true,
           })
         );
         latitude = pos.coords.latitude;
@@ -601,21 +602,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
         // GPS unavailable or timed out — continue without location
       }
 
-      // 2. Reverse geocode — 6s hard timeout so it never blocks on no-data
-      if (latitude !== null && longitude !== null) {
-        try {
-          const geoPromise = geocodeMutation.mutateAsync({ latitude, longitude });
-          const timeoutPromise = new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error("geocode timeout")), 6000)
-          );
-          const geo = await Promise.race([geoPromise, timeoutPromise]);
-          areaName = geo.areaName || "";
-        } catch {
-          // continue without area name
-        }
-      }
-
-      // 3. Calculate distance from capture
+      // 2. Calculate distance from capture
       let distanceMetres: number | null = null;
       if (
         latitude !== null &&
@@ -626,8 +613,19 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
         distanceMetres = haversineMetres(record.latitude, record.longitude, latitude, longitude);
       }
 
-      // 4. Show custom confirm dialog
-      setConfirmData({ latitude, longitude, areaName, distanceMetres });
+      // 3. Show confirm dialog immediately — geocode fires in background
+      setConfirmData({ latitude, longitude, areaName: "", distanceMetres, geocodingInProgress: latitude !== null });
+
+      // 4. Reverse geocode in background — updates areaName in confirmData when done
+      if (latitude !== null && longitude !== null) {
+        geocodeMutation.mutateAsync({ latitude, longitude })
+          .then((geo) => {
+            setConfirmData((prev) => prev ? { ...prev, areaName: geo.areaName || "", geocodingInProgress: false } : prev);
+          })
+          .catch(() => {
+            setConfirmData((prev) => prev ? { ...prev, geocodingInProgress: false } : prev);
+          });
+      }
     } catch (err: any) {
       toast.error("Release failed: " + (err?.message || "Unknown error"));
     } finally {
@@ -1107,6 +1105,16 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
                     </p>
                   </>
                 )}
+
+                {/* Location name — shows while geocoding or once resolved */}
+                {confirmData?.geocodingInProgress ? (
+                  <p className="text-xs text-muted-foreground text-center flex items-center gap-1 justify-center">
+                    <Loader2 size={12} className="animate-spin" />
+                    Getting location name…
+                  </p>
+                ) : confirmData?.areaName ? (
+                  <p className="text-xs text-muted-foreground text-center">{confirmData.areaName}</p>
+                ) : null}
 
                 {/* Photo 3 capture */}
                 <div className="w-full">
