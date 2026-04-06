@@ -347,41 +347,30 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
   }
 
   async function handleSaveEdit() {
-    const lat = editLatitude !== "" ? parseFloat(editLatitude) : null;
-    const lng = editLongitude !== "" ? parseFloat(editLongitude) : null;
     // Fire update webhook immediately (client-side, before server call)
+    // Note: lat, long, date/time, dogId are NOT sent — they are immutable after creation
     if (webhookUrl) {
       const updatePayload = {
           event: "update",
-          dogId: editDogId || rec.dogId,
+          dogId: rec.dogId,
           teamIdentifier: teamId,
           areaName: editAreaName || null,
-          latitude: lat,
-          longitude: lng,
           notes: editNotes || null,
           description: editDescription || null,
           gender: editGender,
           updatedByStaffId: staffSession?.staffId ?? null,
           updatedByStaffName: staffSession?.name ?? null,
         };
-      fetch(webhookUrl.replace(/\/$/, "") + "/update", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updatePayload),
-      }).catch((e) => console.warn("Update webhook failed:", e));
       webhookMutation.mutate({ url: webhookUrl.replace(/\/$/, "") + "/update", payload: updatePayload });
     }
     try {
       await updateMutation.mutateAsync({
         id: rec.id,
         teamIdentifier: teamId,
-        dogId: editDogId || undefined,
+        // dogId, latitude, longitude, recordedAt intentionally omitted — immutable
         description: editDescription || null,
         notes: editNotes || null,
         areaName: editAreaName || null,
-        latitude: lat,
-        longitude: lng,
-        recordedAt: editRecordedAt ? new Date(editRecordedAt).toISOString() : undefined,
         gender: editGender,
         updatedByStaffId: staffSession?.staffId ?? null,
         updatedByStaffName: staffSession?.name ?? null,
@@ -902,12 +891,12 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
             /* ── EDIT MODE ── */
             <div className="space-y-3 border border-primary/20 rounded-xl p-3 bg-primary/5">
               <div>
-                <label className="text-xs font-medium text-muted-foreground block mb-1">Dog ID</label>
-                <Input value={editDogId} onChange={(e) => setEditDogId(e.target.value)} className="font-mono text-sm h-8" />
+                <label className="text-xs font-medium text-muted-foreground block mb-1">Dog ID <span className="text-muted-foreground/50">(read-only)</span></label>
+                <Input value={rec.dogId ?? ""} readOnly className="font-mono text-sm h-8 bg-muted/40 cursor-not-allowed opacity-70" />
               </div>
               <div>
-                <label className="text-xs font-medium text-muted-foreground block mb-1">Date &amp; Time</label>
-                <Input type="datetime-local" value={editRecordedAt} onChange={(e) => setEditRecordedAt(e.target.value)} className="text-sm h-8" />
+                <label className="text-xs font-medium text-muted-foreground block mb-1">Date &amp; Time <span className="text-muted-foreground/50">(read-only)</span></label>
+                <Input type="datetime-local" value={editRecordedAt} readOnly className="text-sm h-8 bg-muted/40 cursor-not-allowed opacity-70" />
               </div>
               <div>
                 <label className="text-xs font-medium text-muted-foreground block mb-1">Area / Location</label>
@@ -915,12 +904,12 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
               </div>
               <div className="flex gap-2">
                 <div className="flex-1">
-                  <label className="text-xs font-medium text-muted-foreground block mb-1">Latitude</label>
-                  <Input value={editLatitude} onChange={(e) => setEditLatitude(e.target.value)} placeholder="0.00000" className="font-mono text-sm h-8" />
+                  <label className="text-xs font-medium text-muted-foreground block mb-1">Latitude <span className="text-muted-foreground/50">(read-only)</span></label>
+                  <Input value={editLatitude} readOnly placeholder="—" className="font-mono text-sm h-8 bg-muted/40 cursor-not-allowed opacity-70" />
                 </div>
                 <div className="flex-1">
-                  <label className="text-xs font-medium text-muted-foreground block mb-1">Longitude</label>
-                  <Input value={editLongitude} onChange={(e) => setEditLongitude(e.target.value)} placeholder="0.00000" className="font-mono text-sm h-8" />
+                  <label className="text-xs font-medium text-muted-foreground block mb-1">Longitude <span className="text-muted-foreground/50">(read-only)</span></label>
+                  <Input value={editLongitude} readOnly placeholder="—" className="font-mono text-sm h-8 bg-muted/40 cursor-not-allowed opacity-70" />
                 </div>
               </div>
               <div>

@@ -454,3 +454,9 @@
 
 ## Fix Photo Pre-fetch URL
 - [x] Fix dog photo pre-fetch in ReleasePlanPage to use annotatedImageUrl (fallback imageUrl) instead of photo2Url/photoUrl
+
+## Edit Record Field Restrictions
+- [x] Make lat, long, date/time, dog ID read-only in edit record form
+- [x] Remove lat, long, date/time, dog ID from updateRecord server mutation input and DB update
+- [x] Remove lat, long, date/time, dog ID from /update webhook payload
+- [x] Add gender to /update webhook payload

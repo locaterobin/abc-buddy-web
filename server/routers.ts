@@ -535,22 +535,18 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
       z.object({
         id: z.number(),
         teamIdentifier: z.string(),
-        dogId: z.string().optional(),
+        // dogId, latitude, longitude, recordedAt are immutable — not accepted in updates
         description: z.string().nullable().optional(),
         notes: z.string().nullable().optional(),
         areaName: z.string().nullable().optional(),
-        latitude: z.number().nullable().optional(),
-        longitude: z.number().nullable().optional(),
-        recordedAt: z.string().optional(), // ISO string
         gender: z.enum(["Unknown", "Male", "Female"]).optional(),
         updatedByStaffId: z.string().nullable().optional(),
         updatedByStaffName: z.string().nullable().optional(),
       })
     )
     .mutation(async ({ input }) => {
-      const { id, teamIdentifier, recordedAt, ...rest } = input;
+      const { id, teamIdentifier, ...rest } = input;
       const data: Parameters<typeof updateDogRecord>[2] = { ...rest, updatedAt: new Date() };
-      if (recordedAt) data.recordedAt = new Date(recordedAt);
       const updated = await updateDogRecord(id, teamIdentifier, data);
       return { success: updated };
     }),
