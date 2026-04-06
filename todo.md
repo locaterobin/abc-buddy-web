@@ -430,3 +430,17 @@
 - [x] AI description always if empty — colour + distinct physical features only, no age/breed
 - [x] Remove image-ready and image-annotated webhooks
 - [x] Fire single update webhook at end with description, imageUrl, annotatedImageUrl
+
+## Offline UI
+- [x] Add non-intrusive offline banner at top of app ("You are offline — Catch still works")
+- [x] Add offline note on login page ("No internet connection — sign in when you're back online")
+
+## Release Plan Offline Cache
+- [x] Cache release plans and dog records (with lat/longs) in IndexedDB on Release tab load
+- [x] Hydrate Release tab from IndexedDB cache when offline
+- [x] Show "last synced" timestamp in Release tab when using cached data
+- [x] Auto-refresh cache when connectivity returns
+
+## Offline UI
+- [x] Add non-intrusive offline banner at top of app ("You are offline — Catch still works")
+- [x] Add offline note on login page ("No internet connection — sign in when you're back online")

@@ -7,12 +7,12 @@ import {
   type PendingPlanPhoto,
   QUEUE_CHANNEL_NAME,
 } from "@/hooks/useOfflineQueue";
-import { getCachedReleasePlans, setCachedReleasePlans, getCachedPlanDogs, setCachedPlanDogs } from "@/hooks/useRecordCache";
+import { getCachedReleasePlans, getCachedReleasePlansWithMeta, setCachedReleasePlans, getCachedPlanDogs, setCachedPlanDogs } from "@/hooks/useRecordCache";
 import { trpc } from "@/lib/trpc";
 import { useTeam } from "@/contexts/TeamContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, Map, Trash2, Plus, CalendarDays, Clock, CheckCircle2, Dog, GripVertical, Archive, LayoutGrid, List } from "lucide-react";
+import { ArrowLeft, Map, Trash2, Plus, CalendarDays, Clock, CheckCircle2, Dog, GripVertical, Archive, LayoutGrid, List, WifiOff, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import RecordDetailModal from "@/components/RecordDetailModal";
 import {
@@ -31,6 +31,17 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+
+// Format a Date as a relative time string (e.g. "5 min ago", "2 hr ago")
+function formatRelativeTime(date: Date): string {
+  const diffMs = Date.now() - date.getTime();
+  const diffMin = Math.floor(diffMs / 60_000);
+  if (diffMin < 1) return "just now";
+  if (diffMin < 60) return `${diffMin} min ago`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr} hr ago`;
+  return `${Math.floor(diffHr / 24)} day${Math.floor(diffHr / 24) > 1 ? "s" : ""} ago`;
+}
 
 // Format YYMMDD → "Mon, 10 Mar 2026"
 function formatPlanDate(yymmdd: string): string {
@@ -247,13 +258,28 @@ export default function ReleasePlanPage() {
   const [localOrder, setLocalOrder] = useState<string[] | null>(null);
   const [viewMode, setViewMode] = useState<"thumb" | "list">("thumb");
 
-  // Offline cache
+  // Offline cache + last-synced timestamp
   const [cachedPlans, setCachedPlansLocal] = useState<any[]>([]);
+  const [lastSynced, setLastSynced] = useState<Date | null>(null);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const cacheLoadedRef = useRef(false);
+
+  // Track online/offline state
+  useEffect(() => {
+    const onOnline = () => setIsOffline(false);
+    const onOffline = () => setIsOffline(true);
+    window.addEventListener("online", onOnline);
+    window.addEventListener("offline", onOffline);
+    return () => { window.removeEventListener("online", onOnline); window.removeEventListener("offline", onOffline); };
+  }, []);
+
   useEffect(() => {
     if (!teamIdentifier || cacheLoadedRef.current) return;
     cacheLoadedRef.current = true;
-    getCachedReleasePlans(teamIdentifier).then((p) => setCachedPlansLocal(p));
+    getCachedReleasePlansWithMeta(teamIdentifier).then(({ plans, cachedAt }) => {
+      setCachedPlansLocal(plans);
+      if (cachedAt) setLastSynced(new Date(cachedAt));
+    });
   }, [teamIdentifier]);
 
   const utils = trpc.useUtils();
@@ -304,11 +330,12 @@ export default function ReleasePlanPage() {
     { enabled: !!teamIdentifier }
   );
 
-  // Persist fresh plans to cache whenever they arrive
+  // Persist fresh plans to cache whenever they arrive + pre-cache dogs for all plans
   useEffect(() => {
     if (teamIdentifier && freshPlans && freshPlans.length > 0) {
       setCachedReleasePlans(teamIdentifier, freshPlans);
       setCachedPlansLocal(freshPlans);
+      setLastSynced(new Date());
     }
   }, [teamIdentifier, JSON.stringify(freshPlans)]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -567,6 +594,25 @@ export default function ReleasePlanPage() {
   // ── Plans List View ───────────────────────────────────────────────────────────
   return (
     <div className="flex flex-col h-full bg-background">
+      {/* Offline / last-synced notice */}
+      {(isOffline || (lastSynced && !freshPlans)) && (
+        <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 border-b border-amber-200 text-amber-800 text-xs">
+          <WifiOff size={13} className="flex-shrink-0" />
+          <span className="flex-1">
+            {isOffline ? "You are offline" : "Using cached data"}
+            {lastSynced ? ` · Last synced ${formatRelativeTime(lastSynced)}` : " · No cache available"}
+          </span>
+          {!isOffline && (
+            <button
+              onClick={() => utils.releasePlans.getPlans.invalidate()}
+              className="flex items-center gap-1 text-amber-700 hover:text-amber-900 font-medium"
+            >
+              <RefreshCw size={11} /> Refresh
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-border">
         <h2 className="font-bold text-foreground text-base">Release Plans</h2>

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, ShieldAlert } from "lucide-react";
+import { Loader2, ShieldAlert, WifiOff } from "lucide-react";
 
 export interface StaffSession {
   name: string;
@@ -39,9 +39,10 @@ export function clearStaffSession() {
 
 interface LoginPageProps {
   onLogin: (session: StaffSession) => void;
+  isOffline?: boolean;
 }
 
-export default function LoginPage({ onLogin }: LoginPageProps) {
+export default function LoginPage({ onLogin, isOffline = false }: LoginPageProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -139,6 +140,13 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
           <h1 className="text-2xl font-bold text-foreground">ABC Buddy</h1>
           <p className="text-sm text-muted-foreground">Sign in to continue</p>
         </div>
+
+        {isOffline && (
+          <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-sm">
+            <WifiOff size={15} className="flex-shrink-0" />
+            <span>No internet connection — sign in when you’re back online.</span>
+          </div>
+        )}
 
         <Card>
           <CardContent className="pt-5 pb-5">

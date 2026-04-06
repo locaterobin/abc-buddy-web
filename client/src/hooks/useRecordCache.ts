@@ -150,6 +150,22 @@ export async function getCachedReleasePlans(teamId: string): Promise<any[]> {
   }
 }
 
+/** Returns plans + the cachedAt timestamp (ms since epoch, or null if not cached) */
+export async function getCachedReleasePlansWithMeta(teamId: string): Promise<{ plans: any[]; cachedAt: number | null }> {
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(PLANS_STORE, "readonly");
+      const store = tx.objectStore(PLANS_STORE);
+      const req = store.get(teamId);
+      req.onsuccess = () => resolve({ plans: req.result?.plans ?? [], cachedAt: req.result?.cachedAt ?? null });
+      req.onerror = () => reject(req.error);
+    });
+  } catch {
+    return { plans: [], cachedAt: null };
+  }
+}
+
 export async function setCachedReleasePlans(teamId: string, plans: any[]): Promise<void> {
   try {
     const db = await openDB();
