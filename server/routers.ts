@@ -455,7 +455,58 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
             }
           }
 
-          // Step 3: Single update webhook with description, imageUrl, annotatedImageUrl
+          // Step 3: Geocode backfill — only if lat/long present and areaName or adminArea is missing
+          let finalAreaName = input.areaName ?? null;
+          let finalDistrict = input.district ?? null;
+          let finalAdminArea = input.adminArea ?? null;
+          if (
+            input.latitude != null &&
+            input.longitude != null &&
+            (!finalAreaName || !finalAdminArea)
+          ) {
+            try {
+              console.log(`[saveRecord BG] Geocode backfill for ${resolvedDogId}`);
+              const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+              if (apiKey) {
+                const geoUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${input.latitude},${input.longitude}&key=${apiKey}&result_type=route|sublocality|locality`;
+                const geoRes = await fetch(geoUrl);
+                if (geoRes.ok) {
+                  const geoData = await geoRes.json();
+                  if (geoData.status === "OK" && geoData.results?.length) {
+                    const components = geoData.results[0].address_components as Array<{ long_name: string; types: string[] }>;
+                    const get = (type: string) => components.find((c: { long_name: string; types: string[] }) => c.types.includes(type))?.long_name ?? "";
+                    if (!finalAreaName) {
+                      const road = get("route") || get("sublocality_level_1") || get("sublocality");
+                      const locality = get("locality") || get("administrative_area_level_3") || get("administrative_area_level_2");
+                      finalAreaName = [locality, road].filter(Boolean).join(", ") || geoData.results[0].formatted_address || null;
+                    }
+                    if (!finalDistrict) {
+                      finalDistrict = get("administrative_area_level_3") || get("administrative_area_level_2") || null;
+                    }
+                    if (!finalAdminArea) {
+                      const district = get("administrative_area_level_3") || get("administrative_area_level_2") || "";
+                      const state = get("administrative_area_level_1");
+                      const country = get("country");
+                      finalAdminArea = [district, state, country].filter(Boolean).join(", ") || null;
+                    }
+                    // Update DB with backfilled values
+                    const backfillUpdate: Record<string, unknown> = {};
+                    if (!input.areaName && finalAreaName) backfillUpdate.areaName = finalAreaName;
+                    if (!input.district && finalDistrict) backfillUpdate.district = finalDistrict;
+                    if (!input.adminArea && finalAdminArea) backfillUpdate.adminArea = finalAdminArea;
+                    if (Object.keys(backfillUpdate).length > 0) {
+                      await updateDogRecord(savedRecord.id, input.teamIdentifier, backfillUpdate);
+                      console.log(`[saveRecord BG] Geocode backfill saved: ${JSON.stringify(backfillUpdate)}`);
+                    }
+                  }
+                }
+              }
+            } catch (e) {
+              console.warn("[saveRecord BG] Geocode backfill failed:", e);
+            }
+          }
+
+          // Step 4: Single update webhook with description, imageUrl, annotatedImageUrl, final geo fields
           if (input.webhookUrl) {
             fetch(`${input.webhookUrl}/update`, {
               method: "POST",
@@ -467,9 +518,9 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
                 description: finalDescription ?? null,
                 imageUrl,
                 annotatedImageUrl: annotatedUrl ?? null,
-                areaName: input.areaName ?? null,
-                district: input.district ?? null,
-                adminArea: input.adminArea ?? null,
+                areaName: finalAreaName,
+                district: finalDistrict,
+                adminArea: finalAdminArea,
                 latitude: input.latitude ?? null,
                 longitude: input.longitude ?? null,
                 notes: input.notes ?? null,

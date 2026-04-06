@@ -476,3 +476,8 @@
 ## District in adminArea & Save Button
 - [x] Update adminArea in geocodeLatLng to include district + state + country
 - [x] Disable Save Record button visually when area name is empty
+
+## Server Geocode Backfill
+- [x] In saveRecord Phase 2: if lat/long present and areaName or adminArea is empty, call Google geocode and fill only the empty fields
+- [x] Run backfill BEFORE the /update webhook call
+- [x] Include final areaName and adminArea in the /update webhook
