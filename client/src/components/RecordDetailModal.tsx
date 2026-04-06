@@ -403,7 +403,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
   );
   // Load eagerly so the button can be disabled immediately
   const { data: dogPlanIds = [] } = trpc.releasePlans.getDogPlans.useQuery(
-    { dogId: record.dogId },
+    { dogId: record.dogId, teamIdentifier: teamId },
     { enabled: !!record.dogId && !released }
   );
   const isInAnyPlan = dogPlanIds.length > 0;
@@ -411,7 +411,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
 
   // Current plan details (for display + move feature)
   const { data: dogPlanDetails = [] } = trpc.releasePlans.getDogPlanDetails.useQuery(
-    { dogId: record.dogId },
+    { dogId: record.dogId, teamIdentifier: teamId },
     { enabled: !!record.dogId && !released }
   );
   const currentPlan = dogPlanDetails[0] ?? null;
@@ -426,8 +426,8 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
   const moveDogMutation = trpc.releasePlans.moveDog.useMutation({
     onSuccess: () => {
       toast.success("Moved to new plan");
-      utils.releasePlans.getDogPlans.invalidate({ dogId: record.dogId });
-      utils.releasePlans.getDogPlanDetails.invalidate({ dogId: record.dogId });
+      utils.releasePlans.getDogPlans.invalidate({ dogId: record.dogId, teamIdentifier: teamId });
+      utils.releasePlans.getDogPlanDetails.invalidate({ dogId: record.dogId, teamIdentifier: teamId });
       utils.releasePlans.getPlanDogs.invalidate();
       utils.releasePlans.getFullRecord.invalidate({ dogId: record.dogId, teamIdentifier: teamId });
       utils.dogs.getRecords.invalidate();
@@ -454,7 +454,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
   const removeDogFromPlan = trpc.releasePlans.removeDog.useMutation({
     onSuccess: () => {
       toast.success("Removed from release plan");
-      utils.releasePlans.getDogPlans.invalidate({ dogId: record.dogId });
+      utils.releasePlans.getDogPlans.invalidate({ dogId: record.dogId, teamIdentifier: teamId });
       utils.releasePlans.getPlanDogs.invalidate();
       utils.dogs.getRecords.invalidate();
     },
@@ -464,7 +464,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
     onSuccess: (added) => {
       if (added) toast.success("Added to release plan");
       else toast.info("Already in this plan");
-      utils.releasePlans.getDogPlans.invalidate({ dogId: record.dogId });
+      utils.releasePlans.getDogPlans.invalidate({ dogId: record.dogId, teamIdentifier: teamId });
       utils.releasePlans.getPlanDogs.invalidate();
       utils.releasePlans.getFullRecord.invalidate({ dogId: record.dogId, teamIdentifier: teamId });
       setPendingPlanId(null);

@@ -524,3 +524,12 @@
 
 ## Bug - SW Falls Back to offline.html Instead of index.html
 - [x] Deleted offline.html from client/public so it is no longer in the precache manifest; index.html is now the only navigation fallback
+
+## Offline Page - Replace "Try Again" with "Go to App"
+- [ ] Find remaining offline page with "Try again" button and replace with "Go to App" button linking to /
+
+## Bug - getDogPlans Shows Plans From Other Teams
+- [x] Added teamIdentifier join/filter to getDogReleasePlans and getDogPlanDetails in db.ts
+- [x] Added teamIdentifier param to getDogPlans and getDogPlanDetails procedures in routers.ts
+- [x] Passed teamIdentifier from RecordDetailModal queries and invalidate calls
+- [x] Passed teamIdentifier from ReleasePlanPage prefetch calls

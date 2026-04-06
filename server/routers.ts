@@ -815,14 +815,14 @@ const releasePlansRouter = router({
       return removeDogFromReleasePlan(input.planId, input.dogId);
     }),
   getDogPlans: publicProcedure
-    .input(z.object({ dogId: z.string() }))
+    .input(z.object({ dogId: z.string(), teamIdentifier: z.string().optional() }))
     .query(async ({ input }) => {
-      return getDogReleasePlans(input.dogId);
+      return getDogReleasePlans(input.dogId, input.teamIdentifier);
     }),
   getDogPlanDetails: publicProcedure
-    .input(z.object({ dogId: z.string() }))
+    .input(z.object({ dogId: z.string(), teamIdentifier: z.string().optional() }))
     .query(async ({ input }) => {
-      return getDogPlanDetails(input.dogId);
+      return getDogPlanDetails(input.dogId, input.teamIdentifier);
     }),
   moveDog: publicProcedure
     .input(z.object({

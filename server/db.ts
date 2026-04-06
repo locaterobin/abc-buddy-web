@@ -644,18 +644,23 @@ export async function removeDogFromReleasePlan(planId: number, dogId: string): P
   return ((result[0] as any).affectedRows ?? 0) > 0;
 }
 
-export async function getDogReleasePlans(dogId: string): Promise<number[]> {
+export async function getDogReleasePlans(dogId: string, teamIdentifier?: string): Promise<number[]> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   const rows = await db
     .select({ planId: releasePlanDogs.planId })
     .from(releasePlanDogs)
-    .where(eq(releasePlanDogs.dogId, dogId));
+    .innerJoin(releasePlans, eq(releasePlanDogs.planId, releasePlans.id))
+    .where(
+      teamIdentifier
+        ? and(eq(releasePlanDogs.dogId, dogId), eq(releasePlans.teamIdentifier, teamIdentifier))
+        : eq(releasePlanDogs.dogId, dogId)
+    );
   return rows.map((r) => r.planId);
 }
 
 /** Returns the plan(s) a dog is currently in, with plan label info */
-export async function getDogPlanDetails(dogId: string): Promise<{ planId: number; planDate: string; orderIndex: number; teamIdentifier: string }[]> {
+export async function getDogPlanDetails(dogId: string, teamIdentifier?: string): Promise<{ planId: number; planDate: string; orderIndex: number; teamIdentifier: string }[]> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   const rows = await db
@@ -667,7 +672,11 @@ export async function getDogPlanDetails(dogId: string): Promise<{ planId: number
     })
     .from(releasePlanDogs)
     .innerJoin(releasePlans, eq(releasePlanDogs.planId, releasePlans.id))
-    .where(eq(releasePlanDogs.dogId, dogId));
+    .where(
+      teamIdentifier
+        ? and(eq(releasePlanDogs.dogId, dogId), eq(releasePlans.teamIdentifier, teamIdentifier))
+        : eq(releasePlanDogs.dogId, dogId)
+    );
   return rows;
 }
 

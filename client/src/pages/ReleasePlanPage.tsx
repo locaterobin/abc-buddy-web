@@ -356,10 +356,10 @@ export default function ReleasePlanPage() {
               // knows the dog is in a plan even when offline
               if (dog.dogId) {
                 utils.releasePlans.getDogPlans
-                  .prefetch({ dogId: dog.dogId })
+                  .prefetch({ dogId: dog.dogId, teamIdentifier: teamIdentifier ?? undefined })
                   .catch(() => {});
                 utils.releasePlans.getDogPlanDetails
-                  .prefetch({ dogId: dog.dogId })
+                  .prefetch({ dogId: dog.dogId, teamIdentifier: teamIdentifier ?? undefined })
                   .catch(() => {});
               }
             });
@@ -398,10 +398,10 @@ export default function ReleasePlanPage() {
         // buttons (Mark as Released, not Add to plan) when offline
         if (dog.dogId) {
           utils.releasePlans.getDogPlans
-            .prefetch({ dogId: dog.dogId })
+            .prefetch({ dogId: dog.dogId, teamIdentifier: teamIdentifier ?? undefined })
             .catch(() => {});
           utils.releasePlans.getDogPlanDetails
-            .prefetch({ dogId: dog.dogId })
+            .prefetch({ dogId: dog.dogId, teamIdentifier: teamIdentifier ?? undefined })
             .catch(() => {});
         }
       });
