@@ -505,3 +505,7 @@
 - [x] Fix app not loading offline: replaced manual SW with workbox-precaching via VitePWA — all hashed JS/CSS bundles now precached on install
 - [x] Fix offline dog ID: also trigger localStorage fallback when suffixQuery.fetchStatus === "paused" (React Query's offline signal)
 - [x] Fix GPS with data off: increased maximumAge to 120s in both catch and release flows; GPS coords set immediately before geocode attempt
+
+## GPS Timeout & Countdown
+- [x] Increase GPS timeout to 60s in catch and release flows
+- [x] Show live countdown (60→0) on "Mark as Released" button while GPS is acquiring

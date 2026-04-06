@@ -279,7 +279,7 @@ export default function AddRecord() {
       },
       {
         enableHighAccuracy: true,
-        timeout: 20000,
+        timeout: 60000,
         // Accept a cached fix up to 2 minutes old — avoids waiting for fresh acquisition
         // when the device already has a recent fix from the OS
         maximumAge: 120000,

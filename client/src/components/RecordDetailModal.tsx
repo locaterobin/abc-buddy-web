@@ -309,6 +309,8 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
   const [released, setReleased] = useState(() => !!record.releasedAt);
   const [confirmData, setConfirmData] = useState<ReleaseConfirmData | null>(null);
   const [confirming, setConfirming] = useState(false);
+  const [gpsCountdown, setGpsCountdown] = useState<number | null>(null);
+  const gpsCountdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [showPlanPicker, setShowPlanPicker] = useState(false);
   const [pendingPlanId, setPendingPlanId] = useState<number | null>(null);
@@ -582,19 +584,33 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
     }
 
     setReleasing(true);
+    // Start 60-second countdown so user can see GPS is working
+    setGpsCountdown(60);
+    if (gpsCountdownRef.current) clearInterval(gpsCountdownRef.current);
+    gpsCountdownRef.current = setInterval(() => {
+      setGpsCountdown((prev) => {
+        if (prev === null || prev <= 1) {
+          if (gpsCountdownRef.current) clearInterval(gpsCountdownRef.current);
+          gpsCountdownRef.current = null;
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
     let latitude: number | null = null;
     let longitude: number | null = null;
     let areaName = "";
 
     try {
-      // 1. Get current GPS — high accuracy, 20s timeout, accept 2-min cached fix
-      // maximumAge: 120000 means a cached GPS fix up to 2 minutes old is reused
-      // immediately without waiting for a fresh acquisition. GPS hardware works
-      // without data/wifi — the fix comes from satellites, not the network.
+      // 1. Get current GPS — high accuracy, 60s timeout, accept 2-min cached fix
+      // maximumAge: 120000 reuses a recent OS fix instantly.
+      // timeout: 60000 gives the hardware enough time for a cold autonomous
+      // satellite acquisition when data/A-GPS is unavailable.
       try {
         const pos = await new Promise<GeolocationPosition>((resolve, reject) =>
           navigator.geolocation.getCurrentPosition(resolve, reject, {
-            timeout: 20000,
+            timeout: 60000,
             maximumAge: 120000,
             enableHighAccuracy: true,
           })
@@ -633,6 +649,9 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
       toast.error("Release failed: " + (err?.message || "Unknown error"));
     } finally {
       setReleasing(false);
+      if (gpsCountdownRef.current) clearInterval(gpsCountdownRef.current);
+      gpsCountdownRef.current = null;
+      setGpsCountdown(null);
     }
   };
 
@@ -1440,7 +1459,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
               {releasing ? (
                 <>
                   <Loader2 size={16} className="mr-2 animate-spin" />
-                  Getting location…
+                  {gpsCountdown !== null ? `Getting GPS… ${gpsCountdown}s` : "Getting location…"}
                 </>
               ) : released ? (
                 <>
