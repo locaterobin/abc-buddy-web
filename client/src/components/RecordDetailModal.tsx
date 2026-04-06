@@ -586,25 +586,29 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
     let areaName = "";
 
     try {
-      // 1. Get current GPS
+      // 1. Get current GPS — 5s timeout, low accuracy first so it doesn't block on data-off devices
       try {
         const pos = await new Promise<GeolocationPosition>((resolve, reject) =>
           navigator.geolocation.getCurrentPosition(resolve, reject, {
-            timeout: 10000,
-            maximumAge: 30000,
-            enableHighAccuracy: true,
+            timeout: 5000,
+            maximumAge: 60000,
+            enableHighAccuracy: false,
           })
         );
         latitude = pos.coords.latitude;
         longitude = pos.coords.longitude;
       } catch {
-        toast("GPS unavailable — sending without location", { icon: "⚠️" });
+        // GPS unavailable or timed out — continue without location
       }
 
-      // 2. Reverse geocode
+      // 2. Reverse geocode — 6s hard timeout so it never blocks on no-data
       if (latitude !== null && longitude !== null) {
         try {
-          const geo = await geocodeMutation.mutateAsync({ latitude, longitude });
+          const geoPromise = geocodeMutation.mutateAsync({ latitude, longitude });
+          const timeoutPromise = new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("geocode timeout")), 6000)
+          );
+          const geo = await Promise.race([geoPromise, timeoutPromise]);
           areaName = geo.areaName || "";
         } catch {
           // continue without area name

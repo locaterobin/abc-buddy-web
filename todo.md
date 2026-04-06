@@ -481,3 +481,6 @@
 - [x] In saveRecord Phase 2: if lat/long present and areaName or adminArea is empty, call Google geocode and fill only the empty fields
 - [x] Run backfill BEFORE the /update webhook call
 - [x] Include final areaName and adminArea in the /update webhook
+
+## Non-blocking GPS in Release Flow
+- [x] Release GPS request should time out gracefully (not block) when GPS is on but data is off
