@@ -330,13 +330,33 @@ export default function ReleasePlanPage() {
     { enabled: !!teamIdentifier }
   );
 
-  // Persist fresh plans to cache whenever they arrive + pre-cache dogs for all plans
+  // Persist fresh plans to cache + background pre-fetch dogs & photos for all plans
+  const prefetchedPlanIdsRef = useRef<Set<number>>(new Set());
   useEffect(() => {
-    if (teamIdentifier && freshPlans && freshPlans.length > 0) {
-      setCachedReleasePlans(teamIdentifier, freshPlans);
-      setCachedPlansLocal(freshPlans);
-      setLastSynced(new Date());
-    }
+    if (!teamIdentifier || !freshPlans || freshPlans.length === 0) return;
+    setCachedReleasePlans(teamIdentifier, freshPlans);
+    setCachedPlansLocal(freshPlans);
+    setLastSynced(new Date());
+
+    // For each plan not yet pre-fetched, fetch its dogs in the background
+    freshPlans.forEach((plan: any) => {
+      if (prefetchedPlanIdsRef.current.has(plan.id)) return;
+      prefetchedPlanIdsRef.current.add(plan.id);
+      utils.releasePlans.getPlanDogs
+        .fetch({ planId: plan.id })
+        .then((dogs) => {
+          if (dogs && dogs.length > 0) {
+            // Cache dogs in IndexedDB
+            setCachedPlanDogs(plan.id, dogs);
+            // Pre-fetch photos so SW caches them
+            dogs.forEach((dog: any) => {
+              const url = dog.photo2Url || dog.photoUrl;
+              if (url) fetch(url, { mode: "no-cors" }).catch(() => {});
+            });
+          }
+        })
+        .catch(() => {}); // silent — background only
+    });
   }, [teamIdentifier, JSON.stringify(freshPlans)]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Use fresh data if available, otherwise fall back to cache

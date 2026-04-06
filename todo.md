@@ -448,3 +448,6 @@
 ## Photo Pre-cache & Annotation Notes
 - [x] Add notes field to client-side annotation overlay (canvas stamp on share image)
 - [x] Pre-cache dog thumbnail photos (photo2Url) via service worker runtime cache for offline release tab
+
+## Pre-cache All Plan Dogs on Release Tab Open
+- [x] When Release tab loads online and plans are fetched, background-fetch dogs for all plans and cache their photos
