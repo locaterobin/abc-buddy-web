@@ -417,3 +417,9 @@
 - [x] Hide description field in AddRecord (Catch tab)
 - [x] Remove analyzeImage AI call on image capture/upload in Catch tab
 - [x] Keep geocode (lat/long → place name) call intact
+
+## GPS Not Available Display
+- [x] Show "GPS not available" where lat/long would appear under the place field when no coordinates are present
+
+## Camera Flow: Read-only Datetime
+- [x] Make date/time field read-only (non-editable) when imageSource === "camera" in Catch tab

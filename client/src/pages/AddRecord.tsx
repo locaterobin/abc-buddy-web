@@ -647,6 +647,11 @@ export default function AddRecord() {
               <div>
                 <label className="text-sm font-medium text-foreground mb-1.5 block">
                   Date & Time
+                  {imageSource === "camera" && (
+                    <span className="ml-2 text-xs font-normal text-muted-foreground">
+                      (device time)
+                    </span>
+                  )}
                   {imageSource === "upload" && (
                     <span className="ml-2 text-xs font-normal text-muted-foreground">
                       (from image)
@@ -657,6 +662,8 @@ export default function AddRecord() {
                   type="datetime-local"
                   value={recordedAt}
                   onChange={(e) => setRecordedAt(e.target.value)}
+                  readOnly={imageSource === "camera"}
+                  className={imageSource === "camera" ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}
                 />
               </div>
 
@@ -692,11 +699,16 @@ export default function AddRecord() {
                     ) : null}
                   </div>
                 </div>
-                {latitude !== null && longitude !== null && (
+                {latitude !== null && longitude !== null ? (
                   <p className="text-xs text-muted-foreground mt-1">
                     GPS: {latitude.toFixed(5)}, {longitude.toFixed(5)}
                   </p>
-                )}
+                ) : !gpsLoading && !geocodeMutation.isPending ? (
+                  <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                    <MapPin size={11} className="text-muted-foreground/60" />
+                    GPS not available
+                  </p>
+                ) : null}
               </div>
 
               {/* Notes */}
