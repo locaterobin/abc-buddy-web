@@ -472,3 +472,7 @@
 
 ## Area Name Required Validation
 - [x] Block saving catch record when area name is empty (upload and camera flows)
+
+## District in adminArea & Save Button
+- [x] Update adminArea in geocodeLatLng to include district + state + country
+- [x] Disable Save Record button visually when area name is empty

@@ -191,7 +191,7 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
         const district = get("administrative_area_level_3") || get("administrative_area_level_2") || "";
         const state = get("administrative_area_level_1");
         const country = get("country");
-        const adminArea = [state, country].filter(Boolean).join(", ");
+        const adminArea = [district, state, country].filter(Boolean).join(", ");
         return { areaName, district, adminArea };
       } catch (e) {
         console.error("Geocoding error:", e);

@@ -727,7 +727,7 @@ export default function AddRecord() {
             className="w-full"
             size="lg"
             onClick={handleSave}
-            disabled={!dogId || dogIdCheck.data?.exists === true || (imageSource === "camera" && (latitude === null || longitude === null) && !areaName.trim())}
+            disabled={!dogId || dogIdCheck.data?.exists === true || !areaName.trim()}
           >
             <Save size={16} className="mr-2" />
             Save Record
