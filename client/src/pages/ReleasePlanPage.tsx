@@ -348,9 +348,9 @@ export default function ReleasePlanPage() {
           if (dogs && dogs.length > 0) {
             // Cache dogs in IndexedDB
             setCachedPlanDogs(plan.id, dogs);
-            // Pre-fetch photos so SW caches them
+            // Pre-fetch annotated catch photos so SW caches them for offline use
             dogs.forEach((dog: any) => {
-              const url = dog.photo2Url || dog.photoUrl;
+              const url = dog.annotatedImageUrl || dog.imageUrl;
               if (url) fetch(url, { mode: "no-cors" }).catch(() => {});
             });
           }
@@ -380,9 +380,9 @@ export default function ReleasePlanPage() {
     if (selectedPlanId !== null && freshPlanDogs && freshPlanDogs.length >= 0) {
       setCachedPlanDogs(selectedPlanId, freshPlanDogs);
       setCachedPlanDogsLocal(freshPlanDogs);
-      // Pre-fetch dog photos so the service worker caches them for offline use
+      // Pre-fetch annotated catch photos so the service worker caches them for offline use
       freshPlanDogs.forEach((dog: any) => {
-        const url = dog.photo2Url || dog.photoUrl;
+        const url = dog.annotatedImageUrl || dog.imageUrl;
         if (url) fetch(url, { mode: "no-cors" }).catch(() => {});
       });
     }

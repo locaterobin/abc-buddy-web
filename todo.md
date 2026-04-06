@@ -451,3 +451,6 @@
 
 ## Pre-cache All Plan Dogs on Release Tab Open
 - [x] When Release tab loads online and plans are fetched, background-fetch dogs for all plans and cache their photos
+
+## Fix Photo Pre-fetch URL
+- [x] Fix dog photo pre-fetch in ReleasePlanPage to use annotatedImageUrl (fallback imageUrl) instead of photo2Url/photoUrl
