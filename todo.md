@@ -517,3 +517,7 @@
 ## Offline Strip UI
 - [x] Remove orange header strip "you are offline, catch still works"
 - [x] Add yellow offline strip inside Catch tab matching Release tab style
+
+## Bug - App Doesn't Load Catch Tab When Started Offline
+- [x] Root cause: SW navigation used NetworkFirst with no timeout — browser waited ~30s before falling back to cached index.html
+- [x] Fix: added networkTimeoutSeconds: 3 to navigation handler so cached shell loads in ≤3s when offline

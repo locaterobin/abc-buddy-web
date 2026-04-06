@@ -16,9 +16,13 @@ import { ExpirationPlugin } from "workbox-expiration";
 precacheAndRoute(self.__WB_MANIFEST || []);
 cleanupOutdatedCaches();
 
-// Navigation: network-first, fall back to cached index.html
+// Navigation: network-first with 3s timeout.
+// Without a timeout the browser waits ~30s before falling back to the cached
+// index.html, causing a blank screen when starting the app offline.
+// With networkTimeoutSeconds: 3, the SW serves the cached shell in ≤3s.
 const navigationHandler = new NetworkFirst({
   cacheName: "abc-buddy-navigation",
+  networkTimeoutSeconds: 3,
   plugins: [new ExpirationPlugin({ maxEntries: 5 })],
 });
 registerRoute(new NavigationRoute(navigationHandler));
