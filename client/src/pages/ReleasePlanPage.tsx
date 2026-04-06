@@ -355,11 +355,16 @@ export default function ReleasePlanPage() {
     { enabled: selectedPlanId !== null }
   );
 
-  // Persist fresh plan dogs to cache whenever they arrive
+  // Persist fresh plan dogs to cache whenever they arrive + pre-fetch photos for SW cache
   useEffect(() => {
     if (selectedPlanId !== null && freshPlanDogs && freshPlanDogs.length >= 0) {
       setCachedPlanDogs(selectedPlanId, freshPlanDogs);
       setCachedPlanDogsLocal(freshPlanDogs);
+      // Pre-fetch dog photos so the service worker caches them for offline use
+      freshPlanDogs.forEach((dog: any) => {
+        const url = dog.photo2Url || dog.photoUrl;
+        if (url) fetch(url, { mode: "no-cors" }).catch(() => {});
+      });
     }
   }, [selectedPlanId, JSON.stringify(freshPlanDogs)]); // eslint-disable-line react-hooks/exhaustive-deps
 

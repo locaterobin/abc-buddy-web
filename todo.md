@@ -444,3 +444,7 @@
 ## Offline UI
 - [x] Add non-intrusive offline banner at top of app ("You are offline — Catch still works")
 - [x] Add offline note on login page ("No internet connection — sign in when you're back online")
+
+## Photo Pre-cache & Annotation Notes
+- [x] Add notes field to client-side annotation overlay (canvas stamp on share image)
+- [x] Pre-cache dog thumbnail photos (photo2Url) via service worker runtime cache for offline release tab

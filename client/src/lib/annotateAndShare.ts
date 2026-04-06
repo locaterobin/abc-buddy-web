@@ -18,6 +18,7 @@ export interface SharePayload {
   longitude?: number | null;
   areaName?: string;
   recordedAt?: number;   // UTC ms
+  notes?: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -258,7 +259,8 @@ async function canvasAnnotate(
   areaName: string | undefined,
   latitude: number | undefined | null,
   longitude: number | undefined | null,
-  recordedAt: number | undefined
+  recordedAt: number | undefined,
+  notes?: string | null
 ): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -293,6 +295,21 @@ async function canvasAnnotate(
       if (areaName) lines.push({ text: areaName, bold: false });
       if (latitude != null && longitude != null) {
         lines.push({ text: `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`, bold: false });
+      }
+      if (notes && notes.trim()) {
+        // Wrap notes at ~60 chars per line to avoid overflow
+        const maxChars = 60;
+        const words = notes.trim().split(/\s+/);
+        let line = "";
+        for (const word of words) {
+          if ((line + " " + word).trim().length > maxChars) {
+            if (line) lines.push({ text: line.trim(), bold: false });
+            line = word;
+          } else {
+            line = (line + " " + word).trim();
+          }
+        }
+        if (line) lines.push({ text: line.trim(), bold: false });
       }
 
       const idFontSize = Math.max(18, Math.round(W * 0.038));
@@ -333,7 +350,7 @@ export async function annotateAndShare(payload: SharePayload): Promise<void> {
     const { imageBase64, dogId, latitude, longitude, areaName, recordedAt } = payload;
 
     const annotatedBlob = await canvasAnnotate(
-      imageBase64, dogId, areaName, latitude, longitude, recordedAt
+      imageBase64, dogId, areaName, latitude, longitude, recordedAt, payload.notes
     );
 
     const finalBlob = await injectExif(annotatedBlob, dogId, latitude, longitude);

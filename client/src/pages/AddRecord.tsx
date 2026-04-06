@@ -434,6 +434,7 @@ export default function AddRecord() {
       longitude: savedLng,
       areaName: savedAreaName || undefined,
       recordedAt: savedRecordedAt,
+      notes: savedNotes || undefined,
     });
 
     // Run annotation + save in background, with offline queue tracking
