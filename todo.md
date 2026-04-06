@@ -412,3 +412,8 @@
 - [x] Remove/bypass "need connection to load" offline guard so app shell loads from cache
 - [x] Ensure Catch tab works fully offline (no blocking network calls)
 - [x] Verify service worker caches app shell assets correctly
+
+## Remove AI Description from Catch Tab
+- [x] Hide description field in AddRecord (Catch tab)
+- [x] Remove analyzeImage AI call on image capture/upload in Catch tab
+- [x] Keep geocode (lat/long → place name) call intact

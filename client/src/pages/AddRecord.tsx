@@ -10,14 +10,12 @@ import { toast } from "sonner";
 import {
   Camera,
   Upload,
-  Sparkles,
   Save,
   CheckCircle2,
   XCircle,
   Loader2,
   MapPin,
   RotateCcw,
-  AlertCircle,
 } from "lucide-react";
 import { enqueueRecord, removeFromQueue, updateQueueStatus, getPendingRecords, type PendingRecord, QUEUE_CHANNEL_NAME } from "@/hooks/useOfflineQueue";
 import PendingQueueBar from "@/components/PendingQueueBar";
@@ -125,8 +123,7 @@ export default function AddRecord() {
 
   // Loading states
   const [gpsLoading, setGpsLoading] = useState(false);
-  const [analysisLoading, setAnalysisLoading] = useState(false);
-  const [analysisError, setAnalysisError] = useState("");
+
 
   // Pending queue state (populated after mutations are declared below)
   const [pendingRecords, setPendingRecords] = useState<PendingRecord[]>([]);
@@ -142,7 +139,7 @@ export default function AddRecord() {
     { teamIdentifier: teamId, dogId },
     { enabled: !!dogId && dogId.length > 4, staleTime: 0 }
   );
-  const analyzeMutation = trpc.dogs.analyzeImage.useMutation();
+
   const annotateMutation = trpc.dogs.annotateRecord.useMutation();
   const saveMutation = trpc.dogs.saveRecord.useMutation();
   const geocodeMutation = trpc.dogs.geocodeLatLng.useMutation();
@@ -282,51 +279,7 @@ export default function AddRecord() {
     );
   }, [areaNameEdited, geocode]);
 
-  // Run AI analysis (auto-triggered after image is set)
-  const runAnalysis = useCallback(
-    async (base64: string, source: ImageSource) => {
-      setAnalysisLoading(true);
-      setAnalysisError("");
-      try {
-        const result = await analyzeMutation.mutateAsync({
-          imageBase64: base64,
-          extractMetadata: source === "upload",
-        });
 
-        setDescription(result.description);
-
-        if (source === "upload") {
-          if (result.latitude !== null && result.longitude !== null) {
-            setLatitude(result.latitude);
-            setLongitude(result.longitude);
-            if (!areaNameEdited) {
-              geocode(result.latitude, result.longitude);
-            }
-          }
-          if (result.recordedAt) {
-            try {
-              const d = new Date(result.recordedAt);
-              if (!isNaN(d.getTime())) {
-                setRecordedAt(toLocalDatetimeValue(d));
-              }
-            } catch {}
-          }
-          if (result.areaName && !areaNameEdited) {
-            setAreaName(result.areaName);
-          }
-          if (result.notes) {
-            setNotes((prev) => (prev ? prev : result.notes || ""));
-          }
-        }
-      } catch (err: any) {
-        setAnalysisError("AI analysis failed. You can still save the record.");
-        console.error("Analysis error:", err);
-      } finally {
-        setAnalysisLoading(false);
-      }
-    },
-    [analyzeMutation, areaNameEdited, geocode]
-  );
 
   // Handle file selected from gallery (upload)
   const handleUploadFile = useCallback(
@@ -337,18 +290,17 @@ export default function AddRecord() {
         setImageBase64(base64);
         setImageSource("upload");
         setDescription("");
-        setAnalysisError("");
         setLatitude(null);
         setLongitude(null);
         setAreaName("");
         setAreaNameEdited(false);
         setRecordedAt(toLocalDatetimeValue(new Date()));
-        runAnalysis(base64, "upload");
+        // No AI call — geocode only happens when GPS coords are set manually or via camera
       } catch {
         toast.error("Failed to read image");
       }
     },
-    [runAnalysis]
+    []
   );
 
   // Handle photo taken from camera
@@ -360,15 +312,14 @@ export default function AddRecord() {
         setImageBase64(base64);
         setImageSource("camera");
         setDescription("");
-        setAnalysisError("");
         setRecordedAt(toLocalDatetimeValue(new Date()));
+        // Request GPS — geocode will fire automatically once coords arrive
         requestDeviceGps();
-        runAnalysis(base64, "camera");
       } catch {
         toast.error("Failed to read image");
       }
     },
-    [runAnalysis, requestDeviceGps]
+    [requestDeviceGps]
   );
 
   // Shared reset helper
@@ -383,7 +334,6 @@ export default function AddRecord() {
     setLatitude(null);
     setLongitude(null);
     setRecordedAt(toLocalDatetimeValue(new Date()));
-    setAnalysisError("");
     // Increment dog ID locally so the next ID is ready immediately without waiting
     // for a server refetch (the background save may not have completed yet)
     if (lastSavedDogId) {
@@ -658,39 +608,11 @@ export default function AddRecord() {
               >
                 <RotateCcw size={16} />
               </button>
-              {analysisLoading && (
-                <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center gap-2">
-                  <Loader2 size={28} className="animate-spin text-white" />
-                  <span className="text-white text-sm font-medium">
-                    {imageSource === "upload" ? "Reading image & extracting data…" : "Analysing dog…"}
-                  </span>
-                </div>
-              )}
+
             </div>
           </Card>
 
-          {analysisError && (
-            <div className="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-              <AlertCircle size={16} className="flex-shrink-0" />
-              <span>{analysisError}</span>
-            </div>
-          )}
 
-          {hasImage && (
-            <div>
-              <label className="text-sm font-medium text-foreground mb-1.5 flex items-center gap-1.5">
-                <Sparkles size={14} className="text-primary" />
-                AI Description
-              </label>
-              <Textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={4}
-                className="text-sm resize-none"
-                placeholder="AI-generated description..."
-              />
-            </div>
-          )}
 
           <Card>
             <CardContent className="py-4 space-y-4">
