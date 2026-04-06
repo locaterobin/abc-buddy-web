@@ -352,6 +352,16 @@ export default function ReleasePlanPage() {
             dogs.forEach((dog: any) => {
               const url = dog.annotatedImageUrl || dog.imageUrl;
               if (url) fetch(url, { mode: "no-cors" }).catch(() => {});
+              // Pre-warm getDogPlans + getDogPlanDetails so RecordDetailModal
+              // knows the dog is in a plan even when offline
+              if (dog.dogId) {
+                utils.releasePlans.getDogPlans
+                  .prefetch({ dogId: dog.dogId })
+                  .catch(() => {});
+                utils.releasePlans.getDogPlanDetails
+                  .prefetch({ dogId: dog.dogId })
+                  .catch(() => {});
+              }
             });
           }
         })
@@ -384,6 +394,16 @@ export default function ReleasePlanPage() {
       freshPlanDogs.forEach((dog: any) => {
         const url = dog.annotatedImageUrl || dog.imageUrl;
         if (url) fetch(url, { mode: "no-cors" }).catch(() => {});
+        // Pre-warm plan membership queries so RecordDetailModal shows correct
+        // buttons (Mark as Released, not Add to plan) when offline
+        if (dog.dogId) {
+          utils.releasePlans.getDogPlans
+            .prefetch({ dogId: dog.dogId })
+            .catch(() => {});
+          utils.releasePlans.getDogPlanDetails
+            .prefetch({ dogId: dog.dogId })
+            .catch(() => {});
+        }
       });
     }
   }, [selectedPlanId, JSON.stringify(freshPlanDogs)]); // eslint-disable-line react-hooks/exhaustive-deps

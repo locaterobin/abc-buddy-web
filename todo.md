@@ -509,3 +509,7 @@
 ## GPS Timeout & Countdown
 - [x] Increase GPS timeout to 60s in catch and release flows
 - [x] Show live countdown (60→0) on "Mark as Released" button while GPS is acquiring
+
+## Bug - Offline Plan Membership Missing
+- [x] Diagnose why isInAnyPlan is false offline: getDogPlans/getDogPlanDetails were never prefetched, so React Query cache was empty offline
+- [x] Fix: prefetch getDogPlans + getDogPlanDetails for every dog in every plan during background prefetch in ReleasePlanPage
