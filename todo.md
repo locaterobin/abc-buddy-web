@@ -407,3 +407,8 @@
 - [x] Add amber/red age warning to PendingReleaseBar items older than 30 min
 - [x] Add amber/red age warning to PendingCheckedBar items older than 30 min
 - [x] Extend online reconnect handler in Lookup to also retry checked plan-add items (already handled — retryPlanPhoto covers all types)
+
+## PWA Offline Fix
+- [x] Remove/bypass "need connection to load" offline guard so app shell loads from cache
+- [x] Ensure Catch tab works fully offline (no blocking network calls)
+- [x] Verify service worker caches app shell assets correctly

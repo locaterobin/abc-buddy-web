@@ -45,10 +45,15 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  // Check if this IP is blocked before showing the login form
+  // Check if this IP is blocked before showing the login form.
+  // When offline, the query will error — treat that as "not blocked" so the
+  // login form is still accessible (staff can't log in offline anyway, but
+  // if they already have a cached session they won't reach this page).
   const ipBlockQuery = trpc.airtable.checkIpBlock.useQuery(undefined, {
     retry: false,
     staleTime: 60_000,
+    // Don't refetch on window focus to avoid unnecessary network calls
+    refetchOnWindowFocus: false,
   });
 
   const loginMutation = trpc.airtable.login.useMutation({
@@ -83,8 +88,10 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
     loginMutation.mutate({ email: email.trim(), password });
   };
 
-  // Show loading while checking IP status
-  if (ipBlockQuery.isLoading) {
+  // Show loading while checking IP status — but only if we're online.
+  // If offline (query errored with a network error), skip straight to the login form.
+  const isNetworkError = ipBlockQuery.isError && !ipBlockQuery.data;
+  if (ipBlockQuery.isLoading && !isNetworkError) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 size={28} className="animate-spin text-muted-foreground" />
