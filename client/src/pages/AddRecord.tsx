@@ -363,6 +363,10 @@ export default function AddRecord() {
       toast.error("Please upload an image and set a Dog ID");
       return;
     }
+    if (!areaName.trim()) {
+      toast.error("Area / Location is required before saving");
+      return;
+    }
     if (dogIdCheck.data?.exists) {
       toast.error("This Dog ID is already taken");
       return;

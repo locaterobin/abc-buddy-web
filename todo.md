@@ -466,3 +466,9 @@
 
 ## Remove "(from image)" Label in Upload Flow
 - [x] Remove "(from image)" prefix from Date & Time and Area/Location labels in AddRecord upload flow
+
+## Include District in adminArea
+- [ ] Update adminArea in geocodeLatLng to include district + state + country
+
+## Area Name Required Validation
+- [x] Block saving catch record when area name is empty (upload and camera flows)
