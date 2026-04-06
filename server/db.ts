@@ -173,14 +173,19 @@ export async function updateDogRecordAnnotation(
   id: number,
   imageUrl: string,
   originalImageUrl: string | null,
-  description: string | null
+  description: string | null,
+  teamIdentifier?: string
 ): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db
     .update(dogRecords)
     .set({ imageUrl, originalImageUrl, description })
-    .where(eq(dogRecords.id, id));
+    .where(
+      teamIdentifier
+        ? and(eq(dogRecords.id, id), eq(dogRecords.teamIdentifier, teamIdentifier))
+        : eq(dogRecords.id, id)
+    );
 }
 
 export async function getRecordsPaginated(
@@ -599,10 +604,13 @@ export async function addDogToReleasePlan(planId: number, dogId: string, photo2U
   if (existing.length > 0) {
     // Update photo2Url on dog_records if a new one is provided
     if (photo2Url) {
+      // Verify the dog belongs to the plan's team before updating
+      const planRow = await db.select({ teamIdentifier: releasePlans.teamIdentifier }).from(releasePlans).where(eq(releasePlans.id, planId)).limit(1);
+      const teamId = planRow[0]?.teamIdentifier;
       await db
         .update(dogRecords)
         .set({ photo2Url })
-        .where(eq(dogRecords.dogId, dogId));
+        .where(teamId ? and(eq(dogRecords.dogId, dogId), eq(dogRecords.teamIdentifier, teamId)) : eq(dogRecords.dogId, dogId));
     }
     return false;
   }
@@ -616,10 +624,13 @@ export async function addDogToReleasePlan(planId: number, dogId: string, photo2U
   await db.insert(releasePlanDogs).values({ planId, dogId, sortOrder: maxSort + 1, addedByStaffId: staffId ?? null, addedByStaffName: staffName ?? null });
   // Save photo2Url on the dog record itself so it persists across plan changes
   if (photo2Url) {
+    // Verify the dog belongs to the plan's team before updating
+    const planRow2 = await db.select({ teamIdentifier: releasePlans.teamIdentifier }).from(releasePlans).where(eq(releasePlans.id, planId)).limit(1);
+    const teamId2 = planRow2[0]?.teamIdentifier;
     await db
       .update(dogRecords)
       .set({ photo2Url })
-      .where(eq(dogRecords.dogId, dogId));
+      .where(teamId2 ? and(eq(dogRecords.dogId, dogId), eq(dogRecords.teamIdentifier, teamId2)) : eq(dogRecords.dogId, dogId));
   }
   return true;
 }

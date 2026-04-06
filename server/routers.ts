@@ -425,7 +425,7 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
             const annotatedKey = `dogs/${input.teamIdentifier}/${resolvedDogId}-annotated-${nanoid(8)}.jpg`;
             const { url: aUrl } = await storagePut(annotatedKey, annotatedBuffer, "image/jpeg");
             annotatedUrl = aUrl;
-            await updateDogRecordAnnotation(savedRecord.id, annotatedUrl, imageUrl, savedRecord.description ?? null);
+            await updateDogRecordAnnotation(savedRecord.id, annotatedUrl, imageUrl, savedRecord.description ?? null, input.teamIdentifier);
             console.log(`[saveRecord BG] Annotation done annotatedUrl=${annotatedUrl}`);
           } catch (e) {
             console.error("[saveRecord BG] Annotation failed:", e);

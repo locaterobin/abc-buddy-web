@@ -533,3 +533,8 @@
 - [x] Added teamIdentifier param to getDogPlans and getDogPlanDetails procedures in routers.ts
 - [x] Passed teamIdentifier from RecordDetailModal queries and invalidate calls
 - [x] Passed teamIdentifier from ReleasePlanPage prefetch calls
+
+## Security - Add teamIdentifier Guards to All Dog Update Paths
+- [x] Added teamIdentifier guard to updateDogRecordAnnotation (optional param, passed from saveRecord)
+- [x] saveReleaseData already had WHERE id = ? AND teamIdentifier = ? guard
+- [x] addDogToReleasePlan photo2Url updates now look up plan's teamIdentifier and scope the WHERE clause
