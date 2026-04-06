@@ -493,3 +493,10 @@
 - [x] Update getReleasePlanDogs in db.ts to filter by teamIdentifier (inner join with dog_records.teamIdentifier)
 - [x] Pass teamIdentifier from ReleasePlanPage client to getPlanDogs query
 - [x] Update background pre-fetch in ReleasePlanPage to also pass teamIdentifier
+
+## Release Flow Bug Fixes
+- [ ] Fix distance "unavailable": use rec.latitude/rec.longitude (freshRecord) not record.latitude (stale prop)
+- [ ] Fix slow GPS: increase maximumAge to 60s so a recent cached fix is reused immediately
+
+## Bug - Deleted Dogs in Release Plan
+- [x] Add deleted=false filter to getReleasePlanDogs query so deleted records don't appear in release plans

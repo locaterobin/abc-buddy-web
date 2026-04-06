@@ -526,8 +526,8 @@ export async function getReleasePlanDogs(planId: number, teamIdentifier?: string
     .innerJoin(dogRecords, eq(releasePlanDogs.dogId, dogRecords.dogId))
     .where(
       teamIdentifier
-        ? and(eq(releasePlanDogs.planId, planId), eq(dogRecords.teamIdentifier, teamIdentifier))
-        : eq(releasePlanDogs.planId, planId)
+        ? and(eq(releasePlanDogs.planId, planId), eq(dogRecords.teamIdentifier, teamIdentifier), eq(dogRecords.deleted, false))
+        : and(eq(releasePlanDogs.planId, planId), eq(dogRecords.deleted, false))
     )
     .orderBy(releasePlanDogs.sortOrder, releasePlanDogs.addedAt);
   return rows;
