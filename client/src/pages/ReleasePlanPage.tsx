@@ -303,7 +303,7 @@ export default function ReleasePlanPage() {
       await removePlanPhotoFromQueue(item.queueId);
       toast.success(`${item.captureDogId ?? "Dog"} release synced`);
       utils.releasePlans.getPlans.invalidate();
-      utils.releasePlans.getPlanDogs.invalidate();
+      utils.releasePlans.getPlanDogs.invalidate({ teamIdentifier: teamIdentifier ?? undefined });
     } catch (err: any) {
       await updatePlanPhotoStatus(item.queueId, "failed", err?.message || "Network error");
       toast.error(`Sync failed: ${err?.message ?? "Unknown error"}`);
@@ -343,7 +343,7 @@ export default function ReleasePlanPage() {
       if (prefetchedPlanIdsRef.current.has(plan.id)) return;
       prefetchedPlanIdsRef.current.add(plan.id);
       utils.releasePlans.getPlanDogs
-        .fetch({ planId: plan.id })
+        .fetch({ planId: plan.id, teamIdentifier: teamIdentifier ?? undefined })
         .then((dogs) => {
           if (dogs && dogs.length > 0) {
             // Cache dogs in IndexedDB
@@ -371,7 +371,7 @@ export default function ReleasePlanPage() {
 
   // Plan dogs (when a plan is selected)
   const { data: freshPlanDogs, isLoading: dogsLoading } = trpc.releasePlans.getPlanDogs.useQuery(
-    { planId: selectedPlanId! },
+    { planId: selectedPlanId!, teamIdentifier: teamIdentifier ?? undefined },
     { enabled: selectedPlanId !== null }
   );
 
@@ -415,7 +415,7 @@ export default function ReleasePlanPage() {
 
   const removeDog = trpc.releasePlans.removeDog.useMutation({
     onSuccess: () => {
-      utils.releasePlans.getPlanDogs.invalidate({ planId: selectedPlanId! });
+      utils.releasePlans.getPlanDogs.invalidate({ planId: selectedPlanId!, teamIdentifier: teamIdentifier ?? undefined });
       toast.success("Dog removed from plan");
     },
     onError: () => toast.error("Failed to remove dog"),
@@ -485,7 +485,7 @@ export default function ReleasePlanPage() {
       { planId: selectedPlanId!, orderedDogIds: newOrder },
       {
         onSuccess: () => {
-          utils.releasePlans.getPlanDogs.invalidate({ planId: selectedPlanId! });
+          utils.releasePlans.getPlanDogs.invalidate({ planId: selectedPlanId!, teamIdentifier: teamIdentifier ?? undefined });
         },
       }
     );
@@ -604,11 +604,11 @@ export default function ReleasePlanPage() {
             record={selectedRecord}
             onClose={() => {
               setSelectedRecord(null);
-              utils.releasePlans.getPlanDogs.invalidate();
+              utils.releasePlans.getPlanDogs.invalidate({ teamIdentifier: teamIdentifier ?? undefined });
             }}
             onDelete={() => {
               setSelectedRecord(null);
-              utils.releasePlans.getPlanDogs.invalidate();
+              utils.releasePlans.getPlanDogs.invalidate({ teamIdentifier: teamIdentifier ?? undefined });
             }}
           />
         )}

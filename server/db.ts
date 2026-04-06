@@ -482,7 +482,7 @@ export async function deleteReleasePlan(planId: number, teamIdentifier: string):
   return ((result[0] as any).affectedRows ?? 0) > 0;
 }
 
-export async function getReleasePlanDogs(planId: number) {
+export async function getReleasePlanDogs(planId: number, teamIdentifier?: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   const rows = await db
@@ -524,7 +524,11 @@ export async function getReleasePlanDogs(planId: number) {
     })
     .from(releasePlanDogs)
     .innerJoin(dogRecords, eq(releasePlanDogs.dogId, dogRecords.dogId))
-    .where(eq(releasePlanDogs.planId, planId))
+    .where(
+      teamIdentifier
+        ? and(eq(releasePlanDogs.planId, planId), eq(dogRecords.teamIdentifier, teamIdentifier))
+        : eq(releasePlanDogs.planId, planId)
+    )
     .orderBy(releasePlanDogs.sortOrder, releasePlanDogs.addedAt);
   return rows;
 }

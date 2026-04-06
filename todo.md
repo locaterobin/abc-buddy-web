@@ -487,3 +487,9 @@
 
 ## Non-blocking Geocode in Release Flow
 - [x] Restore enableHighAccuracy GPS; fire geocode in background so dialog opens immediately after GPS fix
+
+## Filter Release Plan Dogs by Team
+- [x] Add teamIdentifier param to getPlanDogs tRPC procedure
+- [x] Update getReleasePlanDogs in db.ts to filter by teamIdentifier (inner join with dog_records.teamIdentifier)
+- [x] Pass teamIdentifier from ReleasePlanPage client to getPlanDogs query
+- [x] Update background pre-fetch in ReleasePlanPage to also pass teamIdentifier

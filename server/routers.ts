@@ -783,9 +783,9 @@ const releasePlansRouter = router({
       return deleteReleasePlan(input.planId, input.teamIdentifier);
     }),
   getPlanDogs: publicProcedure
-    .input(z.object({ planId: z.number() }))
+    .input(z.object({ planId: z.number(), teamIdentifier: z.string().optional() }))
     .query(async ({ input }) => {
-      return getReleasePlanDogs(input.planId);
+      return getReleasePlanDogs(input.planId, input.teamIdentifier);
     }),
   addDog: publicProcedure
     .input(z.object({
