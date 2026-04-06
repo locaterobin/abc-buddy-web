@@ -460,3 +460,9 @@
 - [x] Remove lat, long, date/time, dog ID from updateRecord server mutation input and DB update
 - [x] Remove lat, long, date/time, dog ID from /update webhook payload
 - [x] Add gender to /update webhook payload
+
+## Add adminArea to /add Webhook
+- [x] Add adminArea to the /add webhook payload in AddRecord.tsx
+
+## Remove "(from image)" Label in Upload Flow
+- [x] Remove "(from image)" prefix from Date & Time and Area/Location labels in AddRecord upload flow

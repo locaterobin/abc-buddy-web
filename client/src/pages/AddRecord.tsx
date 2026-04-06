@@ -413,6 +413,7 @@ export default function AddRecord() {
           latitude: savedLat ?? null,
           longitude: savedLng ?? null,
           areaName: savedAreaName || null,
+          adminArea: savedAdminArea || null,
           notes: savedNotes || null,
           source: savedSource,
           addedByStaffId: savedStaffId ?? null,
@@ -653,11 +654,6 @@ export default function AddRecord() {
                       (device time)
                     </span>
                   )}
-                  {imageSource === "upload" && (
-                    <span className="ml-2 text-xs font-normal text-muted-foreground">
-                      (from image)
-                    </span>
-                  )}
                 </label>
                 <Input
                   type="datetime-local"
@@ -672,11 +668,6 @@ export default function AddRecord() {
               <div>
                 <label className="text-sm font-medium text-foreground mb-1.5 block">
                   Area / Location
-                  {imageSource === "upload" && (
-                    <span className="ml-2 text-xs font-normal text-muted-foreground">
-                      (from image)
-                    </span>
-                  )}
                 </label>
                 <div className="relative">
                   <Input
@@ -717,11 +708,6 @@ export default function AddRecord() {
                 <label className="text-sm font-medium text-foreground mb-1.5 block">
                   Notes{" "}
                   <span className="text-muted-foreground font-normal">(optional)</span>
-                  {imageSource === "upload" && (
-                    <span className="ml-2 text-xs font-normal text-muted-foreground">
-                      (from image)
-                    </span>
-                  )}
                 </label>
                 <Textarea
                   value={notes}
