@@ -609,7 +609,7 @@ export default function ReleasePlanPage() {
                       compact={viewMode === "list"}
                       onOpen={() => setSelectedRecord(dog)}
                       isManager={isManager}
-                      onRemove={() => removeDog.mutate({ planId: selectedPlanId, dogId: dog.dogId })}
+                      onRemove={() => removeDog.mutate({ planId: selectedPlanId!, dogId: dog.dogId, teamIdentifier: teamIdentifier ?? '' })}
                     />
                   ))}
                 </SortableContext>

@@ -550,3 +550,7 @@
 - moveDogToPlan: no team guard — LOW risk, called internally
 - getDogIdByRecordId: no team guard (read-only, returns dogId only) — LOW risk
 - All write paths for dog_records now have teamIdentifier guards
+
+## Security - moveDog and removeDogFromPlan Team Guards
+- [x] moveDog: added teamIdentifier, verifies dog + target plan both belong to team before moving
+- [x] removeDogFromPlan: added teamIdentifier, verifies dog + plan both belong to team before removing

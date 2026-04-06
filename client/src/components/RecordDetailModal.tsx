@@ -1310,6 +1310,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
                       moveDogMutation.mutate({
                         dogId: record.dogId,
                         targetPlanId: pendingMovePlan.id,
+                        teamIdentifier: teamId ?? '',
                         movedByStaffId: staffSession?.staffId ?? null,
                         movedByStaffName: staffSession?.name ?? null,
                       });

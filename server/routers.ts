@@ -2,6 +2,7 @@ import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
+import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { nanoid } from "nanoid";
 import {
@@ -36,7 +37,7 @@ import {
   updateCheckedPhotoUrl,
 } from "./db";
 import { getDb } from "./db";
-import { loginAttempts, blockedIps } from "../drizzle/schema";
+import { loginAttempts, blockedIps, dogRecords, releasePlans } from "../drizzle/schema";
 import { eq, and, gte, count, sql } from "drizzle-orm";
 import { notifyOwner } from "./_core/notification";
 import { storagePut } from "./storage";
@@ -810,8 +811,16 @@ const releasePlansRouter = router({
       return addDogToReleasePlan(input.planId, input.dogId, photo2Url, input.addedByStaffId ?? null, input.addedByStaffName ?? null);
     }),
   removeDog: publicProcedure
-    .input(z.object({ planId: z.number(), dogId: z.string() }))
+    .input(z.object({ planId: z.number(), dogId: z.string(), teamIdentifier: z.string() }))
     .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'DB unavailable' });
+      // Verify plan belongs to team
+      const plan = await db.select({ teamIdentifier: releasePlans.teamIdentifier }).from(releasePlans).where(eq(releasePlans.id, input.planId)).limit(1);
+      if (!plan[0] || plan[0].teamIdentifier !== input.teamIdentifier) throw new TRPCError({ code: 'FORBIDDEN', message: 'Plan not found in your team' });
+      // Verify dog belongs to team
+      const dog = await db.select({ teamIdentifier: dogRecords.teamIdentifier }).from(dogRecords).where(and(eq(dogRecords.dogId, input.dogId), eq(dogRecords.teamIdentifier, input.teamIdentifier))).limit(1);
+      if (!dog[0]) throw new TRPCError({ code: 'FORBIDDEN', message: 'Dog not found in your team' });
       return removeDogFromReleasePlan(input.planId, input.dogId);
     }),
   getDogPlans: publicProcedure
@@ -828,10 +837,19 @@ const releasePlansRouter = router({
     .input(z.object({
       dogId: z.string(),
       targetPlanId: z.number(),
+      teamIdentifier: z.string(),
       movedByStaffId: z.string().nullable().optional(),
       movedByStaffName: z.string().nullable().optional(),
     }))
     .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'DB unavailable' });
+      // Verify target plan belongs to team
+      const plan = await db.select({ teamIdentifier: releasePlans.teamIdentifier }).from(releasePlans).where(eq(releasePlans.id, input.targetPlanId)).limit(1);
+      if (!plan[0] || plan[0].teamIdentifier !== input.teamIdentifier) throw new TRPCError({ code: 'FORBIDDEN', message: 'Target plan not found in your team' });
+      // Verify dog belongs to team
+      const dog = await db.select({ teamIdentifier: dogRecords.teamIdentifier }).from(dogRecords).where(and(eq(dogRecords.dogId, input.dogId), eq(dogRecords.teamIdentifier, input.teamIdentifier))).limit(1);
+      if (!dog[0]) throw new TRPCError({ code: 'FORBIDDEN', message: 'Dog not found in your team' });
       await moveDogToPlan(input.dogId, input.targetPlanId, input.movedByStaffId ?? null, input.movedByStaffName ?? null);
       return { success: true };
     }),
