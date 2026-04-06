@@ -502,7 +502,7 @@ export default function ReleasePlanPage() {
     setLocalOrder(newOrder);
 
     reorderDogs.mutate(
-      { planId: selectedPlanId!, orderedDogIds: newOrder },
+      { planId: selectedPlanId!, orderedDogIds: newOrder, teamIdentifier: teamIdentifier ?? '' },
       {
         onSuccess: () => {
           utils.releasePlans.getPlanDogs.invalidate({ planId: selectedPlanId!, teamIdentifier: teamIdentifier ?? undefined });

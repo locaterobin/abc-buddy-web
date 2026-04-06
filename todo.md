@@ -554,3 +554,7 @@
 ## Security - moveDog and removeDogFromPlan Team Guards
 - [x] moveDog: added teamIdentifier, verifies dog + target plan both belong to team before moving
 - [x] removeDogFromPlan: added teamIdentifier, verifies dog + plan both belong to team before removing
+
+## Security & Correctness - reorderPlanDogs and Auto-Remove on Delete
+- [x] Added team guard to reorderDogs: verifies plan belongs to team before reordering
+- [x] Auto-remove dog from all team release plans on soft-delete (in deleteRecordById)

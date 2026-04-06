@@ -876,8 +876,12 @@ const releasePlansRouter = router({
       return { url };
     }),
   reorderDogs: publicProcedure
-    .input(z.object({ planId: z.number(), orderedDogIds: z.array(z.string()) }))
+    .input(z.object({ planId: z.number(), orderedDogIds: z.array(z.string()), teamIdentifier: z.string() }))
     .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'DB unavailable' });
+      const plan = await db.select({ teamIdentifier: releasePlans.teamIdentifier }).from(releasePlans).where(eq(releasePlans.id, input.planId)).limit(1);
+      if (!plan[0] || plan[0].teamIdentifier !== input.teamIdentifier) throw new TRPCError({ code: 'FORBIDDEN', message: 'Plan not found in your team' });
       await reorderPlanDogs(input.planId, input.orderedDogIds);
       return { success: true };
     }),

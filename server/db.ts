@@ -307,13 +307,34 @@ export async function getRecordsByTeamWithTimeRange(
 export async function deleteRecordById(id: number, teamIdentifier: string): Promise<boolean> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-
+  // Fetch dogId before soft-deleting so we can remove it from release plans
+  const dogRow = await db
+    .select({ dogId: dogRecords.dogId })
+    .from(dogRecords)
+    .where(and(eq(dogRecords.id, id), eq(dogRecords.teamIdentifier, teamIdentifier)))
+    .limit(1);
   const result = await db
     .update(dogRecords)
     .set({ deleted: true })
     .where(and(eq(dogRecords.id, id), eq(dogRecords.teamIdentifier, teamIdentifier)));
-
-  return (result[0] as any).affectedRows > 0;
+  const affected = (result[0] as any).affectedRows > 0;
+  // Auto-remove from all release plans belonging to this team
+  if (affected && dogRow[0]?.dogId) {
+    const planRows = await db
+      .select({ id: releasePlans.id })
+      .from(releasePlans)
+      .where(eq(releasePlans.teamIdentifier, teamIdentifier));
+    if (planRows.length > 0) {
+      const planIds = planRows.map((p) => p.id);
+      await db
+        .delete(releasePlanDogs)
+        .where(and(
+          eq(releasePlanDogs.dogId, dogRow[0].dogId),
+          inArray(releasePlanDogs.planId, planIds)
+        ));
+    }
+  }
+  return affected;
 }
 
 export async function saveReleaseData(
