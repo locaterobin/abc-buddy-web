@@ -252,7 +252,12 @@ export async function getRecordsPaginated(
     const planRows = await db
       .select({ dogId: releasePlanDogs.dogId })
       .from(releasePlanDogs)
-      .where(sql`${releasePlanDogs.dogId} IN (${sql.join(dogIds.map((id) => sql`${id}`), sql`, `)})`)
+      .innerJoin(releasePlans, eq(releasePlanDogs.planId, releasePlans.id))
+      .where(and(
+        sql`${releasePlanDogs.dogId} IN (${sql.join(dogIds.map((id) => sql`${id}`), sql`, `)})`,
+        eq(releasePlans.teamIdentifier, teamIdentifier),
+        isNull(releasePlans.archivedAt)
+      ))
     for (const row of planRows) {
       inPlanSet.add(row.dogId);
     }

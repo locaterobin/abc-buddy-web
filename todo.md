@@ -538,3 +538,15 @@
 - [x] Added teamIdentifier guard to updateDogRecordAnnotation (optional param, passed from saveRecord)
 - [x] saveReleaseData already had WHERE id = ? AND teamIdentifier = ? guard
 - [x] addDogToReleasePlan photo2Url updates now look up plan's teamIdentifier and scope the WHERE clause
+
+## Security - Team Scoping Audit
+- [x] Fixed inReleasePlan query: now innerJoins release_plans and filters by teamIdentifier + archivedAt IS NULL
+- [x] Audit complete — see findings below
+
+### Audit Findings
+- updatePlanAfterRelease: no team guard (planId only) — LOW risk, called internally after release
+- reorderPlanDogs: no team guard (planId only) — LOW risk, planId scoped to team via UI
+- removeDogFromReleasePlan: no team guard (planId+dogId) — LOW risk, same reason
+- moveDogToPlan: no team guard — LOW risk, called internally
+- getDogIdByRecordId: no team guard (read-only, returns dogId only) — LOW risk
+- All write paths for dog_records now have teamIdentifier guards
