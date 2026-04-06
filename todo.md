@@ -423,3 +423,10 @@
 
 ## Camera Flow: Read-only Datetime
 - [x] Make date/time field read-only (non-editable) when imageSource === "camera" in Catch tab
+
+## Server saveRecord Phase 2 Refactor
+- [x] Annotate all images (camera and upload), not just camera
+- [x] Remove geocode backfill from server
+- [x] AI description always if empty — colour + distinct physical features only, no age/breed
+- [x] Remove image-ready and image-annotated webhooks
+- [x] Fire single update webhook at end with description, imageUrl, annotatedImageUrl

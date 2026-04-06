@@ -371,187 +371,114 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
       });
       console.log(`[saveRecord] DB insert confirmed id=${savedRecord.id} dogId=${resolvedDogId}`);
 
-      // Phase 2: fire-and-forget background tasks (annotation, AI, geocoding, webhooks)
+      // Phase 2: fire-and-forget background tasks (annotation, AI description, single update webhook)
       Promise.resolve().then(async () => {
         try {
+          let annotatedUrl: string | null = null;
+          let finalDescription: string | null = input.description ?? null;
 
-          // Server-side annotation: stamp the image and update DB in background
-          // Always annotate camera photos regardless of whether a description exists
-          if (input.source === "camera") {
-            Promise.resolve().then(async () => {
-              try {
-                const sharp = (await import("sharp")).default;
-                const rawBuf = Buffer.from(imageUrl.includes("base64,") ? imageUrl.replace(/^data:image\/\w+;base64,/, "") : imgBuffer.toString("base64"), "base64");
-                const image = sharp(imgBuffer).autoOrient();
-                const meta = await image.clone().metadata();
-                const W = meta.width || 800;
-                const H = meta.height || 600;
-                const date = new Date(input.recordedAt);
-                const IST = "Asia/Kolkata";
-                const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-                const dayName = days[new Date(date.toLocaleString("en-US", { timeZone: IST })).getDay()];
-                const dateStr = date.toLocaleDateString("en-GB", { timeZone: IST, day: "2-digit", month: "short", year: "numeric" });
-                const timeStr = date.toLocaleTimeString("en-US", { timeZone: IST, hour: "2-digit", minute: "2-digit", hour12: true });
-                type Line = { text: string; bold: boolean };
-                const lines: Line[] = [];
-                lines.push({ text: `${input.dogId}`, bold: true });
-                lines.push({ text: `${dayName}, ${dateStr}, ${timeStr}`, bold: false });
-                if (input.areaName) lines.push({ text: input.areaName, bold: false });
-                if (input.latitude != null && input.longitude != null) lines.push({ text: `${input.latitude.toFixed(5)}, ${input.longitude.toFixed(5)}`, bold: false });
-                if (input.notes) {
-                  const words = input.notes.split(" ");
-                  let current = "";
-                  for (const word of words) {
-                    if ((current + " " + word).trim().length > 50) { lines.push({ text: current.trim(), bold: false }); current = word; }
-                    else { current = current ? current + " " + word : word; }
-                  }
-                  if (current.trim()) lines.push({ text: current.trim(), bold: false });
-                }
-                const idFontSize = Math.max(18, Math.round(W * 0.038));
-                const lineFontSize = Math.max(14, Math.round(W * 0.030));
-                const lineHeight = Math.round(lineFontSize * 1.6);
-                const padding = Math.max(10, Math.round(W * 0.025));
-                const overlayHeight = padding * 2 + idFontSize + (lines.length - 1) * lineHeight + Math.round(lineHeight * 0.3);
-                const escXml = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-                let svgLines = "";
-                let y = padding + idFontSize;
-                for (let i = 0; i < lines.length; i++) {
-                  const line = lines[i];
-                  const size = i === 0 ? idFontSize : lineFontSize;
-                  const weight = line.bold ? "bold" : "normal";
-                  svgLines += `<text x="${padding}" y="${y}" font-family="Liberation Sans, Arial, sans-serif" font-size="${size}" font-weight="${weight}" fill="white">${escXml(line.text)}</text>\n`;
-                  y += i === 0 ? idFontSize + Math.round(lineHeight * 0.4) : lineHeight;
-                }
-                const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${overlayHeight}"><rect width="${W}" height="${overlayHeight}" fill="rgba(0,0,0,0.65)"/>${svgLines}</svg>`;
-                const annotatedBuffer = await image.composite([{ input: Buffer.from(svg), top: H - overlayHeight, left: 0 }]).jpeg({ quality: 92 }).toBuffer();
-                const annotatedKey = `dogs/${input.teamIdentifier}/${input.dogId}-annotated-${nanoid(8)}.jpg`;
-                const { url: annotatedUrl } = await storagePut(annotatedKey, annotatedBuffer, "image/jpeg");
-                await updateDogRecordAnnotation(savedRecord.id, annotatedUrl, imageUrl, savedRecord.description ?? null);
-                // Fire image-annotated webhook now that we have the stamped image URL
-                if (input.webhookUrl) {
-                  fetch(`${input.webhookUrl}/image-annotated`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      event: "image_annotated",
-                      dogId: resolvedDogId,
-                      teamIdentifier: input.teamIdentifier,
-                      annotatedImageUrl: annotatedUrl,
-                    }),
-                  }).catch((e) => console.warn("[saveRecord] image-annotated webhook failed:", e));
-                }
-              } catch (e) {
-                console.error("[saveRecord server-annotation] Error:", e);
+          // Step 1: Annotate all images (camera and upload)
+          try {
+            const sharp = (await import("sharp")).default;
+            const image = sharp(imgBuffer).autoOrient();
+            const meta = await image.clone().metadata();
+            const W = meta.width || 800;
+            const H = meta.height || 600;
+            const date = new Date(input.recordedAt);
+            const IST = "Asia/Kolkata";
+            const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+            const dayName = days[new Date(date.toLocaleString("en-US", { timeZone: IST })).getDay()];
+            const dateStr = date.toLocaleDateString("en-GB", { timeZone: IST, day: "2-digit", month: "short", year: "numeric" });
+            const timeStr = date.toLocaleTimeString("en-US", { timeZone: IST, hour: "2-digit", minute: "2-digit", hour12: true });
+            type Line = { text: string; bold: boolean };
+            const lines: Line[] = [];
+            lines.push({ text: `${resolvedDogId}`, bold: true });
+            lines.push({ text: `${dayName}, ${dateStr}, ${timeStr}`, bold: false });
+            if (input.areaName) lines.push({ text: input.areaName, bold: false });
+            if (input.latitude != null && input.longitude != null) lines.push({ text: `${input.latitude.toFixed(5)}, ${input.longitude.toFixed(5)}`, bold: false });
+            if (input.notes) {
+              const words = input.notes.split(" ");
+              let current = "";
+              for (const word of words) {
+                if ((current + " " + word).trim().length > 50) { lines.push({ text: current.trim(), bold: false }); current = word; }
+                else { current = current ? current + " " + word : word; }
               }
-            });
+              if (current.trim()) lines.push({ text: current.trim(), bold: false });
+            }
+            const idFontSize = Math.max(18, Math.round(W * 0.038));
+            const lineFontSize = Math.max(14, Math.round(W * 0.030));
+            const lineHeight = Math.round(lineFontSize * 1.6);
+            const padding = Math.max(10, Math.round(W * 0.025));
+            const overlayHeight = padding * 2 + idFontSize + (lines.length - 1) * lineHeight + Math.round(lineHeight * 0.3);
+            const escXml = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+            let svgLines = "";
+            let y = padding + idFontSize;
+            for (let i = 0; i < lines.length; i++) {
+              const line = lines[i];
+              const size = i === 0 ? idFontSize : lineFontSize;
+              const weight = line.bold ? "bold" : "normal";
+              svgLines += `<text x="${padding}" y="${y}" font-family="Liberation Sans, Arial, sans-serif" font-size="${size}" font-weight="${weight}" fill="white">${escXml(line.text)}</text>\n`;
+              y += i === 0 ? idFontSize + Math.round(lineHeight * 0.4) : lineHeight;
+            }
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${overlayHeight}"><rect width="${W}" height="${overlayHeight}" fill="rgba(0,0,0,0.65)"/>${svgLines}</svg>`;
+            const annotatedBuffer = await image.composite([{ input: Buffer.from(svg), top: H - overlayHeight, left: 0 }]).jpeg({ quality: 92 }).toBuffer();
+            const annotatedKey = `dogs/${input.teamIdentifier}/${resolvedDogId}-annotated-${nanoid(8)}.jpg`;
+            const { url: aUrl } = await storagePut(annotatedKey, annotatedBuffer, "image/jpeg");
+            annotatedUrl = aUrl;
+            await updateDogRecordAnnotation(savedRecord.id, annotatedUrl, imageUrl, savedRecord.description ?? null);
+            console.log(`[saveRecord BG] Annotation done annotatedUrl=${annotatedUrl}`);
+          } catch (e) {
+            console.error("[saveRecord BG] Annotation failed:", e);
           }
 
-          console.log(`[saveRecord BG] firing image-ready webhook id=${savedRecord.id}`);
-          // Fire image-ready webhook server-side once we have the real S3 URL
-          if (input.webhookUrl) {
-            fetch(`${input.webhookUrl}/image-ready`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                event: "image_ready",
-                dogId: resolvedDogId,
-                teamIdentifier: input.teamIdentifier,
-                description: input.description ?? null,
-                notes: input.notes ?? null,
-                areaName: input.areaName ?? null,
-                district: input.district ?? null,
-                adminArea: input.adminArea ?? null,
-                latitude: input.latitude ?? null,
-                longitude: input.longitude ?? null,
-                recordedAt: new Date(input.recordedAt).toISOString(),
-                addedByStaffId: input.addedByStaffId ?? null,
-                addedByStaffName: input.addedByStaffName ?? null,
-                imageUrl,
-              }),
-            }).catch((e) => console.warn("[saveRecord] image-ready webhook failed:", e));
-          }
-
-          // Backfill description and/or areaName if they were missing when saved
-          let backfilledDescription: string | null = null;
-          let backfilledAreaName: string | null = null;
-          let backfilledDistrict: string | null = null;
-          let backfilledAdminArea: string | null = null;
-
-          if (!input.description) {
+          // Step 2: AI description if empty — colour and distinct physical features only
+          if (!finalDescription) {
             try {
-              console.log(`[saveRecord backfill] Generating AI description for ${resolvedDogId}`);
+              console.log(`[saveRecord BG] Generating AI description for ${resolvedDogId}`);
               const aiResult = await generateText({
                 model: openai.chat("gpt-4o"),
                 messages: [{
                   role: "user",
                   content: [
                     { type: "image", image: imageUrl },
-                    { type: "text", text: "Describe this dog briefly for an animal welfare record. Only include what is clearly visible. Cover: color(s), any distinguishing features (markings, scars, injuries), build (small/medium/large, thin/normal/stocky), and breed only if clearly not mixed. Omit anything uncertain. Never mention absent features (no collar, no markings, etc.). Plain text only, 1-2 sentences max." },
+                    { type: "text", text: "Describe this dog's physical appearance for an animal welfare record. Focus only on coat colour(s) and any clearly visible distinct features (markings, patches, scars, injuries). Do not mention age, breed, size, or build. Plain text only, 1 sentence max." },
                   ],
                 }],
               });
-              backfilledDescription = aiResult.text.trim() || null;
-              console.log(`[saveRecord backfill] Description generated: ${backfilledDescription?.slice(0, 60)}`);
+              finalDescription = aiResult.text.trim() || null;
+              console.log(`[saveRecord BG] AI description: ${finalDescription?.slice(0, 80)}`);
+              if (finalDescription) {
+                await updateDogRecord(savedRecord.id, input.teamIdentifier, { description: finalDescription });
+              }
             } catch (e) {
-              console.warn("[saveRecord backfill] AI description failed:", e);
+              console.warn("[saveRecord BG] AI description failed:", e);
             }
           }
 
-          if (!input.areaName && input.latitude != null && input.longitude != null) {
-            try {
-              console.log(`[saveRecord backfill] Reverse geocoding for ${resolvedDogId}`);
-              const geoApiKey = process.env.GOOGLE_MAPS_API_KEY;
-              const geoUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${input.latitude},${input.longitude}&key=${geoApiKey}&result_type=route|sublocality|locality`;
-              const geoRes = await fetch(geoUrl);
-              if (geoRes.ok) {
-                const geoData = await geoRes.json();
-                if (geoData.status === "OK" && geoData.results?.length) {
-                  const comps = geoData.results[0].address_components as Array<{ long_name: string; types: string[] }>;
-                  const getC = (type: string) => comps.find((c: { long_name: string; types: string[] }) => c.types.includes(type))?.long_name ?? "";
-                  const road = getC("route") || getC("sublocality_level_1") || getC("sublocality");
-                  const locality = getC("locality") || getC("administrative_area_level_3") || getC("administrative_area_level_2");
-                  const parts = [locality, road].filter(Boolean); // locality first
-                  backfilledAreaName = parts.join(", ") || geoData.results[0].formatted_address || null;
-                  backfilledDistrict = getC("administrative_area_level_3") || getC("administrative_area_level_2") || null;
-                  const bState = getC("administrative_area_level_1");
-                  const bCountry = getC("country");
-                  backfilledAdminArea = [bState, bCountry].filter(Boolean).join(", ") || null;
-                  console.log(`[saveRecord backfill] Area name: ${backfilledAreaName}, district: ${backfilledDistrict}`);
-                }
-              }
-            } catch (e) {
-              console.warn("[saveRecord backfill] Geocoding failed:", e);
-            }
-          }
-
-          if (backfilledDescription || backfilledAreaName || backfilledDistrict || backfilledAdminArea) {
-            try {
-              await updateDogRecord(savedRecord.id, input.teamIdentifier, {
-                ...(backfilledDescription ? { description: backfilledDescription } : {}),
-                ...(backfilledAreaName ? { areaName: backfilledAreaName } : {}),
-                ...(backfilledDistrict ? { district: backfilledDistrict } : {}),
-                ...(backfilledAdminArea ? { adminArea: backfilledAdminArea } : {}),
-              });
-              console.log(`[saveRecord backfill] DB updated for ${resolvedDogId}`);
-              if (input.webhookUrl) {
-                fetch(`${input.webhookUrl}/update`, {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    event: "update",
-                    dogId: resolvedDogId,
-                    teamIdentifier: input.teamIdentifier,
-                    ...(backfilledDescription ? { description: backfilledDescription } : {}),
-                    ...(backfilledAreaName ? { areaName: backfilledAreaName } : {}),
-                    ...(backfilledDistrict ? { district: backfilledDistrict } : {}),
-                    ...(backfilledAdminArea ? { adminArea: backfilledAdminArea } : {}),
-                    source: "backfill",
-                  }),
-                }).catch((e) => console.warn("[saveRecord backfill] update webhook failed:", e));
-              }
-            } catch (e) {
-              console.warn("[saveRecord backfill] DB update failed:", e);
-            }
+          // Step 3: Single update webhook with description, imageUrl, annotatedImageUrl
+          if (input.webhookUrl) {
+            fetch(`${input.webhookUrl}/update`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                event: "update",
+                dogId: resolvedDogId,
+                teamIdentifier: input.teamIdentifier,
+                description: finalDescription ?? null,
+                imageUrl,
+                annotatedImageUrl: annotatedUrl ?? null,
+                areaName: input.areaName ?? null,
+                district: input.district ?? null,
+                adminArea: input.adminArea ?? null,
+                latitude: input.latitude ?? null,
+                longitude: input.longitude ?? null,
+                notes: input.notes ?? null,
+                recordedAt: new Date(input.recordedAt).toISOString(),
+                addedByStaffId: input.addedByStaffId ?? null,
+                addedByStaffName: input.addedByStaffName ?? null,
+                source: input.source,
+              }),
+            }).catch((e) => console.warn("[saveRecord BG] update webhook failed:", e));
           }
         } catch (e) {
           console.error("[saveRecord BG] Error:", e);
