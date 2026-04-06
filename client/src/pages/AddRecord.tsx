@@ -22,6 +22,7 @@ import PendingQueueBar from "@/components/PendingQueueBar";
 import { logEvent } from "@/lib/appLog";
 import { annotateAndShare } from "@/lib/annotateAndShare";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { WifiOff } from "lucide-react";
 
 function formatAge(ts: number): string {
   const ms = Date.now() - ts;
@@ -123,6 +124,17 @@ export default function AddRecord() {
 
   // Loading states
   const [gpsLoading, setGpsLoading] = useState(false);
+  const [isOffline, setIsOffline] = useState(() => !navigator.onLine);
+  useEffect(() => {
+    const onOnline = () => setIsOffline(false);
+    const onOffline = () => setIsOffline(true);
+    window.addEventListener("online", onOnline);
+    window.addEventListener("offline", onOffline);
+    return () => {
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
+    };
+  }, []);
 
 
   // Pending queue state (populated after mutations are declared below)
@@ -521,6 +533,13 @@ export default function AddRecord() {
 
   return (
     <div className="container py-4 pb-24 max-w-lg mx-auto space-y-4">
+      {/* Offline strip — same style as Release tab */}
+      {isOffline && (
+        <div className="flex items-center gap-2 px-4 py-2 -mx-4 -mt-4 bg-amber-50 border-b border-amber-200 text-amber-800 text-xs">
+          <WifiOff size={13} className="flex-shrink-0" />
+          <span>You are offline — Catch still works</span>
+        </div>
+      )}
       {/* Catching Team — always visible at top */}
       <div>
         <label className="text-sm font-medium text-foreground mb-1.5 block">

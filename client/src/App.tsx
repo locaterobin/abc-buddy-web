@@ -9,7 +9,7 @@ import Home from "./pages/Home";
 import LoginPage, { getStaffSession, setStaffSession, type StaffSession } from "./pages/LoginPage";
 import { useUpdateCheck } from "./hooks/useUpdateCheck";
 import { trpc } from "./lib/trpc";
-import { WifiOff } from "lucide-react";
+
 
 function AppInner() {
   const [session, setSession] = useState<StaffSession | null>(() => getStaffSession());
@@ -60,13 +60,7 @@ function AppInner() {
     <TeamProvider staffSession={session}>
       <TooltipProvider>
         <Toaster position="top-center" />
-        {isOffline && session && (
-          <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center gap-2 px-4 py-1.5 bg-amber-500 text-white text-xs font-medium shadow-sm">
-            <WifiOff size={12} className="flex-shrink-0" />
-            <span>You are offline — Catch still works</span>
-          </div>
-        )}
-        <div className={isOffline && session ? "pt-7" : ""}>
+        <div>
           {session ? <Home onLogout={() => setSession(null)} /> : <LoginPage onLogin={handleLogin} isOffline={isOffline} />}
         </div>
       </TooltipProvider>
