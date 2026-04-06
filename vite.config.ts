@@ -5,6 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { defineConfig, type Plugin, type ViteDevServer } from "vite";
 import { vitePluginManusRuntime } from "vite-plugin-manus-runtime";
+import { VitePWA } from "vite-plugin-pwa";
 
 // Bake a human-readable build timestamp at build time in YYMMDD HH:MM IST format
 const _buildDate = new Date(Date.now() + 5.5 * 60 * 60 * 1000); // UTC → IST
@@ -159,7 +160,26 @@ function vitePluginManusDebugCollector(): Plugin {
   };
 }
 
-const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector()];
+const plugins = [
+  react(),
+  tailwindcss(),
+  jsxLocPlugin(),
+  vitePluginManusRuntime(),
+  vitePluginManusDebugCollector(),
+  VitePWA({
+    strategies: "injectManifest",
+    srcDir: "public",
+    filename: "sw.js",
+    injectRegister: false, // we register manually in index.html
+    manifest: false,       // no auto-generated manifest changes
+    injectManifest: {
+      injectionPoint: "self.__WB_MANIFEST",
+    },
+    devOptions: {
+      enabled: false, // don't intercept in dev
+    },
+  }),
+];
 
 export default defineConfig({
   plugins,

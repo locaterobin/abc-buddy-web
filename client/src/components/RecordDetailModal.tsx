@@ -587,12 +587,15 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
     let areaName = "";
 
     try {
-      // 1. Get current GPS — high accuracy, 15s timeout
+      // 1. Get current GPS — high accuracy, 20s timeout, accept 2-min cached fix
+      // maximumAge: 120000 means a cached GPS fix up to 2 minutes old is reused
+      // immediately without waiting for a fresh acquisition. GPS hardware works
+      // without data/wifi — the fix comes from satellites, not the network.
       try {
         const pos = await new Promise<GeolocationPosition>((resolve, reject) =>
           navigator.geolocation.getCurrentPosition(resolve, reject, {
-            timeout: 15000,
-            maximumAge: 30000,
+            timeout: 20000,
+            maximumAge: 120000,
             enableHighAccuracy: true,
           })
         );

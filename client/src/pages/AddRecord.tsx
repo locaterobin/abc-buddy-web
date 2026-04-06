@@ -224,20 +224,20 @@ export default function AddRecord() {
 
   // Auto-set dog ID when suffix loads or plan changes
   useEffect(() => {
-    // Set ID if: no ID yet, OR a plan change just happened (even if query data is same)
-    if (suffixQuery.data?.suffix && (!dogId || planChangedRef.current)) {
+    const needsId = !dogId || planChangedRef.current;
+    if (suffixQuery.data?.suffix && needsId) {
+      // Server responded — use authoritative suffix
       planChangedRef.current = false;
       const suffix = suffixQuery.data.suffix;
-      // Keep local counter in sync with server
       saveLocalSuffix(datePrefix, catchPlan, suffix);
       setDogId(`${datePrefix}${catchPlan}-${suffix}`);
-    } else if (suffixQuery.isError && (!dogId || planChangedRef.current)) {
-      // Offline fallback: use localStorage-based counter
+    } else if ((suffixQuery.isError || suffixQuery.fetchStatus === "paused") && needsId) {
+      // Offline / network paused — use localStorage-based counter immediately
       planChangedRef.current = false;
       const suffix = getLocalSuffix(datePrefix, catchPlan);
       setDogId(`${datePrefix}${catchPlan}-${suffix}`);
     }
-  }, [suffixQuery.data, suffixQuery.isError, datePrefix, catchPlan, dogId]);
+  }, [suffixQuery.data, suffixQuery.isError, suffixQuery.fetchStatus, datePrefix, catchPlan, dogId]);
 
   // Reverse geocode helper
   const geocode = useCallback(
@@ -266,16 +266,24 @@ export default function AddRecord() {
       (pos) => {
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
+        // Set coords immediately — this works even with data off
         setLatitude(lat);
         setLongitude(lng);
         setGpsLoading(false);
+        // Geocode is best-effort: fires only when online, silently skipped offline
         if (!areaNameEdited) geocode(lat, lng);
       },
       (err) => {
         console.warn("GPS error:", err);
         setGpsLoading(false);
       },
-      { enableHighAccuracy: true, timeout: 15000 }
+      {
+        enableHighAccuracy: true,
+        timeout: 20000,
+        // Accept a cached fix up to 2 minutes old — avoids waiting for fresh acquisition
+        // when the device already has a recent fix from the OS
+        maximumAge: 120000,
+      }
     );
   }, [areaNameEdited, geocode]);
 

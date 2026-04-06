@@ -500,3 +500,8 @@
 
 ## Bug - Deleted Dogs in Release Plan
 - [x] Add deleted=false filter to getReleasePlanDogs query so deleted records don't appear in release plans
+
+## Offline Bug Fixes
+- [x] Fix app not loading offline: replaced manual SW with workbox-precaching via VitePWA — all hashed JS/CSS bundles now precached on install
+- [x] Fix offline dog ID: also trigger localStorage fallback when suffixQuery.fetchStatus === "paused" (React Query's offline signal)
+- [x] Fix GPS with data off: increased maximumAge to 120s in both catch and release flows; GPS coords set immediately before geocode attempt
