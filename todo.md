@@ -521,3 +521,6 @@
 ## Bug - App Doesn't Load Catch Tab When Started Offline
 - [x] Root cause: SW navigation used NetworkFirst with no timeout — browser waited ~30s before falling back to cached index.html
 - [x] Fix: added networkTimeoutSeconds: 3 to navigation handler so cached shell loads in ≤3s when offline
+
+## Bug - SW Falls Back to offline.html Instead of index.html
+- [x] Deleted offline.html from client/public so it is no longer in the precache manifest; index.html is now the only navigation fallback

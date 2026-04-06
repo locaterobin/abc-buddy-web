@@ -1,7 +1,8 @@
 // ABC Buddy Service Worker — offline-first with Workbox precaching
 // Strategy:
-//   App shell (HTML + all hashed JS/CSS) → precached on install via __WB_MANIFEST__
-//   Navigation (HTML)  → network-first; fall back to cached index.html when offline
+//   App shell (index.html + all hashed JS/CSS) → precached on install via __WB_MANIFEST__
+//   Navigation → network-first with 3s timeout; falls back to cached index.html when offline
+//   NOTE: offline.html intentionally removed — index.html is the only navigation fallback
 //   JS / CSS / fonts   → stale-while-revalidate (served from cache instantly, refreshed in background)
 //   Images / S3 / CDN  → cache-first (7-day TTL)
 //   /api/*             → network-only (never cache)
