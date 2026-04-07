@@ -558,3 +558,6 @@
 ## Security & Correctness - reorderPlanDogs and Auto-Remove on Delete
 - [x] Added team guard to reorderDogs: verifies plan belongs to team before reordering
 - [x] Auto-remove dog from all team release plans on soft-delete (in deleteRecordById)
+
+## Show Catch Time on Record Cards
+- [x] Show HH:MM IST catch time on dog record cards in Records tab, in front of the date

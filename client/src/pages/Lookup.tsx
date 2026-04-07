@@ -637,6 +637,12 @@ export default function Lookup() {
                   <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
                     <Clock size={12} />
                     <span>
+                      {new Date(rec.recordedAt).toLocaleTimeString("en-GB", {
+                        timeZone: "Asia/Kolkata",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        hour12: false,
+                      })}{" "}
                       {new Date(rec.recordedAt).toLocaleDateString("en-GB", {
                         timeZone: "Asia/Kolkata",
                         day: "2-digit",
@@ -725,6 +731,12 @@ export default function Lookup() {
                     <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
                       <Clock size={12} />
                       <span>
+                        {new Date(rec.recordedAt).toLocaleTimeString("en-GB", {
+                          timeZone: "Asia/Kolkata",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: false,
+                        })}{" "}
                         {new Date(rec.recordedAt).toLocaleDateString("en-GB", {
                           timeZone: "Asia/Kolkata",
                           day: "2-digit",
