@@ -561,3 +561,6 @@
 
 ## Show Catch Time on Record Cards
 - [x] Show HH:MM IST catch time on dog record cards in Records tab, in front of the date
+
+## Bug - Release Plan Cards Show HH:MM:SS Instead of HH:MM
+- [x] Replaced toLocaleString() with explicit HH:MM + date format on both release plan card layouts
