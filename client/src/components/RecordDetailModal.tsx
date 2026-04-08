@@ -1138,6 +1138,13 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
                   <p className="text-xs text-muted-foreground text-center">{confirmData.areaName}</p>
                 ) : null}
 
+                {/* Current GPS coordinates — always shown for debugging */}
+                <p className="text-[11px] font-mono text-muted-foreground/60 text-center">
+                  {confirmData?.latitude != null && confirmData?.longitude != null
+                    ? `GPS: ${confirmData.latitude.toFixed(6)}, ${confirmData.longitude.toFixed(6)}`
+                    : "GPS: not available"}
+                </p>
+
                 {/* Photo 3 capture */}
                 <div className="w-full">
                   <p className="text-xs text-muted-foreground mb-2 text-center">Add a release photo</p>

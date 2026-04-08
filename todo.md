@@ -578,6 +578,3 @@
 ## Fix Geocode Area Name - Use sublocality_level_1 + locality
 - [x] Updated geocodeLatLng procedure: removed result_type filter, now uses sublocality_level_1 + locality (e.g. PANTEHAR, Dargil)
 - [x] Updated geocode backfill in saveRecord: same logic
-
-## Remove GPS Debug Coordinates from Release Dialog
-- [x] Removed raw GPS lat/long debug line from release confirm dialog in RecordDetailModal.tsx
