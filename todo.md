@@ -564,3 +564,6 @@
 
 ## Bug - Release Plan Cards Show HH:MM:SS Instead of HH:MM
 - [x] Replaced toLocaleString() with explicit HH:MM + date format on both release plan card layouts
+
+## Release Tab - Green Release Timestamp on Released Dogs
+- [x] Added green HH:MM DD MON YYYY release timestamp as bottommost line on both released dog card layouts in Release tab

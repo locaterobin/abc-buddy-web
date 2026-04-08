@@ -145,6 +145,12 @@ function SortableDogCard({
                 {dog.areaName && (
                   <p className="text-xs text-muted-foreground truncate mt-0.5">{dog.areaName}</p>
                 )}
+                {dog.releasedAt && (
+                  <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400 mt-0.5 font-medium">
+                    <CheckCircle2 size={10} />
+                    <span>{new Date(dog.releasedAt).toLocaleTimeString("en-GB", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit", hour12: false }) + " " + new Date(dog.releasedAt).toLocaleDateString("en-GB", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric" })}</span>
+                  </div>
+                )}
               </div>
 
               {/* Remove button — right edge */}
@@ -198,6 +204,12 @@ function SortableDogCard({
             </div>
             {dog.areaName && (
               <p className="text-xs text-muted-foreground truncate mt-0.5">{dog.areaName}</p>
+            )}
+            {dog.releasedAt && (
+              <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400 mt-0.5 font-medium">
+                <CheckCircle2 size={10} />
+                <span>{new Date(dog.releasedAt).toLocaleTimeString("en-GB", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit", hour12: false }) + " " + new Date(dog.releasedAt).toLocaleDateString("en-GB", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric" })}</span>
+              </div>
             )}
           </div>
 
