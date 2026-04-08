@@ -12,7 +12,7 @@ import { trpc } from "@/lib/trpc";
 import { useTeam } from "@/contexts/TeamContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, Map, Trash2, Plus, CalendarDays, Clock, CheckCircle2, Dog, GripVertical, Archive, LayoutGrid, List, WifiOff, RefreshCw } from "lucide-react";
+import { ArrowLeft, Map, Trash2, Plus, CalendarDays, Clock, CheckCircle2, Dog, GripVertical, Archive, LayoutGrid, List, WifiOff, RefreshCw, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import RecordDetailModal from "@/components/RecordDetailModal";
 import {
@@ -643,8 +643,17 @@ export default function ReleasePlanPage() {
         {phoneAlertDog && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
             <div className="bg-background rounded-2xl shadow-xl w-full max-w-sm p-6 flex flex-col gap-4">
-              <p className="text-lg font-bold text-center text-destructive">Call animal's person!</p>
-              <p className="text-sm text-foreground whitespace-pre-wrap break-words">{phoneAlertDog.notes}</p>
+              <div className="flex items-center justify-center gap-2">
+                <AlertTriangle size={22} className="text-destructive flex-shrink-0" />
+                <p className="text-lg font-bold text-destructive uppercase tracking-wide">Call animal's person!</p>
+              </div>
+              <p className="text-sm text-foreground whitespace-pre-wrap break-words">
+                {phoneAlertDog.notes?.split(/(\d{10,})/).map((part: string, i: number) =>
+                  /^\d{10,}$/.test(part)
+                    ? <a key={i} href={`tel:${part}`} className="text-primary underline font-medium">{part}</a>
+                    : part
+                )}
+              </p>
               <div className="flex gap-3 mt-2">
                 <button
                   className="flex-1 rounded-lg border border-border py-2 text-sm text-muted-foreground"
