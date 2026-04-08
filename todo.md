@@ -570,3 +570,7 @@
 
 ## Bug - Release Plan Card Image/Text Misalignment
 - [x] Changed items-stretch to items-start on list card flex row so image and text align to top
+
+## Release Plan Card - Area Name & Alignment
+- [x] Added releaseAreaName to green timestamp row on released dog cards
+- [x] Aligned Dog ID, drag handle, and remove button to top of thumbnail using pt-2 + items-start

@@ -106,7 +106,7 @@ function SortableDogCard({
               <button
                 {...attributes}
                 {...listeners}
-                className="px-2 flex items-center text-muted-foreground/40 hover:text-muted-foreground cursor-grab active:cursor-grabbing touch-none flex-shrink-0"
+                className="px-2 pt-2 flex items-start text-muted-foreground/40 hover:text-muted-foreground cursor-grab active:cursor-grabbing touch-none flex-shrink-0"
                 onClick={(e) => e.stopPropagation()}
               >
                 <GripVertical size={16} />
@@ -128,7 +128,7 @@ function SortableDogCard({
               </div>
 
               {/* Details */}
-              <div className="flex-1 min-w-0 py-2 px-3 cursor-pointer" onClick={onOpen}>
+              <div className="flex-1 min-w-0 pt-2 pb-2 px-3 cursor-pointer" onClick={onOpen}>
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <p className="font-mono font-bold text-sm text-foreground">{dog.dogId}</p>
                   {dog.releasedAt && (
@@ -146,9 +146,10 @@ function SortableDogCard({
                   <p className="text-xs text-muted-foreground truncate mt-0.5">{dog.areaName}</p>
                 )}
                 {dog.releasedAt && (
-                  <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400 mt-0.5 font-medium">
-                    <CheckCircle2 size={10} />
+                  <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400 mt-0.5 font-medium flex-wrap">
+                    <CheckCircle2 size={10} className="flex-shrink-0" />
                     <span>{new Date(dog.releasedAt).toLocaleTimeString("en-GB", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit", hour12: false }) + " " + new Date(dog.releasedAt).toLocaleDateString("en-GB", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric" })}</span>
+                    {dog.releaseAreaName && <span className="truncate">{dog.releaseAreaName}</span>}
                   </div>
                 )}
               </div>
@@ -156,7 +157,7 @@ function SortableDogCard({
               {/* Remove button — right edge */}
               <button
                 onClick={(e) => { e.stopPropagation(); onRemove(); }}
-                className={`px-3 flex items-center hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors flex-shrink-0 ${!isManager ? 'hidden' : ''}`}
+                className={`px-3 pt-2 flex items-start hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors flex-shrink-0 ${!isManager ? 'hidden' : ''}`}
               >
                 <Trash2 size={15} />
               </button>
