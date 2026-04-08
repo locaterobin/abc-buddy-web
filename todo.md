@@ -578,3 +578,6 @@
 ## Fix Geocode Area Name - Use sublocality_level_1 + locality
 - [x] Updated geocodeLatLng procedure: removed result_type filter, now uses sublocality_level_1 + locality (e.g. PANTEHAR, Dargil)
 - [x] Updated geocode backfill in saveRecord: same logic
+
+## Release Plan - Call Animal's Person Modal
+- [x] When tapping a dog in the release plan, if notes contain a 10+ digit number, show a modal with the notes and bold "Call animal's person!" before opening RecordDetailModal

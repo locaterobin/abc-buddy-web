@@ -266,6 +266,7 @@ export default function ReleasePlanPage() {
   const saveReleaseMutation = trpc.dogs.saveRelease.useMutation();
 
   const [selectedRecord, setSelectedRecord] = useState<any>(null);
+  const [phoneAlertDog, setPhoneAlertDog] = useState<any>(null);
   const [dogIdFilter, setDogIdFilter] = useState("");
   // Local order state for optimistic drag reorder
   const [localOrder, setLocalOrder] = useState<string[] | null>(null);
@@ -620,7 +621,14 @@ export default function ReleasePlanPage() {
                       key={dog.dogId}
                       dog={dog}
                       compact={viewMode === "list"}
-                      onOpen={() => setSelectedRecord(dog)}
+                      onOpen={() => {
+                        const notes = dog.notes ?? "";
+                        if (/\d{10,}/.test(notes.replace(/[\s\-().+]/g, ""))) {
+                          setPhoneAlertDog(dog);
+                        } else {
+                          setSelectedRecord(dog);
+                        }
+                      }}
                       isManager={isManager}
                       onRemove={() => removeDog.mutate({ planId: selectedPlanId!, dogId: dog.dogId, teamIdentifier: teamIdentifier ?? '' })}
                     />
@@ -630,6 +638,30 @@ export default function ReleasePlanPage() {
             )}
           </div>
         </div>
+
+        {/* Phone alert modal */}
+        {phoneAlertDog && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+            <div className="bg-background rounded-2xl shadow-xl w-full max-w-sm p-6 flex flex-col gap-4">
+              <p className="text-lg font-bold text-center text-destructive">Call animal's person!</p>
+              <p className="text-sm text-foreground whitespace-pre-wrap break-words">{phoneAlertDog.notes}</p>
+              <div className="flex gap-3 mt-2">
+                <button
+                  className="flex-1 rounded-lg border border-border py-2 text-sm text-muted-foreground"
+                  onClick={() => setPhoneAlertDog(null)}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="flex-1 rounded-lg bg-primary text-primary-foreground py-2 text-sm font-medium"
+                  onClick={() => { setSelectedRecord(phoneAlertDog); setPhoneAlertDog(null); }}
+                >
+                  Continue
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Record Detail Modal */}
         {selectedRecord && (
