@@ -1,4 +1,12 @@
 import { COOKIE_NAME } from "@shared/const";
+/** Convert a Date to IST datetime string (YYYY-MM-DD HH:mm:ss) for webhook payloads */
+function toISTString(date: Date | number | string): string {
+  const d = new Date(date as any);
+  const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
+  const ist = new Date(d.getTime() + IST_OFFSET_MS);
+  return ist.toISOString().replace("T", " ").slice(0, 19);
+}
+
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
@@ -525,7 +533,7 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
                 latitude: input.latitude ?? null,
                 longitude: input.longitude ?? null,
                 notes: input.notes ?? null,
-                recordedAt: new Date(input.recordedAt).toISOString(),
+                recordedAt: toISTString(new Date(input.recordedAt)),
                 addedByStaffId: input.addedByStaffId ?? null,
                 addedByStaffName: input.addedByStaffName ?? null,
                 source: input.source,

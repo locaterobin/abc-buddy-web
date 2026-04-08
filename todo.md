@@ -589,3 +589,6 @@
 - [x] Show yellow offline strip in Tag tab when offline
 - [x] Hide "upload photo to narrow results" section when offline
 - [x] Show cached dogs for selected date when offline
+
+## Webhook Fix
+- [x] Fix all datetime fields in all webhook payloads (/add, /update catch, /release) to send in IST (UTC+5:30)

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { logEvent } from "@/lib/appLog";
 import { trpc } from "@/lib/trpc";
+import { logEvent } from "@/lib/appLog";
+import { cn, toISTString } from "@/lib/utils";
 import { resizeImage } from "@/lib/resizeImage";
 import { enqueuePlanPhoto, removePlanPhotoFromQueue, getPendingPlanPhotos, updatePlanPhotoStatus } from "@/hooks/useOfflineQueue";
 import { useTeam } from "@/contexts/TeamContext";
@@ -658,7 +659,8 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
   const handleConfirmRelease = async () => {
     if (!confirmData) return;
     const { latitude, longitude, areaName, distanceMetres } = confirmData;
-    const releasedAt = new Date().toISOString();
+    const releasedAtISO = new Date().toISOString(); // stored as UTC for DB
+    const releasedAt = releasedAtISO; // alias kept for saveRelease mutation (expects ISO)
     const distanceRounded = distanceMetres !== null ? Math.round(distanceMetres) : null;
     const queueId = crypto.randomUUID();
 
@@ -743,7 +745,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
             event: "release",
             dogId: record.dogId,
             teamIdentifier: teamId,
-            releasedAt,
+            releasedAt: toISTString(releasedAtISO),
             captureLatitude: record.latitude ?? null,
             captureLongitude: record.longitude ?? null,
             captureAreaName: record.areaName ?? null,
