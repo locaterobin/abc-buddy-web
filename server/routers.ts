@@ -2,9 +2,14 @@ import { COOKIE_NAME } from "@shared/const";
 /** Convert a Date to IST datetime string (YYYY-MM-DD HH:mm:ss) for webhook payloads */
 function toISTString(date: Date | number | string): string {
   const d = new Date(date as any);
-  const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
-  const ist = new Date(d.getTime() + IST_OFFSET_MS);
-  return ist.toISOString().replace("T", " ").slice(0, 19);
+  const f = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit",
+    hour12: false,
+  });
+  const parts = Object.fromEntries(f.formatToParts(d).map(p => [p.type, p.value]));
+  return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}:${parts.second}`;
 }
 
 import { getSessionCookieOptions } from "./_core/cookies";
