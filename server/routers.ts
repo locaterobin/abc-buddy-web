@@ -176,7 +176,7 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
       try {
         const apiKey = process.env.GOOGLE_MAPS_API_KEY;
         if (!apiKey) throw new Error("GOOGLE_MAPS_API_KEY not set");
-        const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${input.latitude},${input.longitude}&key=${apiKey}&result_type=route|sublocality|locality`;
+        const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${input.latitude},${input.longitude}&key=${apiKey}`;
         const res = await fetch(url);
         if (!res.ok) throw new Error("Geocoding failed");
         const data = await res.json();
@@ -184,9 +184,9 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
         // Build a concise area name: Locality first, then Route
         const components = data.results[0].address_components as Array<{ long_name: string; types: string[] }>;
         const get = (type: string) => components.find((c) => c.types.includes(type))?.long_name ?? "";
-        const road = get("route") || get("sublocality_level_1") || get("sublocality");
+        const sublocality = get("sublocality_level_1") || get("sublocality");
         const locality = get("locality") || get("administrative_area_level_3") || get("administrative_area_level_2");
-        const parts = [locality, road].filter(Boolean); // locality first
+        const parts = [sublocality, locality].filter(Boolean); // sublocality first, then locality
         const areaName = parts.join(", ") || data.results[0].formatted_address || "Unknown location";
         // District and state+country (hidden from UI, stored in DB + sent in webhook)
         const district = get("administrative_area_level_3") || get("administrative_area_level_2") || "";
@@ -469,7 +469,7 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
               console.log(`[saveRecord BG] Geocode backfill for ${resolvedDogId}`);
               const apiKey = process.env.GOOGLE_MAPS_API_KEY;
               if (apiKey) {
-                const geoUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${input.latitude},${input.longitude}&key=${apiKey}&result_type=route|sublocality|locality`;
+                const geoUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${input.latitude},${input.longitude}&key=${apiKey}`;
                 const geoRes = await fetch(geoUrl);
                 if (geoRes.ok) {
                   const geoData = await geoRes.json();
@@ -477,9 +477,9 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
                     const components = geoData.results[0].address_components as Array<{ long_name: string; types: string[] }>;
                     const get = (type: string) => components.find((c: { long_name: string; types: string[] }) => c.types.includes(type))?.long_name ?? "";
                     if (!finalAreaName) {
-                      const road = get("route") || get("sublocality_level_1") || get("sublocality");
+                      const sublocality = get("sublocality_level_1") || get("sublocality");
                       const locality = get("locality") || get("administrative_area_level_3") || get("administrative_area_level_2");
-                      finalAreaName = [locality, road].filter(Boolean).join(", ") || geoData.results[0].formatted_address || null;
+                      finalAreaName = [sublocality, locality].filter(Boolean).join(", ") || geoData.results[0].formatted_address || null;
                     }
                     if (!finalDistrict) {
                       finalDistrict = get("administrative_area_level_3") || get("administrative_area_level_2") || null;

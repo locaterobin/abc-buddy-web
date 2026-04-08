@@ -574,3 +574,7 @@
 ## Release Plan Card - Area Name & Alignment
 - [x] Added releaseAreaName to green timestamp row on released dog cards
 - [x] Aligned Dog ID, drag handle, and remove button to top of thumbnail using pt-2 + items-start
+
+## Fix Geocode Area Name - Use sublocality_level_1 + locality
+- [x] Updated geocodeLatLng procedure: removed result_type filter, now uses sublocality_level_1 + locality (e.g. PANTEHAR, Dargil)
+- [x] Updated geocode backfill in saveRecord: same logic
