@@ -567,3 +567,6 @@
 
 ## Release Tab - Green Release Timestamp on Released Dogs
 - [x] Added green HH:MM DD MON YYYY release timestamp as bottommost line on both released dog card layouts in Release tab
+
+## Bug - Release Plan Card Image/Text Misalignment
+- [x] Changed items-stretch to items-start on list card flex row so image and text align to top

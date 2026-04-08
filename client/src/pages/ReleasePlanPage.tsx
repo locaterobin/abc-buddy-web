@@ -101,7 +101,7 @@ function SortableDogCard({
       <div ref={setNodeRef} style={style}>
         <Card className="border border-border/60 hover:border-primary/40 transition-colors overflow-hidden">
           <CardContent className="p-0">
-            <div className="flex items-stretch gap-0">
+            <div className="flex items-start gap-0">
               {/* Drag handle — left edge */}
               <button
                 {...attributes}
