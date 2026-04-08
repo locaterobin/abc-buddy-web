@@ -581,3 +581,11 @@
 
 ## Release Plan - Call Animal's Person Modal
 - [x] When tapping a dog in the release plan, if notes contain a 10+ digit number, show a modal with the notes and bold "Call animal's person!" before opening RecordDetailModal
+
+## Tag Tab - Offline Caching & UI
+- [x] Cap getRecordDates to last 15 catching dates server-side
+- [x] Cache all dogs per date in IndexedDB; evict dates that drop off the 15-date window on next online sync
+- [x] Evict stale release plan dog caches for plans no longer in the server response
+- [x] Show yellow offline strip in Tag tab when offline
+- [x] Hide "upload photo to narrow results" section when offline
+- [x] Show cached dogs for selected date when offline

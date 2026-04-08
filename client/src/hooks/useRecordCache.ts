@@ -5,11 +5,12 @@
  */
 
 const DB_NAME = "abc-buddy-cache";
-const DB_VERSION = 5; // consolidated with useOfflineQueue stores
+const DB_VERSION = 6; // v6: added tagDateDogs store for per-date dog caching
 const RECORDS_STORE = "records";
 const DATES_STORE = "recordDates";
 const PLANS_STORE = "releasePlans";
 const PLAN_DOGS_STORE = "planDogs";
+const TAG_DATE_DOGS_STORE = "tagDateDogs";
 const MAX_CACHED = 100;
 
 function openDB(): Promise<IDBDatabase> {
@@ -30,6 +31,10 @@ function openDB(): Promise<IDBDatabase> {
       if (!db.objectStoreNames.contains(PLAN_DOGS_STORE)) {
         // key: planId (number), value: { planId, dogs: any[], cachedAt: number }
         db.createObjectStore(PLAN_DOGS_STORE, { keyPath: "planId" });
+      }
+      if (!db.objectStoreNames.contains(TAG_DATE_DOGS_STORE)) {
+        // key: "teamId:YYYY-MM-DD", value: { key, teamId, date, dogs: any[], cachedAt: number }
+        db.createObjectStore(TAG_DATE_DOGS_STORE, { keyPath: "key" });
       }
     };
     req.onsuccess = () => resolve(req.result);
@@ -210,5 +215,99 @@ export async function setCachedPlanDogs(planId: number, dogs: any[]): Promise<vo
     });
   } catch (e) {
     console.warn("IndexedDB plan dogs write failed:", e);
+  }
+}
+
+// ── Tag Date Dogs ─────────────────────────────────────────────────────────────
+
+/** Get cached dogs for a specific catching date (YYYY-MM-DD) for a team */
+export async function getCachedTagDateDogs(teamId: string, date: string): Promise<any[]> {
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(TAG_DATE_DOGS_STORE, "readonly");
+      const store = tx.objectStore(TAG_DATE_DOGS_STORE);
+      const req = store.get(`${teamId}:${date}`);
+      req.onsuccess = () => resolve(req.result?.dogs ?? []);
+      req.onerror = () => reject(req.error);
+    });
+  } catch {
+    return [];
+  }
+}
+
+/** Cache all dogs for a specific catching date. Called after a successful online fetch. */
+export async function setCachedTagDateDogs(teamId: string, date: string, dogs: any[]): Promise<void> {
+  try {
+    const db = await openDB();
+    const tx = db.transaction(TAG_DATE_DOGS_STORE, "readwrite");
+    const store = tx.objectStore(TAG_DATE_DOGS_STORE);
+    store.put({ key: `${teamId}:${date}`, teamId, date, dogs, cachedAt: Date.now() });
+    await new Promise<void>((resolve, reject) => {
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  } catch (e) {
+    console.warn("IndexedDB tag date dogs write failed:", e);
+  }
+}
+
+/**
+ * Evict cached plan dog entries for plan IDs no longer in the active plan list.
+ * Called after a successful online fetch of getPlans.
+ */
+export async function evictStalePlanDogs(activePlanIds: number[]): Promise<void> {
+  try {
+    const db = await openDB();
+    const tx = db.transaction(PLAN_DOGS_STORE, "readwrite");
+    const store = tx.objectStore(PLAN_DOGS_STORE);
+    const allReq = store.getAll();
+    await new Promise<void>((resolve, reject) => {
+      allReq.onsuccess = () => {
+        const all: any[] = allReq.result ?? [];
+        const activeSet = new Set(activePlanIds);
+        all
+          .filter((entry) => !activeSet.has(entry.planId))
+          .forEach((entry) => store.delete(entry.planId));
+        resolve();
+      };
+      allReq.onerror = () => reject(allReq.error);
+    });
+    await new Promise<void>((resolve, reject) => {
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  } catch (e) {
+    console.warn("IndexedDB plan dogs eviction failed:", e);
+  }
+}
+
+/**
+ * Evict cached date entries that are no longer in the active date list.
+ * Called after a successful online fetch of getRecordDates.
+ */
+export async function evictStaleTagDateDogs(teamId: string, activeDates: string[]): Promise<void> {
+  try {
+    const db = await openDB();
+    const tx = db.transaction(TAG_DATE_DOGS_STORE, "readwrite");
+    const store = tx.objectStore(TAG_DATE_DOGS_STORE);
+    const allReq = store.getAll();
+    await new Promise<void>((resolve, reject) => {
+      allReq.onsuccess = () => {
+        const all: any[] = allReq.result ?? [];
+        const activeSet = new Set(activeDates.map((d) => `${teamId}:${d}`));
+        all
+          .filter((entry) => entry.teamId === teamId && !activeSet.has(entry.key))
+          .forEach((entry) => store.delete(entry.key));
+        resolve();
+      };
+      allReq.onerror = () => reject(allReq.error);
+    });
+    await new Promise<void>((resolve, reject) => {
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  } catch (e) {
+    console.warn("IndexedDB tag date eviction failed:", e);
   }
 }
