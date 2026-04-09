@@ -263,29 +263,15 @@ export default function Lookup() {
     }
   }, [teamId, timeRange, defaultListQuery.data]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Load cached dogs for the selected date from IndexedDB when offline or date changes
+  // Load cached dogs for the selected date from IndexedDB ONLY when offline
   useEffect(() => {
-    if (!teamId || !timeRange) return;
-    if (isOffline || !defaultListQuery.data) {
-      getCachedTagDateDogs(teamId, timeRange).then(setCachedTagDogs);
-    }
-  }, [teamId, timeRange, isOffline, defaultListQuery.data]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!teamId || !timeRange || !isOffline) return;
+    getCachedTagDateDogs(teamId, timeRange).then(setCachedTagDogs);
+  }, [teamId, timeRange, isOffline]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Filter cached records by the selected time range for offline fallback (legacy)
-  function filterCachedByTimeRange(records: any[], tr: string): any[] {
-    const { dateFrom, dateTo } = timeRangeToDateFilter(tr);
-    return records.filter((r) => {
-      const d = new Date(r.recordedAt).toISOString().slice(0, 10);
-      if (dateFrom && d < dateFrom) return false;
-      if (dateTo && d > dateTo) return false;
-      if (r.releasedAt) return false; // only active
-      return true;
-    });
-  }
-
-  // Show cached dogs for the date when offline; otherwise show server results
+  // Show server results when online; fall back to per-date cache only when offline
   const serverRecords = defaultListQuery.data?.records;
-  const allDefaultRecords: any[] = serverRecords ?? (isOffline ? cachedTagDogs : filterCachedByTimeRange(cachedRecords, timeRange));
+  const allDefaultRecords: any[] = isOffline ? cachedTagDogs : (serverRecords ?? []);
   const defaultRecords: any[] = planFilter === "all"
     ? allDefaultRecords
     : allDefaultRecords.filter((r) => getPlanLetter(r.dogId) === planFilter);
@@ -707,7 +693,7 @@ export default function Lookup() {
       {/* Default list: all records in the selected range (shown when no photo search active) */}
       {!showSearchResults && (
         <div className="space-y-2">
-          {defaultListQuery.isLoading ? (
+          {(!isOffline && (defaultListQuery.isLoading || defaultListQuery.isFetching || (!serverRecords && !!timeRange))) ? (
             <div className="text-center py-6">
               <Loader2 size={24} className="animate-spin text-primary mx-auto" />
             </div>
