@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { cn, toISTString } from "@/lib/utils";
+import { trpc } from "@/lib/trpc";
 import { resizeImage } from "@/lib/resizeImage";
 import { useTeam } from "@/contexts/TeamContext";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,6 @@ import {
   MapPin,
   RotateCcw,
 } from "lucide-react";
-import { trpc } from "@/lib/trpc";
 import { enqueueRecord, removeFromQueue, updateQueueStatus, getPendingRecords, type PendingRecord, QUEUE_CHANNEL_NAME } from "@/hooks/useOfflineQueue";
 import PendingQueueBar from "@/components/PendingQueueBar";
 import { logEvent } from "@/lib/appLog";
@@ -433,7 +432,7 @@ export default function AddRecord() {
           event: "add",
           dogId: savedDogId,
           teamIdentifier: savedTeamId,
-          recordedAt: toISTString(new Date(savedRecordedAt)),
+          recordedAt: new Date(savedRecordedAt).toISOString(),
           description: savedDescription || null,
           latitude: savedLat ?? null,
           longitude: savedLng ?? null,

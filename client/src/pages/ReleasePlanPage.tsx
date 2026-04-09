@@ -7,7 +7,7 @@ import {
   type PendingPlanPhoto,
   QUEUE_CHANNEL_NAME,
 } from "@/hooks/useOfflineQueue";
-import { getCachedReleasePlans, getCachedReleasePlansWithMeta, setCachedReleasePlans, getCachedPlanDogs, setCachedPlanDogs, evictStalePlanDogs } from "@/hooks/useRecordCache";
+import { getCachedReleasePlans, getCachedReleasePlansWithMeta, setCachedReleasePlans, getCachedPlanDogs, setCachedPlanDogs } from "@/hooks/useRecordCache";
 import { trpc } from "@/lib/trpc";
 import { useTeam } from "@/contexts/TeamContext";
 import { Button } from "@/components/ui/button";
@@ -351,8 +351,6 @@ export default function ReleasePlanPage() {
     setCachedReleasePlans(teamIdentifier, freshPlans);
     setCachedPlansLocal(freshPlans);
     setLastSynced(new Date());
-    // Evict cached plan dogs for plans that no longer exist
-    evictStalePlanDogs(freshPlans.map((p: any) => p.id));
 
     // For each plan not yet pre-fetched, fetch its dogs in the background
     freshPlans.forEach((plan: any) => {

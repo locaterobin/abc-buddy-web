@@ -25,12 +25,11 @@ import {
   RefreshCw,
   AlertTriangle,
   Trash2,
-  WifiOff,
 } from "lucide-react";
 import RecordDetailModal from "@/components/RecordDetailModal";
 import PendingQueueBar from "@/components/PendingQueueBar";
 import PendingCheckedBar from "@/components/PendingCheckedBar";
-import { getCachedRecordDates, setCachedRecordDates, getCachedRecords, getCachedTagDateDogs, setCachedTagDateDogs, evictStaleTagDateDogs } from "@/hooks/useRecordCache";
+import { getCachedRecordDates, setCachedRecordDates, getCachedRecords } from "@/hooks/useRecordCache";
 import {
   getPendingRecords,
   removeFromQueue,
@@ -149,18 +148,7 @@ export default function Lookup() {
   // module-level promise that resolves before the second render.
   const [cachedDates, setCachedDates] = useState<string[]>([]);
   const [cachedRecords, setCachedRecordsLocal] = useState<any[]>([]);
-  const [cachedTagDogs, setCachedTagDogs] = useState<any[]>([]);
-  const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const cacheLoadedRef = useRef(false);
-
-  useEffect(() => {
-    const onOnline = () => setIsOffline(false);
-    const onOffline = () => setIsOffline(true);
-    window.addEventListener("online", onOnline);
-    window.addEventListener("offline", onOffline);
-    return () => { window.removeEventListener("online", onOnline); window.removeEventListener("offline", onOffline); };
-  }, []);
-
   useEffect(() => {
     if (!teamId || cacheLoadedRef.current) return;
     cacheLoadedRef.current = true;
@@ -208,12 +196,11 @@ export default function Lookup() {
   );
   const freshDates: string[] = datesData?.dates ?? [];
 
-  // Persist fresh dates to IndexedDB whenever they arrive; evict stale date-dog caches
+  // Persist fresh dates to IndexedDB whenever they arrive
   useEffect(() => {
     if (teamId && freshDates.length > 0) {
       setCachedRecordDates(teamId, freshDates);
       setCachedDates(freshDates);
-      evictStaleTagDateDogs(teamId, freshDates);
     }
   }, [teamId, freshDates.join("|")]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -242,36 +229,34 @@ export default function Lookup() {
     return match ? match[1] : "";
   }
 
-  // Default list: all records in the selected date (no photo needed)
+  // Default list: all records in the selected time range (no photo needed)
   const { dateFrom, dateTo } = timeRangeToDateFilter(timeRange);
   const defaultListQuery = trpc.dogs.getRecordsPaginated.useQuery(
     {
       teamIdentifier: teamId,
       page: 1,
-      pageSize: 500,
+      pageSize: 100,
       dateFrom,
       dateTo,
       status: "active",
     },
-    { enabled: !!teamId && !lookupMutation.isSuccess && !isOffline }
+    { enabled: !!teamId && !lookupMutation.isSuccess }
   );
+  // Filter cached records by the selected time range for offline fallback
+  function filterCachedByTimeRange(records: any[], tr: string): any[] {
+    const { dateFrom, dateTo } = timeRangeToDateFilter(tr);
+    return records.filter((r) => {
+      const d = new Date(r.recordedAt).toISOString().slice(0, 10);
+      if (dateFrom && d < dateFrom) return false;
+      if (dateTo && d > dateTo) return false;
+      if (r.releasedAt) return false; // only active
+      return true;
+    });
+  }
 
-  // Cache dogs for the selected date whenever a fresh online result arrives
-  useEffect(() => {
-    if (teamId && timeRange && defaultListQuery.data?.records && defaultListQuery.data.records.length >= 0) {
-      setCachedTagDateDogs(teamId, timeRange, defaultListQuery.data.records);
-    }
-  }, [teamId, timeRange, defaultListQuery.data]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Load cached dogs for the selected date from IndexedDB ONLY when offline
-  useEffect(() => {
-    if (!teamId || !timeRange || !isOffline) return;
-    getCachedTagDateDogs(teamId, timeRange).then(setCachedTagDogs);
-  }, [teamId, timeRange, isOffline]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Show server results when online; fall back to per-date cache only when offline
+  // Show cached records whenever server data is not yet available (offline, loading, or error)
   const serverRecords = defaultListQuery.data?.records;
-  const allDefaultRecords: any[] = isOffline ? cachedTagDogs : (serverRecords ?? []);
+  const allDefaultRecords: any[] = serverRecords ?? filterCachedByTimeRange(cachedRecords, timeRange);
   const defaultRecords: any[] = planFilter === "all"
     ? allDefaultRecords
     : allDefaultRecords.filter((r) => getPlanLetter(r.dogId) === planFilter);
@@ -450,13 +435,7 @@ export default function Lookup() {
   return (
     <div className="container py-4 pb-24 max-w-lg mx-auto space-y-4">
 
-      {/* Offline strip */}
-      {isOffline && (
-        <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-xs">
-          <WifiOff size={13} className="flex-shrink-0" />
-          <span>You are offline — showing cached records</span>
-        </div>
-      )}
+
 
       {/* Date Range Dropdown + Sync */}
       <div className="flex gap-2">
@@ -516,8 +495,8 @@ export default function Lookup() {
         ))}
       </div>
 
-      {/* Upload Area — hidden when offline */}
-      {!isOffline && (<Card className={`border-2 ${imageBase64 ? "border-border" : "border-dashed border-primary/30 bg-primary/5"}`}>
+      {/* Upload Area */}
+      <Card className={`border-2 ${imageBase64 ? "border-border" : "border-dashed border-primary/30 bg-primary/5"}`}>
         <CardContent className={imageBase64 ? "p-0" : "py-6"}>
           {imageBase64 ? (
             <div className="relative">
@@ -599,7 +578,7 @@ export default function Lookup() {
             </div>
           )}
         </CardContent>
-      </Card>)}
+      </Card>
 
       {/* Search in progress */}
       {lookupMutation.isPending && (
@@ -693,7 +672,7 @@ export default function Lookup() {
       {/* Default list: all records in the selected range (shown when no photo search active) */}
       {!showSearchResults && (
         <div className="space-y-2">
-          {(!isOffline && (defaultListQuery.isLoading || defaultListQuery.isFetching || (!serverRecords && !!timeRange))) ? (
+          {defaultListQuery.isLoading ? (
             <div className="text-center py-6">
               <Loader2 size={24} className="animate-spin text-primary mx-auto" />
             </div>

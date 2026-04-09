@@ -1,17 +1,4 @@
 import { COOKIE_NAME } from "@shared/const";
-/** Convert a Date to IST datetime string (YYYY-MM-DD HH:mm:ss) for webhook payloads */
-function toISTString(date: Date | number | string): string {
-  const d = new Date(date as any);
-  const f = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Kolkata",
-    year: "numeric", month: "2-digit", day: "2-digit",
-    hour: "2-digit", minute: "2-digit", second: "2-digit",
-    hour12: false,
-  });
-  const parts = Object.fromEntries(f.formatToParts(d).map(p => [p.type, p.value]));
-  return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}:${parts.second}`;
-}
-
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
@@ -538,7 +525,7 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
                 latitude: input.latitude ?? null,
                 longitude: input.longitude ?? null,
                 notes: input.notes ?? null,
-                recordedAt: toISTString(new Date(input.recordedAt)),
+                recordedAt: new Date(input.recordedAt).toISOString(),
                 addedByStaffId: input.addedByStaffId ?? null,
                 addedByStaffName: input.addedByStaffName ?? null,
                 source: input.source,
