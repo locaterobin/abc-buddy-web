@@ -581,3 +581,7 @@
 
 ## Release Plan - Call Animal's Person Modal
 - [x] When tapping a dog in the release plan, if notes contain a 10+ digit number, show a modal with the notes and bold "Call animal's person!" before opening RecordDetailModal
+
+## /api/stops REST Endpoint
+- [x] Add getStops DB helper: catch stops (addedByStaffId IN staffIds, date match) + release stops (releasedByStaffId IN staffIds, releasedAt date match)
+- [x] Add GET /api/stops?staffId=S7,S6&date=20260407 Express route with comma-split staffId support

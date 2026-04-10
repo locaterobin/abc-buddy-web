@@ -25,6 +25,7 @@ import { registerOAuthRoutes } from "./oauth";
 import { registerChatRoutes } from "./chat";
 import { registerIngestRoute } from "../ingest";
 import { registerPdfRoute } from "../pdf";
+import { registerStopsRoute } from "../stops";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
@@ -62,6 +63,8 @@ async function startServer() {
   registerIngestRoute(app);
   // PDF generation
   registerPdfRoute(app);
+  // Stops REST API
+  registerStopsRoute(app);
   // Version endpoint — returns a timestamp generated at server startup.
   // This changes on every deployment/restart, allowing the client to detect new versions.
   const BUILD_ID = Date.now().toString();

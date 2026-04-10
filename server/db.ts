@@ -757,3 +757,117 @@ export async function saveTeamDocxTemplateUrl(teamIdentifier: string, url: strin
     .values({ teamIdentifier, docxTemplateUrl: url })
     .onDuplicateKeyUpdate({ set: { docxTemplateUrl: url } });
 }
+
+export interface Stop {
+  dogId: string;
+  type: "catch" | "release";
+  timestamp: string; // IST "YYYY-MM-DD HH:mm:ss"
+  latitude: number | null;
+  longitude: number | null;
+  areaName: string | null;
+  staffId: string | null;
+  staffName: string | null;
+}
+
+function toISTStr(d: Date | null | undefined): string {
+  if (!d) return "";
+  const f = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit",
+    hour12: false,
+  });
+  const parts = Object.fromEntries(f.formatToParts(d).map(p => [p.type, p.value]));
+  return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}:${parts.second}`;
+}
+
+/**
+ * Returns all catch and release stops for the given staffIds on the given date (YYYYMMDD).
+ * Catch stop: addedByStaffId IN staffIds AND recordedAt date = date (IST).
+ * Release stop: releasedByStaffId IN staffIds AND releasedAt date = date (IST).
+ */
+export async function getStops(staffIds: string[], date: string): Promise<Stop[]> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // date is YYYYMMDD — convert to YYYY-MM-DD for SQL date comparison
+  const dateStr = `${date.slice(0, 4)}-${date.slice(4, 6)}-${date.slice(6, 8)}`;
+
+  const rows = await db
+    .select({
+      dogId: dogRecords.dogId,
+      recordedAt: dogRecords.recordedAt,
+      latitude: dogRecords.latitude,
+      longitude: dogRecords.longitude,
+      areaName: dogRecords.areaName,
+      addedByStaffId: dogRecords.addedByStaffId,
+      addedByStaffName: dogRecords.addedByStaffName,
+      releasedAt: dogRecords.releasedAt,
+      releaseLatitude: dogRecords.releaseLatitude,
+      releaseLongitude: dogRecords.releaseLongitude,
+      releaseAreaName: dogRecords.releaseAreaName,
+      releasedByStaffId: dogRecords.releasedByStaffId,
+      releasedByStaffName: dogRecords.releasedByStaffName,
+    })
+    .from(dogRecords)
+    .where(
+      and(
+        eq(dogRecords.deleted, false),
+        sql`(
+          (${dogRecords.addedByStaffId} IN (${sql.join(staffIds.map(id => sql`${id}`), sql`, `)})
+            AND DATE(CONVERT_TZ(${dogRecords.recordedAt}, '+00:00', '+05:30')) = ${dateStr})
+          OR
+          (${dogRecords.releasedByStaffId} IN (${sql.join(staffIds.map(id => sql`${id}`), sql`, `)})
+            AND ${dogRecords.releasedAt} IS NOT NULL
+            AND DATE(CONVERT_TZ(${dogRecords.releasedAt}, '+00:00', '+05:30')) = ${dateStr})
+        )`
+      )
+    );
+
+  const stops: Stop[] = [];
+
+  for (const row of rows) {
+    // Catch stop
+    if (
+      row.addedByStaffId && staffIds.includes(row.addedByStaffId) &&
+      row.recordedAt
+    ) {
+      const istDate = toISTStr(row.recordedAt).slice(0, 10);
+      if (istDate === dateStr) {
+        stops.push({
+          dogId: row.dogId,
+          type: "catch",
+          timestamp: toISTStr(row.recordedAt),
+          latitude: row.latitude ?? null,
+          longitude: row.longitude ?? null,
+          areaName: row.areaName ?? null,
+          staffId: row.addedByStaffId,
+          staffName: row.addedByStaffName ?? null,
+        });
+      }
+    }
+    // Release stop
+    if (
+      row.releasedByStaffId && staffIds.includes(row.releasedByStaffId) &&
+      row.releasedAt
+    ) {
+      const istDate = toISTStr(row.releasedAt).slice(0, 10);
+      if (istDate === dateStr) {
+        stops.push({
+          dogId: row.dogId,
+          type: "release",
+          timestamp: toISTStr(row.releasedAt),
+          latitude: row.releaseLatitude ?? null,
+          longitude: row.releaseLongitude ?? null,
+          areaName: row.releaseAreaName ?? null,
+          staffId: row.releasedByStaffId,
+          staffName: row.releasedByStaffName ?? null,
+        });
+      }
+    }
+  }
+
+  // Sort by timestamp ascending
+  stops.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+  return stops;
+}
