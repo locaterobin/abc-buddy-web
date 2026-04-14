@@ -7,7 +7,7 @@ describe("env defaults", () => {
 
   it("VITE_DEFAULT_WEBHOOK_URL is set and points to n8n", () => {
     expect(process.env.VITE_DEFAULT_WEBHOOK_URL).toBe(
-      "https://peepalfarm.app.n8n.cloud/webhook/abcbuddy"
+      "https://n8n.peepalfarm.org/webhook/abcbuddy"
     );
   });
 });
