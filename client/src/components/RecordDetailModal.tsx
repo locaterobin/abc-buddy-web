@@ -760,7 +760,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
           }).catch((e) => console.warn("Release webhook failed:", e));
-          webhookMutation.mutate({ url: releaseUrl, payload });
+          // webhookMutation.mutate({ url: releaseUrl, payload }); // disabled: direct fetch above handles this
         }
         utils.dogs.getRecords.invalidate();
       } catch (err: any) {
