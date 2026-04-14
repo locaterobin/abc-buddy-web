@@ -567,7 +567,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify(deletePayload),
             }).catch((e) => console.error("Delete webhook failed:", e));
-            webhookMutation.mutate({ url: deleteUrl, payload: deletePayload });
+            // webhookMutation.mutate({ url: deleteUrl, payload: deletePayload }); // disabled: direct fetch above handles this
           }
           onDelete?.();
           onClose();
