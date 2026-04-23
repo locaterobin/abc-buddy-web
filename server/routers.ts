@@ -35,6 +35,8 @@ import {
   getRecordByDogId,
   updateDogRecord,
   updateCheckedPhotoUrl,
+  getReleaseFarThreshold,
+  saveReleaseFarThreshold,
 } from "./db";
 import { getDb } from "./db";
 import { loginAttempts, blockedIps, dogRecords, releasePlans } from "../drizzle/schema";
@@ -630,6 +632,11 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
         const { url } = await storagePut(fileKey, imgBuffer, "image/jpeg");
         releasePhotoUrl = url;
       }
+      // Compute releasedFar: compare distance against team threshold
+      const threshold = await getReleaseFarThreshold(input.teamIdentifier);
+      const releasedFar =
+        input.releaseDistanceMetres !== null && input.releaseDistanceMetres > threshold;
+
       const saved = await saveReleaseData(input.id, input.teamIdentifier, {
         releasedAt: new Date(input.releasedAt),
         releaseLatitude: input.releaseLatitude,
@@ -639,6 +646,7 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
         releasePhotoUrl,
         releasedByStaffId: input.releasedByStaffId ?? null,
         releasedByStaffName: input.releasedByStaffName ?? null,
+        releasedFar,
       });
       // Update plan timestamps (first/last release) — no auto-archive
       if (saved) {
@@ -908,6 +916,18 @@ const settingsRouter = router({
       const { url } = await storagePut(key, buf, "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
       await saveTeamDocxTemplateUrl(input.teamIdentifier, url);
       return { url };
+    }),
+  getReleaseFarThreshold: publicProcedure
+    .input(z.object({ teamIdentifier: z.string() }))
+    .query(async ({ input }) => {
+      const threshold = await getReleaseFarThreshold(input.teamIdentifier);
+      return { threshold };
+    }),
+  saveReleaseFarThreshold: publicProcedure
+    .input(z.object({ teamIdentifier: z.string(), threshold: z.number().int().min(50).max(5000) }))
+    .mutation(async ({ input }) => {
+      await saveReleaseFarThreshold(input.teamIdentifier, input.threshold);
+      return { success: true };
     }),
 });
 

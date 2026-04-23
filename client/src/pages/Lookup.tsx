@@ -708,10 +708,17 @@ export default function Lookup() {
                         {rec.dogId}
                       </span>
                       {rec.releasedAt && (
-                        <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 border border-green-300/50">
-                          <CheckCircle2 size={9} />
-                          Released
-                        </span>
+                        (rec as any).releasedFar ? (
+                          <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400 border border-red-300/50">
+                            <AlertTriangle size={9} />
+                            Released Far
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 border border-green-300/50">
+                            <CheckCircle2 size={9} />
+                            Released
+                          </span>
+                        )
                       )}
                       {rec.inReleasePlan && !rec.releasedAt && (
                         <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400 border border-yellow-300/50">

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { logEvent } from "@/lib/appLog";
+import { annotateAndShare } from "@/lib/annotateAndShare";
 import { trpc } from "@/lib/trpc";
 import { resizeImage } from "@/lib/resizeImage";
 import { enqueuePlanPhoto, removePlanPhotoFromQueue, getPendingPlanPhotos, updatePlanPhotoStatus } from "@/hooks/useOfflineQueue";
@@ -317,6 +318,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
   const [photo2Base64, setPhoto2Base64] = useState<string | null>(null);
   const photo2InputRef = useRef<HTMLInputElement>(null);
   const [photo3Base64, setPhoto3Base64] = useState<string | null>(null);
+  const [photo3FromCamera, setPhoto3FromCamera] = useState(false);
   const photo3InputRef = useRef<HTMLInputElement>(null);
 
   // Edit mode
@@ -490,9 +492,12 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
   async function handlePhoto3Change(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    // Track whether this came from camera (capture attribute was set)
+    const fromCamera = photo3InputRef.current?.getAttribute("capture") === "environment";
     try {
       const b64 = await resizeImage(file, 1280, 0.82);
       setPhoto3Base64(b64);
+      setPhoto3FromCamera(fromCamera);
     } catch {
       toast.error("Failed to process image");
     }
@@ -700,9 +705,22 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
     });
 
     // 2. Close dialog immediately — team can move on
+    // Trigger share sheet for camera-taken release photos (same as catch flow)
+    if (photo3Base64 && photo3FromCamera) {
+      annotateAndShare({
+        imageBase64: photo3Base64,
+        dogId: record.dogId,
+        latitude: latitude ?? undefined,
+        longitude: longitude ?? undefined,
+        areaName: areaName || undefined,
+        recordedAt: new Date(releasedAt).getTime(),
+        notes: record.notes ?? undefined,
+      });
+    }
     setReleased(true);
     setConfirmData(null);
     setPhoto3Base64(null);
+    setPhoto3FromCamera(false);
     const distanceMsg = distanceMetres !== null ? ` · ${formatDistance(distanceMetres)} from capture` : "";
     toast.success(`${record.dogId} queued for release${distanceMsg}`);
 
@@ -1032,54 +1050,75 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
           )}
 
           {/* Release info (if already released) */}
-          {rec.releasedAt && (
-            <div className="bg-green-50 dark:bg-green-950/30 rounded-lg p-3 border border-green-500/20 space-y-1.5">
-              <div className="flex items-center gap-2">
-                <CheckCircle2
-                  size={15}
-                  className="text-green-600 dark:text-green-400 flex-shrink-0"
-                />
-                <p className="text-xs font-semibold text-green-700 dark:text-green-400">Released</p>
-              </div>
-              <div className="flex items-center gap-2 text-xs text-green-700/80 dark:text-green-400/80">
-                <Clock size={12} className="flex-shrink-0" />
-                <span>{formatDate(rec.releasedAt)}</span>
-              </div>
-              {(rec.releaseAreaName || releaseGpsLink) && (
-                <div className="flex items-start gap-2 text-xs text-green-700/80 dark:text-green-400/80">
-                  <MapPin size={12} className="flex-shrink-0 mt-0.5" />
-                  {rec.releaseAreaName && releaseGpsLink ? (
-                    <a
-                      href={releaseGpsLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="hover:underline inline-flex items-center gap-1"
-                    >
-                      {rec.releaseAreaName}
-                      <ExternalLink size={10} />
-                    </a>
-                  ) : rec.releaseAreaName ? (
-                    <span>{rec.releaseAreaName}</span>
-                  ) : releaseGpsLink ? (
-                    <a
-                      href={releaseGpsLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="hover:underline inline-flex items-center gap-1"
-                    >
-                      {rec.releaseLatitude?.toFixed(5)}, {rec.releaseLongitude?.toFixed(5)}
-                      <ExternalLink size={10} />
-                    </a>
-                  ) : null}
+          {rec.releasedAt && (() => {
+            const isFar = !!(rec as any).releasedFar;
+            const colorBase = isFar
+              ? "bg-red-50 dark:bg-red-950/30 border-red-500/20"
+              : "bg-green-50 dark:bg-green-950/30 border-green-500/20";
+            const colorText = isFar
+              ? "text-red-700 dark:text-red-400"
+              : "text-green-700 dark:text-green-400";
+            const colorTextMuted = isFar
+              ? "text-red-700/80 dark:text-red-400/80"
+              : "text-green-700/80 dark:text-green-400/80";
+            const colorTextFaint = isFar
+              ? "text-red-700/70 dark:text-red-400/70"
+              : "text-green-700/70 dark:text-green-400/70";
+            const IconComp = isFar ? AlertTriangle : CheckCircle2;
+            return (
+              <div className={`rounded-lg p-3 border space-y-1.5 ${colorBase}`}>
+                <div className="flex items-center gap-2">
+                  <IconComp size={15} className={`${colorText} flex-shrink-0`} />
+                  <p className={`text-xs font-semibold ${colorText}`}>
+                    {isFar ? "Released Far" : "Released"}
+                  </p>
                 </div>
-              )}
-              {rec.releaseDistanceMetres != null && (
-                <p className="text-xs text-green-700/70 dark:text-green-400/70 pl-[20px]">
-                  {formatDistance(rec.releaseDistanceMetres)} from capture
-                </p>
-              )}
-            </div>
-          )}
+                <div className={`flex items-center gap-2 text-xs ${colorTextMuted}`}>
+                  <Clock size={12} className="flex-shrink-0" />
+                  <span>{formatDate(rec.releasedAt)}</span>
+                </div>
+                {(rec.releaseAreaName || releaseGpsLink) && (
+                  <div className={`flex items-start gap-2 text-xs ${colorTextMuted}`}>
+                    <MapPin size={12} className="flex-shrink-0 mt-0.5" />
+                    {rec.releaseAreaName && releaseGpsLink ? (
+                      <a
+                        href={releaseGpsLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:underline inline-flex items-center gap-1"
+                      >
+                        {rec.releaseAreaName}
+                        <ExternalLink size={10} />
+                      </a>
+                    ) : rec.releaseAreaName ? (
+                      <span>{rec.releaseAreaName}</span>
+                    ) : releaseGpsLink ? (
+                      <a
+                        href={releaseGpsLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:underline inline-flex items-center gap-1"
+                      >
+                        {rec.releaseLatitude?.toFixed(5)}, {rec.releaseLongitude?.toFixed(5)}
+                        <ExternalLink size={10} />
+                      </a>
+                    ) : null}
+                  </div>
+                )}
+                {/* Always show lat/long if available */}
+                {rec.releaseLatitude != null && rec.releaseLongitude != null && (
+                  <p className={`text-xs ${colorTextFaint} pl-[20px] font-mono`}>
+                    {rec.releaseLatitude.toFixed(5)}, {rec.releaseLongitude.toFixed(5)}
+                  </p>
+                )}
+                {rec.releaseDistanceMetres != null && (
+                  <p className={`text-xs ${colorTextFaint} pl-[20px]`}>
+                    {formatDistance(rec.releaseDistanceMetres)} from capture
+                  </p>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Custom Release Confirm Dialog */}
           {confirmData && (

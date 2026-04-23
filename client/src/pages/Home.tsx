@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { PlusCircle, Search, ClipboardList, CalendarCheck, Menu, X, Settings, LogOut, ScrollText, Copy, Trash2 } from "lucide-react";
+import { PlusCircle, Search, ClipboardList, CalendarCheck, Menu, X, Settings, LogOut, ScrollText, Copy } from "lucide-react";
 import { getPendingRecords, getPendingPlanPhotos } from "../hooks/useOfflineQueue";
 import { useTeam } from "../contexts/TeamContext";
 import { clearStaffSession } from "./LoginPage";
@@ -308,9 +308,7 @@ export default function Home({ onLogout }: { onLogout?: () => void }) {
             <button onClick={handleCopyLog} title="Copy log" className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
               <Copy size={16} />
             </button>
-            <button onClick={handleClearLog} title="Clear log" className="w-8 h-8 flex items-center justify-center rounded-lg text-destructive hover:bg-destructive/10 transition-colors">
-              <Trash2 size={16} />
-            </button>
+
           </header>
           <div className="flex-1 overflow-y-auto p-3 space-y-1 font-mono text-xs">
             {logEntries.length === 0 && (

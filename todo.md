@@ -585,3 +585,19 @@
 ## /api/stops REST Endpoint
 - [x] Add getStops DB helper: catch stops (addedByStaffId IN staffIds, date match) + release stops (releasedByStaffId IN staffIds, releasedAt date match)
 - [x] Add GET /api/stops?staffId=S7,S6&date=20260407 Express route with comma-split staffId support
+
+## Batch Changes (Apr 23)
+- [x] Remove clear/delete button from activity log header in Home.tsx
+- [x] Add save-to-camera-roll (annotateAndShare) for camera-taken release photos in RecordDetailModal.tsx
+- [x] Hide archive button for in-progress release plans in ReleasePlanPage.tsx
+- [x] Add releasedFar boolean column to dog_records schema
+- [x] Add releaseFarThreshold integer column to team_settings schema
+- [x] Compute releasedFar on release in saveRelease procedure (compare releaseDistanceMetres vs threshold)
+- [x] Add getReleaseFarThreshold/saveReleaseFarThreshold DB helpers and tRPC procedures
+- [x] Add ReleaseFarThreshold setting to ConfigPage UI
+- [x] Released section in RecordDetailModal: red background + AlertTriangle icon + lat/long when releasedFar
+- [x] Released capsule in Lookup.tsx: red when releasedFar
+- [x] Released capsule in ReleasePlanPage.tsx (list + thumb): red when releasedFar
+- [x] Plan status capsule (In Progress/Completed) in ReleasePlanPage: red when anyReleasedFar
+- [x] Add anyReleasedFar field to getReleasePlans enrichment in db.ts
+- [x] Block deletion of release plans that have any dogs in them (client + server guard)

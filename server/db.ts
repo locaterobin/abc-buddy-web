@@ -349,6 +349,7 @@ export async function saveReleaseData(
     releasePhotoUrl?: string | null;
     releasedByStaffId?: string | null;
     releasedByStaffName?: string | null;
+    releasedFar?: boolean;
   }
 ): Promise<boolean> {
   const db = await getDb();
@@ -365,6 +366,7 @@ export async function saveReleaseData(
       ...(data.releasePhotoUrl !== undefined ? { releasePhotoUrl: data.releasePhotoUrl } : {}),
       ...(data.releasedByStaffId !== undefined ? { releasedByStaffId: data.releasedByStaffId } : {}),
       ...(data.releasedByStaffName !== undefined ? { releasedByStaffName: data.releasedByStaffName } : {}),
+      ...(data.releasedFar !== undefined ? { releasedFar: data.releasedFar } : {}),
     })
     .where(and(eq(dogRecords.id, id), eq(dogRecords.teamIdentifier, teamIdentifier)));
 
@@ -442,15 +444,17 @@ export async function getReleasePlans(teamIdentifier: string, sinceHours?: numbe
         .where(eq(releasePlanDogs.planId, plan.id));
       const totalDogs = planDogs.length;
       let releasedDogs = 0;
+      let anyReleasedFar = false;
       if (totalDogs > 0) {
         const dogIds = planDogs.map((d) => d.dogId);
         const released = await db
-          .select({ dogId: dogRecords.dogId })
+          .select({ dogId: dogRecords.dogId, releasedFar: dogRecords.releasedFar })
           .from(dogRecords)
           .where(and(inArray(dogRecords.dogId, dogIds), isNotNull(dogRecords.releasedAt)));
         releasedDogs = released.length;
+        anyReleasedFar = released.some((r) => r.releasedFar === true);
       }
-      return { ...plan, totalDogs, releasedDogs };
+      return { ...plan, totalDogs, releasedDogs, anyReleasedFar };
     })
   );
   return enriched;
@@ -736,6 +740,26 @@ export async function moveDogToPlan(
     addedByStaffId: staffId,
     addedByStaffName: staffName,
   });
+}
+
+export async function getReleaseFarThreshold(teamIdentifier: string): Promise<number> {
+  const db = await getDb();
+  if (!db) return 200;
+  const rows = await db
+    .select({ releaseFarThreshold: teamSettings.releaseFarThreshold })
+    .from(teamSettings)
+    .where(eq(teamSettings.teamIdentifier, teamIdentifier))
+    .limit(1);
+  return rows[0]?.releaseFarThreshold ?? 200;
+}
+
+export async function saveReleaseFarThreshold(teamIdentifier: string, threshold: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db
+    .insert(teamSettings)
+    .values({ teamIdentifier, releaseFarThreshold: threshold })
+    .onDuplicateKeyUpdate({ set: { releaseFarThreshold: threshold } });
 }
 
 export async function getTeamDocxTemplateUrl(teamIdentifier: string): Promise<string | null> {

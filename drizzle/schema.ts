@@ -50,6 +50,8 @@ export const dogRecords = mysqlTable("dog_records", {
   // Staff who marked as released
   releasedByStaffId: varchar("releasedByStaffId", { length: 64 }),
   releasedByStaffName: varchar("releasedByStaffName", { length: 128 }),
+  // Released far from capture location (beyond team threshold)
+  releasedFar: boolean("releasedFar").default(false),
   // Soft delete
   deleted: boolean("deleted").default(false).notNull(),
 });
@@ -91,6 +93,7 @@ export const teamSettings = mysqlTable("team_settings", {
   id: int("id").autoincrement().primaryKey(),
   teamIdentifier: varchar("teamIdentifier", { length: 64 }).notNull().unique(),
   docxTemplateUrl: text("docxTemplateUrl"),
+  releaseFarThreshold: int("releaseFarThreshold").default(200), // metres, default 200m
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 

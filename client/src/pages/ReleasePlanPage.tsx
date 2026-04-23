@@ -132,10 +132,17 @@ function SortableDogCard({
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <p className="font-mono font-bold text-sm text-foreground">{dog.dogId}</p>
                   {dog.releasedAt && (
-                    <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 border border-green-300/50 dark:border-green-700/50">
-                      <CheckCircle2 size={9} />
-                      Released
-                    </span>
+                    (dog as any).releasedFar ? (
+                      <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400 border border-red-300/50 dark:border-red-700/50">
+                        <AlertTriangle size={9} />
+                        Released Far
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 border border-green-300/50 dark:border-green-700/50">
+                        <CheckCircle2 size={9} />
+                        Released
+                      </span>
+                    )
                   )}
                 </div>
                 <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
@@ -146,8 +153,10 @@ function SortableDogCard({
                   <p className="text-xs text-muted-foreground truncate mt-0.5">{dog.areaName}</p>
                 )}
                 {dog.releasedAt && (
-                  <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400 mt-0.5 font-medium flex-wrap">
-                    <CheckCircle2 size={10} className="flex-shrink-0" />
+                  <div className={`flex items-center gap-1 text-xs mt-0.5 font-medium flex-wrap ${
+                    (dog as any).releasedFar ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"
+                  }`}>
+                    {(dog as any).releasedFar ? <AlertTriangle size={10} className="flex-shrink-0" /> : <CheckCircle2 size={10} className="flex-shrink-0" />}
                     <span>{new Date(dog.releasedAt).toLocaleTimeString("en-GB", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit", hour12: false }) + " " + new Date(dog.releasedAt).toLocaleDateString("en-GB", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric" })}</span>
                     {dog.releaseAreaName && <span className="truncate">{dog.releaseAreaName}</span>}
                   </div>
@@ -193,10 +202,17 @@ function SortableDogCard({
             <div className="flex items-center gap-1.5 flex-wrap mb-1">
               <p className="font-mono font-bold text-sm text-foreground">{dog.dogId}</p>
               {dog.releasedAt && (
-                <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 border border-green-300/50 dark:border-green-700/50">
-                  <CheckCircle2 size={9} />
-                  Released
-                </span>
+                (dog as any).releasedFar ? (
+                  <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400 border border-red-300/50 dark:border-red-700/50">
+                    <AlertTriangle size={9} />
+                    Released Far
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 border border-green-300/50 dark:border-green-700/50">
+                    <CheckCircle2 size={9} />
+                    Released
+                  </span>
+                )
               )}
             </div>
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -207,8 +223,10 @@ function SortableDogCard({
               <p className="text-xs text-muted-foreground truncate mt-0.5">{dog.areaName}</p>
             )}
             {dog.releasedAt && (
-              <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400 mt-0.5 font-medium">
-                <CheckCircle2 size={10} />
+              <div className={`flex items-center gap-1 text-xs mt-0.5 font-medium ${
+                (dog as any).releasedFar ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"
+              }`}>
+                {(dog as any).releasedFar ? <AlertTriangle size={10} /> : <CheckCircle2 size={10} />}
                 <span>{new Date(dog.releasedAt).toLocaleTimeString("en-GB", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit", hour12: false }) + " " + new Date(dog.releasedAt).toLocaleDateString("en-GB", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric" })}</span>
               </div>
             )}
@@ -574,18 +592,20 @@ export default function ReleasePlanPage() {
                 <List size={15} />
               </button>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-destructive hover:text-destructive hover:bg-destructive/10 px-2"
-              onClick={() => {
-                if (confirm("Delete this entire release plan?")) {
-                  deletePlan.mutate({ planId: selectedPlanId, teamIdentifier });
-                }
-              }}
-            >
-              <Trash2 size={16} />
-            </Button>
+            {planDogs.length === 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-destructive hover:text-destructive hover:bg-destructive/10 px-2"
+                onClick={() => {
+                  if (confirm("Delete this entire release plan?")) {
+                    deletePlan.mutate({ planId: selectedPlanId, teamIdentifier });
+                  }
+                }}
+              >
+                <Trash2 size={16} />
+              </Button>
+            )}
           </div>
 
           {/* ID filter */}
@@ -752,28 +772,46 @@ export default function ReleasePlanPage() {
                   <div className="flex items-center gap-2">
                     <p className="font-mono font-bold text-foreground text-sm">{plan.planDate}-{plan.orderIndex}</p>
                     {(plan as any).totalDogs > 0 && (plan as any).releasedDogs === (plan as any).totalDogs && (
-                       <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-green-500/20 text-green-600 border border-green-500/30">Completed</span>
+                      (plan as any).anyReleasedFar ? (
+                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-red-500/20 text-red-600 border border-red-500/30 inline-flex items-center gap-0.5">
+                          <AlertTriangle size={9} />Completed
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-green-500/20 text-green-600 border border-green-500/30">Completed</span>
+                      )
                     )}
                     {(plan as any).totalDogs > 1 && (plan as any).releasedDogs > 0 && (plan as any).releasedDogs < (plan as any).totalDogs && (
-                       <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-yellow-500/20 text-yellow-600 border border-yellow-500/30">In Progress</span>
+                      (plan as any).anyReleasedFar ? (
+                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-red-500/20 text-red-600 border border-red-500/30 inline-flex items-center gap-0.5">
+                          <AlertTriangle size={9} />In Progress
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-yellow-500/20 text-yellow-600 border border-yellow-500/30">In Progress</span>
+                      )
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground">{formatPlanDate(plan.planDate)}{(plan as any).totalDogs > 0 ? ` · ${(plan as any).totalDogs} dogs` : ''}</p>
                 </div>
-                {isManager && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (confirm(`Archive plan ${plan.planDate}-${plan.orderIndex}? It will be hidden from this list.`)) {
-                        archivePlan.mutate({ planId: plan.id, teamIdentifier });
-                      }
-                    }}
-                    className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
-                    title="Archive plan"
-                  >
-                    <Archive size={16} />
-                  </button>
-                )}
+                {isManager && (() => {
+                  const totalDogs = (plan as any).totalDogs ?? 0;
+                  const releasedDogs = (plan as any).releasedDogs ?? 0;
+                  const isInProgress = totalDogs > 0 && releasedDogs > 0 && releasedDogs < totalDogs;
+                  if (isInProgress) return null;
+                  return (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (confirm(`Archive plan ${plan.planDate}-${plan.orderIndex}? It will be hidden from this list.`)) {
+                          archivePlan.mutate({ planId: plan.id, teamIdentifier });
+                        }
+                      }}
+                      className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+                      title="Archive plan"
+                    >
+                      <Archive size={16} />
+                    </button>
+                  );
+                })()}
                 <ArrowLeft size={16} className="text-muted-foreground rotate-180" />
               </CardContent>
             </Card>
