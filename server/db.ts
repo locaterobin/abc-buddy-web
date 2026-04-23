@@ -554,6 +554,7 @@ export async function getReleasePlanDogs(planId: number, teamIdentifier?: string
       updatedAt: dogRecords.updatedAt,
       releasedByStaffId: dogRecords.releasedByStaffId,
       releasedByStaffName: dogRecords.releasedByStaffName,
+      releasedFar: dogRecords.releasedFar,
       planAddedByStaffId: releasePlanDogs.addedByStaffId,
       planAddedByStaffName: releasePlanDogs.addedByStaffName,
     })
@@ -602,6 +603,7 @@ export async function getFullRecordByDogId(dogId: string, teamIdentifier?: strin
       updatedAt: dogRecords.updatedAt,
       releasedByStaffId: dogRecords.releasedByStaffId,
       releasedByStaffName: dogRecords.releasedByStaffName,
+      releasedFar: dogRecords.releasedFar,
     })
     .from(dogRecords)
     .leftJoin(releasePlanDogs, eq(releasePlanDogs.dogId, dogRecords.dogId))
