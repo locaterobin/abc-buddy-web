@@ -50,6 +50,9 @@ export const dogRecords = mysqlTable("dog_records", {
   // Staff who marked as released
   releasedByStaffId: varchar("releasedByStaffId", { length: 64 }),
   releasedByStaffName: varchar("releasedByStaffName", { length: 128 }),
+  // GPS accuracy (metres) at time of catch and release
+  gpsAccuracy: double("gpsAccuracy"),
+  releaseGpsAccuracy: double("releaseGpsAccuracy"),
   // Released far from capture location (beyond team threshold)
   releasedFar: boolean("releasedFar").default(false),
   // Soft delete

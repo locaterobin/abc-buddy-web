@@ -601,3 +601,14 @@
 - [x] Plan status capsule (In Progress/Completed) in ReleasePlanPage: red when anyReleasedFar
 - [x] Add anyReleasedFar field to getReleasePlans enrichment in db.ts
 - [x] Block deletion of release plans that have any dogs in them (client + server guard)
+
+## GPS Accuracy Feature
+- [x] Add gpsAccuracy (catch) and releaseGpsAccuracy columns to dog_records schema
+- [x] Push DB migration
+- [x] Update saveRecord DB helper to accept and store gpsAccuracy
+- [x] Update saveReleaseData DB helper to accept and store releaseGpsAccuracy
+- [x] Update AddRecord to capture accuracy from Geolocation API and pass to server
+- [x] Update RecordDetailModal release flow to capture release GPS accuracy and pass to server
+- [x] Include gpsAccuracy in catch webhook payload (/add and /update)
+- [x] Include releaseGpsAccuracy in release webhook payload (/release)
+- [x] Add GPS accuracy indicator to app header (±Xm, colour-coded green/amber/red)

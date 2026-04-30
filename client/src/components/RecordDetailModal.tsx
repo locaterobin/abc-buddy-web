@@ -78,6 +78,7 @@ interface ReleaseConfirmData {
   areaName: string;
   distanceMetres: number | null;
   geocodingInProgress?: boolean;
+  gpsAccuracy?: number | null;
 }
 
 /** Swipeable thumbnail carousel for the record detail modal */
@@ -605,6 +606,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
 
     let latitude: number | null = null;
     let longitude: number | null = null;
+    let releaseGpsAccuracy: number | null = null;
     let areaName = "";
 
     try {
@@ -622,6 +624,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
         );
         latitude = pos.coords.latitude;
         longitude = pos.coords.longitude;
+        releaseGpsAccuracy = pos.coords.accuracy ?? null;
       } catch {
         // GPS unavailable or timed out — continue without location
       }
@@ -638,7 +641,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
       }
 
       // 3. Show confirm dialog immediately — geocode fires in background
-      setConfirmData({ latitude, longitude, areaName: "", distanceMetres, geocodingInProgress: latitude !== null });
+      setConfirmData({ latitude, longitude, areaName: "", distanceMetres, geocodingInProgress: latitude !== null, gpsAccuracy: releaseGpsAccuracy });
 
       // 4. Reverse geocode in background — updates areaName in confirmData when done
       if (latitude !== null && longitude !== null) {
@@ -662,7 +665,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
 
   const handleConfirmRelease = async () => {
     if (!confirmData) return;
-    const { latitude, longitude, areaName, distanceMetres } = confirmData;
+    const { latitude, longitude, areaName, distanceMetres, gpsAccuracy: releaseGpsAccuracy } = confirmData;
     const releasedAt = new Date().toISOString();
     const distanceRounded = distanceMetres !== null ? Math.round(distanceMetres) : null;
     const queueId = crypto.randomUUID();
@@ -744,6 +747,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
           photo3Base64: photo3Base64 ?? undefined,
           releasedByStaffId: staffSession?.staffId ?? null,
           releasedByStaffName: staffSession?.name ?? null,
+          releaseGpsAccuracy: releaseGpsAccuracy ?? undefined,
         });
         await removePlanPhotoFromQueue(queueId);
         logEvent("info", "release_confirmed", record.dogId, {
@@ -772,6 +776,7 @@ export default function RecordDetailModal({ record, onClose, onDelete }: RecordD
             releasePhotoUrl: releaseResult?.releasePhotoUrl ?? null,
             releasedByStaffId: staffSession?.staffId ?? null,
             releasedByStaffName: staffSession?.name ?? null,
+            releaseGpsAccuracy: releaseGpsAccuracy ?? null,
           };
           fetch(releaseUrl, {
             method: "POST",

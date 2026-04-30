@@ -313,6 +313,7 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
         webhookUrl: z.string().optional(),
         addedByStaffId: z.string().optional(),
         addedByStaffName: z.string().optional(),
+        gpsAccuracy: z.number().optional(),
       })
     )
     .mutation(async ({ input }) => {
@@ -371,6 +372,7 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
         recordedAt: new Date(input.recordedAt),
         addedByStaffId: input.addedByStaffId ?? null,
         addedByStaffName: input.addedByStaffName ?? null,
+        gpsAccuracy: input.gpsAccuracy ?? null,
       });
       console.log(`[saveRecord] DB insert confirmed id=${savedRecord.id} dogId=${resolvedDogId}`);
 
@@ -531,6 +533,7 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
                 addedByStaffId: input.addedByStaffId ?? null,
                 addedByStaffName: input.addedByStaffName ?? null,
                 source: input.source,
+                gpsAccuracy: input.gpsAccuracy ?? null,
               }),
             }).catch((e) => console.warn("[saveRecord BG] update webhook failed:", e));
           }
@@ -618,6 +621,7 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
         photo3Base64: z.string().optional(), // optional release photo
         releasedByStaffId: z.string().nullable().optional(),
         releasedByStaffName: z.string().nullable().optional(),
+        releaseGpsAccuracy: z.number().nullable().optional(),
       })
     )
     .mutation(async ({ input }) => {
@@ -647,6 +651,7 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
         releasedByStaffId: input.releasedByStaffId ?? null,
         releasedByStaffName: input.releasedByStaffName ?? null,
         releasedFar,
+        releaseGpsAccuracy: input.releaseGpsAccuracy ?? null,
       });
       // Update plan timestamps (first/last release) — no auto-archive
       if (saved) {

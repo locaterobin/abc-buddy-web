@@ -154,6 +154,8 @@ export default function Home({ onLogout }: { onLogout?: () => void }) {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* GPS accuracy badge */}
+          <GpsBadge />
           {/* Org name badge from session */}
           <OrgBadge />
           {/* Hamburger */}
@@ -427,5 +429,25 @@ function OrgBadge() {
       <div className="w-2 h-2 flex-shrink-0 rounded-full bg-primary" />
       <span className="text-xs font-mono font-medium text-muted-foreground truncate">{label}</span>
     </div>
+  );
+}
+
+function GpsBadge() {
+  const [accuracy, setAccuracy] = useState<number | null>(null);
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    const id = navigator.geolocation.watchPosition(
+      (pos) => setAccuracy(pos.coords.accuracy),
+      () => setAccuracy(null),
+      { enableHighAccuracy: true, maximumAge: 10000 }
+    );
+    return () => navigator.geolocation.clearWatch(id);
+  }, []);
+  if (accuracy === null) return null;
+  const color = accuracy < 12 ? "text-green-600" : accuracy <= 50 ? "text-amber-500" : "text-red-500";
+  return (
+    <span className={`text-xs font-mono font-medium ${color}`}>
+      GPS ±{Math.round(accuracy)}m
+    </span>
   );
 }

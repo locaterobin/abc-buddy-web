@@ -40,6 +40,7 @@ export interface PendingRecord {
   source: "camera" | "upload";
   recordedAt: number;     // UTC ms
   webhookUrl?: string;
+  gpsAccuracy?: number;
   status: QueueStatus;
   queuedAt: number;       // UTC ms
   errorMessage?: string;

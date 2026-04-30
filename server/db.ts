@@ -350,6 +350,7 @@ export async function saveReleaseData(
     releasedByStaffId?: string | null;
     releasedByStaffName?: string | null;
     releasedFar?: boolean;
+    releaseGpsAccuracy?: number | null;
   }
 ): Promise<boolean> {
   const db = await getDb();
@@ -367,6 +368,7 @@ export async function saveReleaseData(
       ...(data.releasedByStaffId !== undefined ? { releasedByStaffId: data.releasedByStaffId } : {}),
       ...(data.releasedByStaffName !== undefined ? { releasedByStaffName: data.releasedByStaffName } : {}),
       ...(data.releasedFar !== undefined ? { releasedFar: data.releasedFar } : {}),
+      ...(data.releaseGpsAccuracy !== undefined ? { releaseGpsAccuracy: data.releaseGpsAccuracy } : {}),
     })
     .where(and(eq(dogRecords.id, id), eq(dogRecords.teamIdentifier, teamIdentifier)));
 

@@ -121,6 +121,7 @@ export default function AddRecord() {
   const [description, setDescription] = useState("");
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
+  const [gpsAccuracy, setGpsAccuracy] = useState<number | null>(null);
 
   // Loading states
   const [gpsLoading, setGpsLoading] = useState(false);
@@ -195,6 +196,7 @@ export default function AddRecord() {
         source: item.source,
         recordedAt: item.recordedAt,
         webhookUrl: item.webhookUrl,
+        gpsAccuracy: item.gpsAccuracy,
       });
       await removeFromQueue(item.queueId);
       logEvent("success", `Retry succeeded for ${item.dogId}`, item.dogId);
@@ -278,9 +280,11 @@ export default function AddRecord() {
       (pos) => {
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
+        const acc = pos.coords.accuracy;
         // Set coords immediately — this works even with data off
         setLatitude(lat);
         setLongitude(lng);
+        setGpsAccuracy(acc);
         setGpsLoading(false);
         // Geocode is best-effort: fires only when online, silently skipped offline
         if (!areaNameEdited) geocode(lat, lng);
@@ -414,6 +418,7 @@ export default function AddRecord() {
     const savedNotes = notes;
     const savedLat = latitude;
     const savedLng = longitude;
+    const savedGpsAccuracy = gpsAccuracy;
     const savedAreaName = areaName;
     const savedDistrict = district;
     const savedAdminArea = adminArea;
@@ -480,6 +485,7 @@ export default function AddRecord() {
         source: savedSource,
         recordedAt: savedRecordedAt,
         webhookUrl: savedWebhookUrl || undefined,
+        gpsAccuracy: savedGpsAccuracy ?? undefined,
       });
       logEvent("info", `Queued for save`, savedDogId);
 
@@ -507,6 +513,7 @@ export default function AddRecord() {
           webhookUrl: savedWebhookUrl || undefined,
           addedByStaffId: savedStaffId,
           addedByStaffName: savedStaffName,
+          gpsAccuracy: savedGpsAccuracy ?? undefined,
         });
 
         // Server confirmed DB insert — safe to remove from queue
