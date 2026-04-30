@@ -612,3 +612,8 @@
 - [x] Include gpsAccuracy in catch webhook payload (/add and /update)
 - [x] Include releaseGpsAccuracy in release webhook payload (/release)
 - [x] Add GPS accuracy indicator to app header (±Xm, colour-coded green/amber/red)
+
+## Records Tab - Export Buttons Revamp
+- [x] JSON button: icon only (no text), server call returns all filtered records (no pagination limit)
+- [x] DOCX button (new, before ZIP): server call returns one DOCX with each filtered dog's form on a separate page
+- [x] ZIP button (new, between DOCX and JSON): server call returns ZIP of annotated catching photos for all filtered dogs

@@ -271,6 +271,53 @@ export async function getRecordsPaginated(
   return { records, total, hasMore: page * pageSize < total };
 }
 
+export async function getRecordsFiltered(
+  teamIdentifier: string,
+  opts: {
+    search?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    releasedDateFrom?: string;
+    releasedDateTo?: string;
+    status?: "all" | "active" | "released";
+  }
+): Promise<DogRecord[]> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const { search, dateFrom, dateTo, releasedDateFrom, releasedDateTo, status } = opts;
+  const conditions: ReturnType<typeof eq>[] = [eq(dogRecords.teamIdentifier, teamIdentifier), eq(dogRecords.deleted, false) as any];
+  if (search?.trim()) {
+    conditions.push(like(dogRecords.dogId, `%${search.trim()}%`) as any);
+  }
+  if (dateFrom) {
+    const utcStart = new Date(dateFrom + "T00:00:00+05:30").toISOString().replace("T", " ").replace("Z", "");
+    conditions.push(sql`${dogRecords.recordedAt} >= ${utcStart}` as any);
+  }
+  if (dateTo) {
+    const utcEnd = new Date(dateTo + "T23:59:59+05:30").toISOString().replace("T", " ").replace("Z", "");
+    conditions.push(sql`${dogRecords.recordedAt} <= ${utcEnd}` as any);
+  }
+  if (releasedDateFrom) {
+    const utcStart = new Date(releasedDateFrom + "T00:00:00+05:30").toISOString().replace("T", " ").replace("Z", "");
+    conditions.push(sql`${dogRecords.releasedAt} >= ${utcStart}` as any);
+  }
+  if (releasedDateTo) {
+    const utcEnd = new Date(releasedDateTo + "T23:59:59+05:30").toISOString().replace("T", " ").replace("Z", "");
+    conditions.push(sql`${dogRecords.releasedAt} <= ${utcEnd}` as any);
+  }
+  if (status === "released") {
+    conditions.push(isNotNull(dogRecords.releasedAt) as any);
+  } else if (status === "active") {
+    conditions.push(isNull(dogRecords.releasedAt) as any);
+  }
+  const where = and(...conditions);
+  return db
+    .select()
+    .from(dogRecords)
+    .where(where)
+    .orderBy(desc(dogRecords.createdAt));
+}
+
 export async function getRecordsByTeam(teamIdentifier: string): Promise<DogRecord[]> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");

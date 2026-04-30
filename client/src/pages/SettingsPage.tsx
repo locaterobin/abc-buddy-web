@@ -10,6 +10,7 @@ import { getCachedRecords, setCachedRecords } from "@/hooks/useRecordCache";
 import {
   FileJson,
   FileText,
+  FileArchive,
   Clock,
   MapPin,
   Loader2,
@@ -108,22 +109,50 @@ export default function RecordsPage() {
     }
   }, [query.data, page, search, filterDate, filterReleasedDate, statusFilter, teamId]);
 
-  const handleExportJson = () => {
-    if (allRecords.length === 0) {
-      toast.error("No records to export");
-      return;
+  const [exportingDocx, setExportingDocx] = useState(false);
+  const [exportingZip, setExportingZip] = useState(false);
+  const [exportingJson, setExportingJson] = useState(false);
+
+  function buildExportUrl(format: string) {
+    const params = new URLSearchParams();
+    params.set("team", teamId);
+    if (search) params.set("search", search);
+    if (filterDate) { params.set("dateFrom", filterDate); params.set("dateTo", filterDate); }
+    if (filterReleasedDate) { params.set("releasedDateFrom", filterReleasedDate); params.set("releasedDateTo", filterReleasedDate); }
+    if (statusFilter !== "all") params.set("status", statusFilter);
+    return `/api/export/${format}?${params.toString()}`;
+  }
+
+  async function triggerDownload(format: string, setLoading: (v: boolean) => void) {
+    setLoading(true);
+    try {
+      const url = buildExportUrl(format);
+      const resp = await fetch(url);
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({ error: "Export failed" }));
+        toast.error(err.error || "Export failed");
+        return;
+      }
+      const blob = await resp.blob();
+      const objUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = objUrl;
+      const cd = resp.headers.get("content-disposition") || "";
+      const match = cd.match(/filename="([^"]+)"/);
+      a.download = match ? match[1] : `export.${format === "photos" ? "zip" : format}`;
+      a.click();
+      URL.revokeObjectURL(objUrl);
+      toast.success("Download started");
+    } catch {
+      toast.error("Export failed");
+    } finally {
+      setLoading(false);
     }
-    const data = JSON.stringify(allRecords, null, 2);
-    const blob = new Blob([data], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const date = new Date().toISOString().slice(0, 10);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `abc-buddy-${teamId}-${date}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success("Export downloaded");
-  };
+  }
+
+  const handleExportDocx = () => triggerDownload("docx", setExportingDocx);
+  const handleExportZip  = () => triggerDownload("photos", setExportingZip);
+  const handleExportJson = () => triggerDownload("json", setExportingJson);
 
   const total = query.data?.total ?? 0;
   const hasMore = query.data?.hasMore ?? false;
@@ -148,10 +177,17 @@ export default function RecordsPage() {
                 {allRecords.length}{total > allRecords.length ? `/${total}` : ""}
               </Badge>
             </div>
-            <Button variant="outline" size="sm" className="bg-card" onClick={handleExportJson}>
-              <FileJson size={14} className="mr-1.5" />
-              Export JSON
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button variant="outline" size="sm" className="bg-card px-2" onClick={handleExportDocx} disabled={exportingDocx} title="Download DOCX (all forms)">
+                {exportingDocx ? <Loader2 size={14} className="animate-spin" /> : <FileText size={14} />}
+              </Button>
+              <Button variant="outline" size="sm" className="bg-card px-2" onClick={handleExportZip} disabled={exportingZip} title="Download photos ZIP">
+                {exportingZip ? <Loader2 size={14} className="animate-spin" /> : <FileArchive size={14} />}
+              </Button>
+              <Button variant="outline" size="sm" className="bg-card px-2" onClick={handleExportJson} disabled={exportingJson} title="Download JSON">
+                {exportingJson ? <Loader2 size={14} className="animate-spin" /> : <FileJson size={14} />}
+              </Button>
+            </div>
           </div>
 
           {/* Status filter toggle */}
