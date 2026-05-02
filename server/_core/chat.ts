@@ -17,8 +17,8 @@ import { createPatchedFetch } from "./patchedFetch";
  * Creates an OpenAI-compatible provider with patched fetch.
  */
 function createLLMProvider() {
-  // Use direct OpenAI API if OPENAI_API_KEY is set, otherwise fall back to Forge
-  if (ENV.openAiKey) {
+  // Use direct OpenAI API when USE_OPENAI=true, otherwise use Manus Forge API
+  if (ENV.useOpenAI) {
     return createOpenAI({ apiKey: ENV.openAiKey });
   }
   const baseURL = ENV.forgeApiUrl.endsWith("/v1")

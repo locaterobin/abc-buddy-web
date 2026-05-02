@@ -37,6 +37,7 @@ import { nanoid } from "nanoid";
 import { createOpenAI } from "@ai-sdk/openai";
 import { generateText } from "ai";
 import { createPatchedFetch } from "./_core/patchedFetch";
+import { ENV } from "./_core/env";
 import { storagePut } from "./storage";
 import {
   getNextDogIdSuffix,
@@ -79,12 +80,12 @@ export function registerIngestRoute(app: Router) {
     }
 
     try {
-      // ── AI Description ────────────────────────────────────────────────
-      const openai = process.env.OPENAI_API_KEY
-        ? createOpenAI({ apiKey: process.env.OPENAI_API_KEY })
+      // ── AI Description ────────────────────────────────────────────────────────────────
+      const openai = ENV.useOpenAI
+        ? createOpenAI({ apiKey: ENV.openAiKey })
         : createOpenAI({
-            apiKey: process.env.BUILT_IN_FORGE_API_KEY,
-            baseURL: `${process.env.BUILT_IN_FORGE_API_URL}/v1`,
+            apiKey: ENV.forgeApiKey,
+            baseURL: `${ENV.forgeApiUrl}/v1`,
             fetch: createPatchedFetch(fetch),
           });
 

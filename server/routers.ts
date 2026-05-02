@@ -48,12 +48,13 @@ import { createPatchedFetch } from "./_core/patchedFetch";
 import { generateText } from "ai";
 
 // ─── AI Setup ───
-// Use direct OpenAI API if OPENAI_API_KEY is set, otherwise fall back to Forge
-const openai = process.env.OPENAI_API_KEY
-  ? createOpenAI({ apiKey: process.env.OPENAI_API_KEY })
+// Use direct OpenAI API when USE_OPENAI=true, otherwise use Manus Forge API
+import { ENV } from "./_core/env";
+const openai = ENV.useOpenAI
+  ? createOpenAI({ apiKey: ENV.openAiKey })
   : createOpenAI({
-      apiKey: process.env.BUILT_IN_FORGE_API_KEY,
-      baseURL: `${process.env.BUILT_IN_FORGE_API_URL}/v1`,
+      apiKey: ENV.forgeApiKey,
+      baseURL: `${ENV.forgeApiUrl}/v1`,
       fetch: createPatchedFetch(fetch),
     });
 

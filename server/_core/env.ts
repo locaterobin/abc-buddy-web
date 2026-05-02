@@ -8,4 +8,6 @@ export const ENV = {
   forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
   openAiKey: process.env.OPENAI_API_KEY ?? "",
+  // When true, use direct OpenAI API; when false (default), use Manus Forge API
+  useOpenAI: process.env.USE_OPENAI === "true",
 };
