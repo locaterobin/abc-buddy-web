@@ -444,7 +444,7 @@ Respond ONLY with a valid JSON object in this exact format (no markdown, no extr
             try {
               console.log(`[saveRecord BG] Generating AI description for ${resolvedDogId}`);
               const aiResult = await generateText({
-                model: openai.chat("gpt-4o"),
+                model: openai.chat("gpt-4o-mini"),
                 messages: [{
                   role: "user",
                   content: [
