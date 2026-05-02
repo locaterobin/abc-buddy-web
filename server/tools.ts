@@ -92,8 +92,7 @@ async function handleExportJson(_req: Request, res: Response) {
 
 // ─── /api/tools/migrate-images ───────────────────────────────────────────────
 
-async function handleMigrateImages(req: Request, res: Response) {
-  const dryRun = req.query.dryRun === "true" || req.query.dryRun === "1";
+async function runMigration(dryRun: boolean) {
   const { bucket, bucketName } = getGcsClient();
   const conn = await mysql.createConnection(getDbUrl());
 
@@ -108,14 +107,17 @@ async function handleMigrateImages(req: Request, res: Response) {
 
   async function migrateUrl(oldUrl: string | null | undefined, gcsKey: string): Promise<string | null> {
     if (isAlreadyGcs(oldUrl)) { skipped++; return oldUrl ?? null; }
+    if (dryRun) {
+      // Dry-run: just count, no download
+      migrated++;
+      return oldUrl ?? null;
+    }
     try {
       const resp = await fetch(oldUrl!);
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const buffer = Buffer.from(await resp.arrayBuffer());
       const contentType = resp.headers.get("content-type") || "image/jpeg";
-      if (!dryRun) {
-        await bucket.file(gcsKey).save(buffer, { contentType, resumable: false });
-      }
+      await bucket.file(gcsKey).save(buffer, { contentType, resumable: false });
       migrated++;
       return `https://storage.googleapis.com/${bucketName}/${gcsKey}`;
     } catch (err: unknown) {
@@ -167,10 +169,45 @@ async function handleMigrateImages(req: Request, res: Response) {
       }
     }
 
-    res.json({ ok: true, dryRun, migrated, skipped, failed, errors: errors.slice(0, 20) });
+    // Write results log to GCS
+    const ts = new Date().toISOString().replace(/[:.]/g, "-");
+    const logKey = `migration-logs/${dryRun ? "dryrun" : "run"}-${ts}.json`;
+    const logData = JSON.stringify({ ok: true, dryRun, migrated, skipped, failed, errors, completedAt: new Date().toISOString() }, null, 2);
+    await bucket.file(logKey).save(Buffer.from(logData), { contentType: "application/json", resumable: false });
+    console.log(`[migrate-images] Done. migrated=${migrated} skipped=${skipped} failed=${failed} log=gs://${bucketName}/${logKey}`);
+    return { ok: true, dryRun, migrated, skipped, failed, logKey: `gs://${bucketName}/${logKey}` };
   } finally {
     await conn.end();
   }
+}
+
+async function handleMigrateImages(req: Request, res: Response) {
+  const dryRun = req.query.dryRun === "true" || req.query.dryRun === "1";
+
+  if (dryRun) {
+    // Dry-run is fast enough to wait for
+    try {
+      const result = await runMigration(true);
+      res.json(result);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      res.status(500).json({ ok: false, error: msg });
+    }
+    return;
+  }
+
+  // Real run: respond immediately, continue in background
+  const { bucketName } = getGcsClient();
+  res.json({
+    ok: true,
+    message: "Migration started in background. Check GCS bucket for results log.",
+    logLocation: `gs://${bucketName}/migration-logs/`,
+  });
+
+  // Fire and forget — do not await
+  runMigration(false).catch((err) => {
+    console.error("[migrate-images] Background migration failed:", err);
+  });
 }
 
 // ─── CSV helpers ─────────────────────────────────────────────────────────────
