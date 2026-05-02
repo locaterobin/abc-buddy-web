@@ -80,11 +80,13 @@ export function registerIngestRoute(app: Router) {
 
     try {
       // ── AI Description ────────────────────────────────────────────────
-      const openai = createOpenAI({
-        apiKey: process.env.BUILT_IN_FORGE_API_KEY,
-        baseURL: `${process.env.BUILT_IN_FORGE_API_URL}/v1`,
-        fetch: createPatchedFetch(fetch),
-      });
+      const openai = process.env.OPENAI_API_KEY
+        ? createOpenAI({ apiKey: process.env.OPENAI_API_KEY })
+        : createOpenAI({
+            apiKey: process.env.BUILT_IN_FORGE_API_KEY,
+            baseURL: `${process.env.BUILT_IN_FORGE_API_URL}/v1`,
+            fetch: createPatchedFetch(fetch),
+          });
 
       let aiDescription = "";
       try {

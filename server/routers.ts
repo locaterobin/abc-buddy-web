@@ -48,11 +48,14 @@ import { createPatchedFetch } from "./_core/patchedFetch";
 import { generateText } from "ai";
 
 // ─── AI Setup ───
-const openai = createOpenAI({
-  apiKey: process.env.BUILT_IN_FORGE_API_KEY,
-  baseURL: `${process.env.BUILT_IN_FORGE_API_URL}/v1`,
-  fetch: createPatchedFetch(fetch),
-});
+// Use direct OpenAI API if OPENAI_API_KEY is set, otherwise fall back to Forge
+const openai = process.env.OPENAI_API_KEY
+  ? createOpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  : createOpenAI({
+      apiKey: process.env.BUILT_IN_FORGE_API_KEY,
+      baseURL: `${process.env.BUILT_IN_FORGE_API_URL}/v1`,
+      fetch: createPatchedFetch(fetch),
+    });
 
 // ─── Team ID Generation ───
 const ADJECTIVES = [
