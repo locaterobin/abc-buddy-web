@@ -1,102 +1,68 @@
-// Preconfigured storage helpers for Manus WebDev templates
-// Uses the Biz-provided storage proxy (Authorization: Bearer <token>)
+/**
+ * Storage helpers — backed by Google Cloud Storage.
+ *
+ * Credentials are injected via:
+ *   GCS_SERVICE_ACCOUNT_JSON  — full service-account JSON (stringified)
+ *   GCS_BUCKET_NAME           — e.g. "photos.abc.peepalfarm.org"
+ *
+ * Uploaded objects are made publicly readable (allUsers: Storage Object Viewer
+ * must be set on the bucket). The returned URL is the canonical public URL:
+ *   https://storage.googleapis.com/<bucket>/<key>
+ */
 
-import { ENV } from './_core/env';
+import { Storage } from "@google-cloud/storage";
 
-type StorageConfig = { baseUrl: string; apiKey: string };
+function getGcsClient(): { storage: Storage; bucket: string } {
+  const jsonStr = process.env.GCS_SERVICE_ACCOUNT_JSON;
+  const bucket = process.env.GCS_BUCKET_NAME;
 
-function getStorageConfig(): StorageConfig {
-  const baseUrl = ENV.forgeApiUrl;
-  const apiKey = ENV.forgeApiKey;
+  if (!jsonStr) throw new Error("GCS_SERVICE_ACCOUNT_JSON is not set");
+  if (!bucket) throw new Error("GCS_BUCKET_NAME is not set");
 
-  if (!baseUrl || !apiKey) {
-    throw new Error(
-      "Storage proxy credentials missing: set BUILT_IN_FORGE_API_URL and BUILT_IN_FORGE_API_KEY"
-    );
-  }
-
-  return { baseUrl: baseUrl.replace(/\/+$/, ""), apiKey };
-}
-
-function buildUploadUrl(baseUrl: string, relKey: string): URL {
-  const url = new URL("v1/storage/upload", ensureTrailingSlash(baseUrl));
-  url.searchParams.set("path", normalizeKey(relKey));
-  return url;
-}
-
-async function buildDownloadUrl(
-  baseUrl: string,
-  relKey: string,
-  apiKey: string
-): Promise<string> {
-  const downloadApiUrl = new URL(
-    "v1/storage/downloadUrl",
-    ensureTrailingSlash(baseUrl)
-  );
-  downloadApiUrl.searchParams.set("path", normalizeKey(relKey));
-  const response = await fetch(downloadApiUrl, {
-    method: "GET",
-    headers: buildAuthHeaders(apiKey),
-  });
-  return (await response.json()).url;
-}
-
-function ensureTrailingSlash(value: string): string {
-  return value.endsWith("/") ? value : `${value}/`;
+  const credentials = JSON.parse(jsonStr);
+  const storage = new Storage({ credentials });
+  return { storage, bucket };
 }
 
 function normalizeKey(relKey: string): string {
   return relKey.replace(/^\/+/, "");
 }
 
-function toFormData(
-  data: Buffer | Uint8Array | string,
-  contentType: string,
-  fileName: string
-): FormData {
-  const blob =
-    typeof data === "string"
-      ? new Blob([data], { type: contentType })
-      : new Blob([data as any], { type: contentType });
-  const form = new FormData();
-  form.append("file", blob, fileName || "file");
-  return form;
-}
-
-function buildAuthHeaders(apiKey: string): HeadersInit {
-  return { Authorization: `Bearer ${apiKey}` };
-}
-
+/**
+ * Upload bytes to GCS and return the public URL.
+ * The object is saved with public-read ACL so it is accessible without signing.
+ */
 export async function storagePut(
   relKey: string,
   data: Buffer | Uint8Array | string,
   contentType = "application/octet-stream"
 ): Promise<{ key: string; url: string }> {
-  const { baseUrl, apiKey } = getStorageConfig();
+  const { storage, bucket } = getGcsClient();
   const key = normalizeKey(relKey);
-  const uploadUrl = buildUploadUrl(baseUrl, key);
-  const formData = toFormData(data, contentType, key.split("/").pop() ?? key);
-  const response = await fetch(uploadUrl, {
-    method: "POST",
-    headers: buildAuthHeaders(apiKey),
-    body: formData,
+
+  const file = storage.bucket(bucket).file(key);
+  const buffer =
+    typeof data === "string" ? Buffer.from(data) : Buffer.from(data);
+
+  await file.save(buffer, {
+    contentType,
+    // No per-object ACL needed — bucket uses uniform access with allUsers:objectViewer IAM
+    resumable: false,
   });
 
-  if (!response.ok) {
-    const message = await response.text().catch(() => response.statusText);
-    throw new Error(
-      `Storage upload failed (${response.status} ${response.statusText}): ${message}`
-    );
-  }
-  const url = (await response.json()).url;
+  const url = `https://storage.googleapis.com/${bucket}/${key}`;
   return { key, url };
 }
 
-export async function storageGet(relKey: string): Promise<{ key: string; url: string; }> {
-  const { baseUrl, apiKey } = getStorageConfig();
+/**
+ * Return the public URL for an existing GCS object.
+ * Since objects are uploaded with publicRead, no signing is needed.
+ */
+export async function storageGet(
+  relKey: string
+): Promise<{ key: string; url: string }> {
+  const { bucket } = getGcsClient();
   const key = normalizeKey(relKey);
-  return {
-    key,
-    url: await buildDownloadUrl(baseUrl, key, apiKey),
-  };
+  const url = `https://storage.googleapis.com/${bucket}/${key}`;
+  return { key, url };
 }

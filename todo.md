@@ -617,3 +617,10 @@
 - [x] JSON button: icon only (no text), server call returns all filtered records (no pagination limit)
 - [x] DOCX button (new, before ZIP): server call returns one DOCX with each filtered dog's form on a separate page
 - [x] ZIP button (new, between DOCX and JSON): server call returns ZIP of annotated catching photos for all filtered dogs
+
+## Google Cloud Storage Migration
+- [x] Store GCS_SERVICE_ACCOUNT_JSON and GCS_BUCKET_NAME secrets
+- [x] Install @google-cloud/storage SDK
+- [x] Rewrite server/storage.ts to use GCS instead of S3
+- [x] Test GCS upload end-to-end
+- [ ] Save checkpoint and push to GitHub
