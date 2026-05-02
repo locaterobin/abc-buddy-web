@@ -27,6 +27,7 @@ import { registerIngestRoute } from "../ingest";
 import { registerPdfRoute } from "../pdf";
 import { registerStopsRoute } from "../stops";
 import { registerExportsRoute } from "../exports";
+import { registerToolsRoute } from "../tools";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
@@ -68,6 +69,8 @@ async function startServer() {
   registerStopsRoute(app);
   // Export REST API (JSON / DOCX / Photos ZIP)
   registerExportsRoute(app);
+  // Admin tools API (backup, migrate-images, export-json) — secret-protected
+  registerToolsRoute(app);
   // Version endpoint — returns a timestamp generated at server startup.
   // This changes on every deployment/restart, allowing the client to detect new versions.
   const BUILD_ID = Date.now().toString();
