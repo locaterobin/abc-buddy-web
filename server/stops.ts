@@ -13,6 +13,16 @@ import { getStops } from "./db";
 export function registerStopsRoute(app: Express) {
   app.get("/api/stops", async (req: Request, res: Response) => {
     try {
+      // ── Auth ──────────────────────────────────────────────────────────────
+      const provided =
+        (req.query.secret as string | undefined) ||
+        (req.headers["x-tools-secret"] as string | undefined);
+      const expectedKey = process.env.TOOLS_SECRET;
+      if (!expectedKey || provided !== expectedKey) {
+        res.status(401).json({ error: "Unauthorized: invalid or missing secret" });
+        return;
+      }
+
       const { staffId, date } = req.query as { staffId?: string; date?: string };
 
       if (!staffId || !date) {

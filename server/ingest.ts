@@ -5,7 +5,7 @@
  * Accepts an image + metadata, runs AI description, uploads to S3,
  * saves to DB, and fires the configured webhook.
  *
- * Authentication: X-API-Key header must match INGEST_API_KEY env var.
+ * Authentication: ?secret= query param or X-Tools-Secret header must match TOOLS_SECRET env var.
  *
  * Request body (JSON):
  * {
@@ -46,15 +46,17 @@ import {
 
 export function registerIngestRoute(app: Router) {
   app.post("/api/ingest", async (req: Request, res: Response) => {
-    // ── Auth ──────────────────────────────────────────────────────────────
-    const apiKey = req.headers["x-api-key"];
-    const expectedKey = process.env.INGEST_API_KEY;
+    // ── Auth ────────────────────────────────────────────────────────────────
+    const provided =
+      (req.query.secret as string | undefined) ||
+      (req.headers["x-tools-secret"] as string | undefined);
+    const expectedKey = process.env.TOOLS_SECRET;
 
     if (!expectedKey) {
-      return res.status(503).json({ error: "INGEST_API_KEY not configured on server" });
+      return res.status(503).json({ error: "TOOLS_SECRET not configured on server" });
     }
-    if (!apiKey || apiKey !== expectedKey) {
-      return res.status(401).json({ error: "Unauthorized: invalid or missing X-API-Key header" });
+    if (!provided || provided !== expectedKey) {
+      return res.status(401).json({ error: "Unauthorized: invalid or missing secret" });
     }
 
     // ── Validate body ─────────────────────────────────────────────────────
