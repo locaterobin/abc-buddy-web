@@ -6,10 +6,10 @@
  *   X-Tools-Secret: helloworldiamdyingtoseeyou
  *
  * Endpoints:
- *   GET  /api/tools/backup          — export DB tables to GCS, returns GCS URL
+ *   GET  /api/tools/export-json     — export all DB tables as JSON to GCS, returns GCS URL
  *   GET  /api/tools/migrate-images  — migrate old S3/Forge images to GCS, updates DB
  *                                     add ?dryRun=true to preview without writing
- *   GET  /api/tools/export-csv      — download ZIP of three MySQL-import-ready CSVs
+ *   GET  /api/tools/export-csv      — export three MySQL-import-ready CSVs as ZIP to GCS, returns GCS URL
  *                                     (dog_records.csv, release_plans.csv, release_plan_dogs.csv)
  */
 
@@ -50,9 +50,9 @@ function getDbUrl() {
   return url;
 }
 
-// ─── /api/tools/backup ───────────────────────────────────────────────────────
+// ─── /api/tools/export-json ─────────────────────────────────────────────────
 
-async function handleBackup(_req: Request, res: Response) {
+async function handleExportJson(_req: Request, res: Response) {
   const conn = await mysql.createConnection(getDbUrl());
   try {
     const [dogRecords] = await conn.query("SELECT * FROM dog_records");
@@ -204,19 +204,40 @@ async function handleExportCsv(_req: Request, res: Response) {
     const [releasePlans] = await conn.query("SELECT * FROM release_plans") as [Record<string, unknown>[], unknown];
     const [releasePlanDogs] = await conn.query("SELECT * FROM release_plan_dogs") as [Record<string, unknown>[], unknown];
 
-    const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const timestamp =
+      `${now.getUTCFullYear()}-${pad(now.getUTCMonth() + 1)}-${pad(now.getUTCDate())}` +
+      `_${pad(now.getUTCHours())}-${pad(now.getUTCMinutes())}-${pad(now.getUTCSeconds())}`;
 
-    res.setHeader("Content-Type", "application/zip");
-    res.setHeader("Content-Disposition", `attachment; filename="abc-export-${timestamp}.zip"`);
+    // Build ZIP in memory
+    const zipBuffer = await new Promise<Buffer>((resolve, reject) => {
+      const chunks: Buffer[] = [];
+      const archive = archiver("zip", { zlib: { level: 6 } });
+      archive.on("data", (chunk: Buffer) => chunks.push(chunk));
+      archive.on("end", () => resolve(Buffer.concat(chunks)));
+      archive.on("error", reject);
+      archive.append(rowsToCsv(dogRecords), { name: "dog_records.csv" });
+      archive.append(rowsToCsv(releasePlans), { name: "release_plans.csv" });
+      archive.append(rowsToCsv(releasePlanDogs), { name: "release_plan_dogs.csv" });
+      archive.finalize();
+    });
 
-    const archive = archiver("zip", { zlib: { level: 6 } });
-    archive.pipe(res);
+    // Upload ZIP to GCS
+    const gcsKey = `exports/csv/${timestamp}.zip`;
+    const { bucket, bucketName } = getGcsClient();
+    await bucket.file(gcsKey).save(zipBuffer, {
+      contentType: "application/zip",
+      resumable: false,
+    });
 
-    archive.append(rowsToCsv(dogRecords), { name: "dog_records.csv" });
-    archive.append(rowsToCsv(releasePlans), { name: "release_plans.csv" });
-    archive.append(rowsToCsv(releasePlanDogs), { name: "release_plan_dogs.csv" });
-
-    await archive.finalize();
+    const url = `https://storage.googleapis.com/${bucketName}/${gcsKey}`;
+    const counts = {
+      dog_records: (dogRecords as unknown[]).length,
+      release_plans: (releasePlans as unknown[]).length,
+      release_plan_dogs: (releasePlanDogs as unknown[]).length,
+    };
+    res.json({ ok: true, url, gcsKey, counts, sizeKb: +(zipBuffer.length / 1024).toFixed(1) });
   } finally {
     await conn.end();
   }
@@ -237,7 +258,7 @@ export function registerToolsRoute(app: Express) {
       }
     };
 
-  app.get("/api/tools/backup", wrap(handleBackup));
+  app.get("/api/tools/export-json", wrap(handleExportJson));
   app.get("/api/tools/migrate-images", wrap(handleMigrateImages));
   app.get("/api/tools/export-csv", wrap(handleExportCsv));
 }
