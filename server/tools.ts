@@ -9,15 +9,14 @@
  *   GET  /api/tools/backup          — export DB tables to GCS, returns GCS URL
  *   GET  /api/tools/migrate-images  — migrate old S3/Forge images to GCS, updates DB
  *                                     add ?dryRun=true to preview without writing
- *   GET  /api/tools/export-json     — download all records as JSON (same filters as Records tab)
- *                                     optional query params: catchFrom, catchTo, releaseFrom,
- *                                     releaseTo, status (active|released)
+ *   GET  /api/tools/export-csv      — download ZIP of three MySQL-import-ready CSVs
+ *                                     (dog_records.csv, release_plans.csv, release_plan_dogs.csv)
  */
 
 import type { Express, Request, Response } from "express";
 import { Storage } from "@google-cloud/storage";
 import mysql from "mysql2/promise";
-import { getRecordsFiltered } from "./db";
+import archiver from "archiver";
 
 // ─── Shared secret ────────────────────────────────────────────────────────────
 
@@ -174,26 +173,53 @@ async function handleMigrateImages(req: Request, res: Response) {
   }
 }
 
-// ─── /api/tools/export-json ──────────────────────────────────────────────────
+// ─── CSV helpers ─────────────────────────────────────────────────────────────
 
-async function handleExportJson(req: Request, res: Response) {
-  const { catchFrom, catchTo, releaseFrom, releaseTo, status, teamId } = req.query as Record<string, string | undefined>;
+function escapeCell(val: unknown): string {
+  if (val === null || val === undefined) return "";
+  const s = val instanceof Date ? val.toISOString() : String(val);
+  // Wrap in quotes if contains comma, quote, or newline
+  if (s.includes(",") || s.includes('"') || s.includes("\n") || s.includes("\r")) {
+    return '"' + s.replace(/"/g, '""') + '"';
+  }
+  return s;
+}
 
-  const records = await getRecordsFiltered(
-    teamId ?? "",
-    {
-      dateFrom: catchFrom ?? undefined,
-      dateTo: catchTo ?? undefined,
-      releasedDateFrom: releaseFrom ?? undefined,
-      releasedDateTo: releaseTo ?? undefined,
-      status: (status as "active" | "released" | "all" | undefined) ?? "all",
-    }
-  );
+function rowsToCsv(rows: Record<string, unknown>[]): string {
+  if (rows.length === 0) return "";
+  const headers = Object.keys(rows[0]);
+  const lines = [headers.join(",")];
+  for (const row of rows) {
+    lines.push(headers.map(h => escapeCell(row[h])).join(","));
+  }
+  return lines.join("\r\n") + "\r\n";
+}
 
-  const json = JSON.stringify(records, null, 2);
-  res.setHeader("Content-Type", "application/json");
-  res.setHeader("Content-Disposition", `attachment; filename="abc-records-${Date.now()}.json"`);
-  res.send(json);
+// ─── /api/tools/export-csv ───────────────────────────────────────────────────
+
+async function handleExportCsv(_req: Request, res: Response) {
+  const conn = await mysql.createConnection(getDbUrl());
+  try {
+    const [dogRecords] = await conn.query("SELECT * FROM dog_records") as [Record<string, unknown>[], unknown];
+    const [releasePlans] = await conn.query("SELECT * FROM release_plans") as [Record<string, unknown>[], unknown];
+    const [releasePlanDogs] = await conn.query("SELECT * FROM release_plan_dogs") as [Record<string, unknown>[], unknown];
+
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+
+    res.setHeader("Content-Type", "application/zip");
+    res.setHeader("Content-Disposition", `attachment; filename="abc-export-${timestamp}.zip"`);
+
+    const archive = archiver("zip", { zlib: { level: 6 } });
+    archive.pipe(res);
+
+    archive.append(rowsToCsv(dogRecords), { name: "dog_records.csv" });
+    archive.append(rowsToCsv(releasePlans), { name: "release_plans.csv" });
+    archive.append(rowsToCsv(releasePlanDogs), { name: "release_plan_dogs.csv" });
+
+    await archive.finalize();
+  } finally {
+    await conn.end();
+  }
 }
 
 // ─── Register ─────────────────────────────────────────────────────────────────
@@ -213,5 +239,5 @@ export function registerToolsRoute(app: Express) {
 
   app.get("/api/tools/backup", wrap(handleBackup));
   app.get("/api/tools/migrate-images", wrap(handleMigrateImages));
-  app.get("/api/tools/export-json", wrap(handleExportJson));
+  app.get("/api/tools/export-csv", wrap(handleExportCsv));
 }
