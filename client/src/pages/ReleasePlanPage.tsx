@@ -351,6 +351,22 @@ export default function ReleasePlanPage() {
     for (const item of releaseItems) await retryReleaseItem(item);
   }, [retryReleaseItem]);
 
+  // Auto-retry: 2 s after coming back online, and every 30 s while online
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const handleOnline = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => syncAllReleases(), 2000);
+    };
+    window.addEventListener("online", handleOnline);
+    const interval = setInterval(() => { if (navigator.onLine) syncAllReleases(); }, 30_000);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      if (timer) clearTimeout(timer);
+      clearInterval(interval);
+    };
+  }, [syncAllReleases]);
+
   const discardReleaseItem = useCallback(async (queueId: string) => {
     await removePlanPhotoFromQueue(queueId);
     refreshReleaseQueue();

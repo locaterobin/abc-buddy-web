@@ -222,7 +222,7 @@ export default function AddRecord() {
     refreshQueue();
   }, [refreshQueue]);
 
-  // Auto-retry 2 s after coming back online (grace period for network stack)
+  // Auto-retry: 2 s after coming back online, and every 30 s while online
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | null = null;
     const handleOnline = () => {
@@ -230,9 +230,11 @@ export default function AddRecord() {
       timer = setTimeout(() => syncAll(), 2000);
     };
     window.addEventListener("online", handleOnline);
+    const interval = setInterval(() => { if (navigator.onLine) syncAll(); }, 30_000);
     return () => {
       window.removeEventListener("online", handleOnline);
       if (timer) clearTimeout(timer);
+      clearInterval(interval);
     };
   }, [syncAll]);
 
