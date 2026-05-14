@@ -13,9 +13,13 @@ import { trpc } from "./lib/trpc";
 
 function AppInner() {
   const [session, setSession] = useState<StaffSession | null>(() => getStaffSession());
+  const [sessionReady, setSessionReady] = useState(() => {
+    const s = getStaffSession();
+    return !s || !!s.webhookUrl; // ready immediately if no session or webhookUrl already present
+  });
   const refreshMutation = trpc.airtable.refreshSession.useMutation();
 
-  // On load: if session exists but webhookUrl is missing, silently re-fetch team data
+  // On load: if session exists but webhookUrl is missing, re-fetch team data before showing the app
   useEffect(() => {
     if (session && !session.webhookUrl && session.teamId) {
       refreshMutation.mutate(
@@ -28,6 +32,7 @@ function AppInner() {
               setSession(updated);
             }
           },
+          onSettled: () => setSessionReady(true),
         }
       );
     }
@@ -61,7 +66,11 @@ function AppInner() {
       <TooltipProvider>
         <Toaster position="top-center" />
         <div>
-          {session ? <Home onLogout={() => setSession(null)} /> : <LoginPage onLogin={handleLogin} isOffline={isOffline} />}
+          {session
+            ? sessionReady
+              ? <Home onLogout={() => setSession(null)} />
+              : null
+            : <LoginPage onLogin={handleLogin} isOffline={isOffline} />}
         </div>
       </TooltipProvider>
     </TeamProvider>
