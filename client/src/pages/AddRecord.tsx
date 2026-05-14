@@ -449,6 +449,7 @@ export default function AddRecord() {
           source: savedSource,
           addedByStaffId: savedStaffId ?? null,
           addedByStaffName: savedStaffName ?? null,
+          gpsAccuracy: savedGpsAccuracy ?? null,
         },
       }).catch((e: unknown) => console.warn("Add webhook proxy failed:", e));
     }
